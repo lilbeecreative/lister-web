@@ -22,7 +22,9 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase     = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI(title="Lister AI")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+import os as _os
+if _os.path.isdir("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 EBAY_DESCRIPTION = """Shipped primarily with UPS and sometimes USPS. If you have special packing or shipping needs, please send a message.\n\nThis item is sold in "as-is" condition. The seller assumes no liability for the use, operation, or installation of this product. Due to the technical nature of this equipment, the buyer is responsible for having the item professionally inspected and installed by a certified technician prior to use."""
