@@ -300,10 +300,10 @@ async def export_ebay_csv():
             pic = photo_url(pid) if pid else ""
             writer.writerow([
                 "Draft", "",
-                str(l.get("ebay_category_id","") or "").replace(".0",""),
+                str(l.get("ebay_category_id","") or "").replace(".0","") or "12576",
                 str(l.get("title",""))[:80],
                 "",
-                f"{float(l.get('price',0) or 0):.2f}",
+                f"{max(float(l.get('price',0) or 0), 1.00):.2f}",
                 str(int(l.get("quantity",1) or 1)),
                 pic, cond_id,
                 EBAY_DESCRIPTION,
