@@ -71,7 +71,11 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .tile.ebay-draft { border-left: 3px solid var(--accent); }
 
 .tile-photo { position: relative; width: 100%; padding-top: 100%; background: #161925; overflow: hidden; }
-.tile-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tile-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-orientation: from-image; }
+.photo-counter { position: absolute; bottom: 44px; right: 7px; background: rgba(0,0,0,0.6); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
+.photo-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.photo-nav-prev { left: 5px; }
+.photo-nav-next { right: 5px; }
 .tile-photo-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #3d4663; }
 .tile-badge-tl { position: absolute; top: 7px; left: 7px; background: rgba(0,0,0,0.65); border-radius: 5px; padding: 2px 7px; font-size: 9px; font-weight: 700; }
 .tile-badge-tr { position: absolute; top: 7px; right: 7px; }
@@ -457,13 +461,22 @@ function renderTiles() {
     const statusBadge = ebayDraft
       ? `<a href="https://www.ebay.com/itm/${l.ebay_item_id}" target="_blank" style="background:rgba(37,99,235,0.8);color:#fff;border-radius:5px;font-size:9px;font-weight:700;padding:2px 6px;text-decoration:none;">eBay</a>`
       : fallback ? `<span style="background:rgba(245,158,11,0.8);color:#fff;border-radius:5px;font-size:9px;font-weight:700;padding:2px 5px;">⚠</span>` : '';
-    const photoHtml = l.thumb_url
-      ? `<img src="${l.thumb_url}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"/>`
+    const photos = l.all_photos || (l.thumb_url ? [{thumb: l.thumb_url, full: l.full_url}] : []);
+    const photoCount = photos.length;
+    const firstThumb = photos[0]?.thumb || '';
+    const photoHtml = firstThumb
+      ? `<img src="${firstThumb}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-orientation:from-image;" id="photo-img-${l.id}"/>`
       : `<div class="tile-photo-placeholder">📷</div>`;
+    const photoNavHtml = photoCount > 1
+      ? `<button class="photo-nav photo-nav-prev" onclick="event.stopPropagation();cyclePhoto('${l.id}',-1)">‹</button>
+         <button class="photo-nav photo-nav-next" onclick="event.stopPropagation();cyclePhoto('${l.id}',1)">›</button>
+         <div class="photo-counter" id="photo-counter-${l.id}">1/${photoCount}</div>`
+      : '';
 
-    return `<div class="tile${isSel?' selected':''}${ebayDraft?' ebay-draft':''}" id="tile-${l.id}">
+    return `<div class="tile${isSel?' selected':''}${ebayDraft?' ebay-draft':''}" id="tile-${l.id}" data-photos='${JSON.stringify(photos)}' data-photo-idx="0">
       <div class="tile-photo" onclick="openModal('${l.id}')">
         ${photoHtml}
+        ${photoNavHtml}
         <div class="tile-badge-tl" style="color:${condCol};">${isNew?'NEW':'USED'}</div>
         <div class="tile-badge-tr">${statusBadge}</div>
         <div class="tile-price-overlay">
@@ -489,6 +502,21 @@ function renderTiles() {
   }).join('');
 
   updateSubmitBtn();
+}
+
+function cyclePhoto(id, dir) {
+  const tile = document.getElementById('tile-' + id);
+  if (!tile) return;
+  const photos = JSON.parse(tile.dataset.photos || '[]');
+  if (photos.length <= 1) return;
+  let idx = parseInt(tile.dataset.photoIdx || '0') + dir;
+  if (idx < 0) idx = photos.length - 1;
+  if (idx >= photos.length) idx = 0;
+  tile.dataset.photoIdx = idx;
+  const img = document.getElementById('photo-img-' + id);
+  if (img) img.src = photos[idx].thumb;
+  const counter = document.getElementById('photo-counter-' + id);
+  if (counter) counter.textContent = (idx + 1) + '/' + photos.length;
 }
 
 function toggleSelect(id) {
@@ -583,9 +611,12 @@ function openModal(id) {
   if (!l) return;
   modalItemId = id;
   modalDirty  = false;
+  const tile = document.getElementById('tile-' + id);
+  const photos = (l.all_photos && l.all_photos.length) ? l.all_photos : (l.full_url ? [{thumb: l.thumb_url, full: l.full_url}] : []);
+  const curIdx = parseInt(tile?.dataset?.photoIdx || '0');
   const img = document.getElementById('modal-img');
-  img.src = l.full_url || '';
-  img.style.display = l.full_url ? 'block' : 'none';
+  img.src = photos[curIdx]?.full || l.full_url || '';
+  img.style.cssText = 'width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px 14px 0 0;image-orientation:from-image;display:' + (img.src ? 'block' : 'none') + ';';
   document.getElementById('modal-title').textContent = l.title || 'Unknown Item';
   document.getElementById('modal-meta').textContent  = `${l.ebay_category || ''} · ${(l.condition||'used').toUpperCase()}`;
   document.getElementById('modal-price').textContent = `$${l.price.toFixed(2)}`;
