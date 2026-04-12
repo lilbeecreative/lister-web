@@ -27,7 +27,7 @@ if _os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-EBAY_DESCRIPTION = """Shipped primarily with UPS and sometimes USPS. If you have special packing or shipping needs, please send a message.\n\nThis item is sold in "as-is" condition. The seller assumes no liability for the use, operation, or installation of this product. Due to the technical nature of this equipment, the buyer is responsible for having the item professionally inspected and installed by a certified technician prior to use."""
+EBAY_DESCRIPTION = "Shipped primarily with UPS and sometimes USPS. If you have special packing or shipping needs, please send a message. This item is sold in as-is condition. The seller assumes no liability for the use, operation, or installation of this product. Due to the technical nature of this equipment, the buyer is responsible for having the item professionally inspected and installed by a certified technician prior to use."
 
 def photo_url(photo_id: str, thumb: bool = False) -> str:
     if not photo_id or photo_id in ("", "nan", "0"):
