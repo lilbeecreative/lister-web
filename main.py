@@ -307,7 +307,7 @@ async def export_ebay_csv():
                 str(int(l.get("quantity",1) or 1)),
                 pic, cond_id,
                 EBAY_DESCRIPTION,
-                "BestOfferEnabled",
+                "FixedPrice",
             ])
 
         csv_bytes = output.getvalue().encode("utf-8")
