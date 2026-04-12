@@ -62,6 +62,13 @@ async def get_listings():
             l["price_used"] = float(l.get("price_used") or 0)
             l["price_new"]  = float(l.get("price_new") or 0)
             l["quantity"]   = int(l.get("quantity") or 1)
+            # Normalize condition — default to "used" if blank/null
+            cond = str(l.get("condition") or "").strip().lower()
+            l["condition"] = cond if cond in ("new", "used") else "used"
+            # Normalize listing_type — items from batch upload are not auctions
+            lt = str(l.get("listing_type") or "").strip().lower()
+            if lt not in ("auction", "fixed"):
+                l["listing_type"] = "fixed"
         return JSONResponse(listings)
     except Exception as e:
         raise HTTPException(500, str(e))
@@ -261,7 +268,9 @@ async def export_ebay_csv():
         writer = csv.writer(output, quoting=csv.QUOTE_ALL)
 
         for l in listings:
-            cond = str(l.get("condition","used") or "used").strip().lower()
+            cond = str(l.get("condition") or "used").strip().lower()
+            if cond not in ("new", "used"):
+                cond = "used"
             cond_id = "1000" if cond == "new" else "3000"
             pid = str(l.get("photo_id","") or "")
             pic = photo_url(pid) if pid else ""
@@ -284,6 +293,140 @@ async def export_ebay_csv():
             headers={"Content-Disposition": f"attachment; filename={fn}"})
     except Exception as e:
         raise HTTPException(500, str(e))
+
+
+# ── API: PARTS LOOKUP ────────────────────────────────────────── #
+
+@app.get("/api/parts/photos")
+async def get_unmatched_photos():
+    """Get all photos from storage that haven't been matched yet."""
+    try:
+        # Get all files in part-photos bucket
+        res = supabase.storage.from_("part-photos").list()
+        files = [f["name"] for f in (res or []) if f.get("name") and not f["name"].startswith(".")]
+        return {"photos": files, "count": len(files)}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+class ScanPartsBody(BaseModel):
+    part_numbers: list
+    photo_ids:    list
+    gemini_key:   Optional[str] = None
+
+@app.post("/api/parts/scan")
+async def scan_parts(body: ScanPartsBody):
+    """
+    Scan a batch of photos through Gemini Vision.
+    For each photo, extract any visible part numbers and check against the list.
+    Returns matches with confidence.
+    """
+    import threading
+    gemini_key = body.gemini_key or os.getenv("GEMINI_API_KEY", "")
+    if not gemini_key:
+        raise HTTPException(400, "Gemini API key required")
+    if not body.part_numbers:
+        raise HTTPException(400, "No part numbers provided")
+
+    results = []
+    part_set = [str(p).strip().upper() for p in body.part_numbers if str(p).strip()]
+
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=gemini_key)
+        model = genai.GenerativeModel("gemini-1.5-pro")
+    except Exception:
+        try:
+            from google import genai as genai2
+            from google.genai import types
+            client = genai2.Client(api_key=gemini_key)
+        except Exception as e:
+            raise HTTPException(500, f"Gemini init failed: {e}")
+
+    for photo_id in body.photo_ids[:50]:  # max 50 at a time
+        try:
+            # Download photo from Supabase
+            img_bytes = supabase.storage.from_("part-photos").download(photo_id)
+            if not img_bytes:
+                continue
+
+            # Build prompt
+            parts_list = "\n".join(part_set[:200])
+            prompt = f"""Examine this image carefully. 
+Read ALL visible text including: part numbers, model numbers, serial numbers, labels, stamps, engravings, stickers, tags.
+
+I am looking for matches to this list of part numbers:
+{parts_list}
+
+Return ONLY a JSON object:
+{{
+  "visible_text": ["list", "of", "all", "text", "you", "can", "read"],
+  "part_numbers_found": ["any", "part", "numbers", "you", "see"],
+  "matches": ["part numbers that exactly or closely match the search list"],
+  "confidence": "high/medium/low",
+  "notes": "brief note on what you see"
+}}
+
+If no text visible or no matches, still return the JSON with empty arrays."""
+
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=gemini_key)
+                model = genai.GenerativeModel("gemini-1.5-pro")
+                import PIL.Image
+                import io
+                img = PIL.Image.open(io.BytesIO(img_bytes))
+                response = model.generate_content([prompt, img])
+                raw = response.text or ""
+            except Exception:
+                try:
+                    from google import genai as gc
+                    from google.genai import types as gt
+                    cl = gc.Client(api_key=gemini_key)
+                    models = [m.name for m in cl.models.list()]
+                    best = next((m for m in models if "gemini-2.5" in m or "gemini-2.0" in m), models[0] if models else "models/gemini-1.5-pro")
+                    resp = cl.models.generate_content(
+                        model=best,
+                        contents=[gt.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"), prompt]
+                    )
+                    raw = resp.text or ""
+                except Exception as e2:
+                    results.append({"photo_id": photo_id, "error": str(e2), "matches": []})
+                    continue
+
+            import re, json
+            raw = re.sub(r"^```[a-z]*
+?", "", raw, flags=re.IGNORECASE)
+            raw = re.sub(r"
+?```$", "", raw).strip()
+            jm = re.search(r'\{.*\}', raw, re.DOTALL)
+            if jm:
+                data = json.loads(jm.group())
+                results.append({
+                    "photo_id":        photo_id,
+                    "url":             photo_url(photo_id, thumb=True),
+                    "full_url":        photo_url(photo_id),
+                    "visible_text":    data.get("visible_text", []),
+                    "part_numbers_found": data.get("part_numbers_found", []),
+                    "matches":         data.get("matches", []),
+                    "confidence":      data.get("confidence", ""),
+                    "notes":           data.get("notes", ""),
+                    "has_match":       len(data.get("matches", [])) > 0,
+                })
+            else:
+                results.append({"photo_id": photo_id, "matches": [], "notes": "Could not parse response"})
+
+        except Exception as e:
+            results.append({"photo_id": photo_id, "error": str(e), "matches": []})
+
+    matches    = [r for r in results if r.get("has_match")]
+    no_matches = [r for r in results if not r.get("has_match")]
+    return {
+        "results":     results,
+        "matches":     matches,
+        "no_matches":  no_matches,
+        "match_count": len(matches),
+        "scanned":     len(results),
+    }
 
 # ── SETTINGS ──────────────────────────────────────────────────── #
 
