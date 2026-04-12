@@ -53,10 +53,34 @@ async def get_listings():
             .order("created_at", desc=True)\
             .execute()
         listings = res.data or []
+
+        # Batch fetch all group photos for these listings
+        primary_pids = [str(l.get("photo_id") or "") for l in listings if l.get("photo_id")]
+        group_photo_map = {}  # photo_id -> [all photo_ids in same group]
+        if primary_pids:
+            try:
+                gp_res = supabase.table("group_photos")                    .select("group_id, photo_id")                    .in_("photo_id", primary_pids[:100])                    .execute()
+                # Map primary photo -> group_id
+                pid_to_gid = {row["photo_id"]: row["group_id"] for row in (gp_res.data or [])}
+                group_ids = list(set(pid_to_gid.values()))
+                if group_ids:
+                    all_gp = supabase.table("group_photos")                        .select("group_id, photo_id")                        .in_("group_id", group_ids)                        .execute()
+                    # Build group_id -> [photo_ids]
+                    gid_to_photos = {}
+                    for row in (all_gp.data or []):
+                        gid_to_photos.setdefault(row["group_id"], []).append(row["photo_id"])
+                    # Map primary photo_id -> all photos in its group
+                    for pid, gid in pid_to_gid.items():
+                        group_photo_map[pid] = gid_to_photos.get(gid, [pid])
+            except Exception:
+                pass
+
         for l in listings:
             pid = str(l.get("photo_id") or "")
-            l["thumb_url"] = photo_url(pid, thumb=True)
-            l["full_url"]  = photo_url(pid)
+            all_photos = group_photo_map.get(pid, [pid] if pid else [])
+            l["thumb_url"]  = photo_url(pid, thumb=True)
+            l["full_url"]   = photo_url(pid)
+            l["all_photos"] = [{"thumb": photo_url(p, thumb=True), "full": photo_url(p)} for p in all_photos if p]
             # Coerce types
             l["price"]      = float(l.get("price") or 0)
             l["price_used"] = float(l.get("price_used") or 0)
@@ -394,10 +418,8 @@ If no text visible or no matches, still return the JSON with empty arrays."""
                     continue
 
             import re, json
-            raw = re.sub(r"^```[a-z]*
-?", "", raw, flags=re.IGNORECASE)
-            raw = re.sub(r"
-?```$", "", raw).strip()
+            raw = re.sub(r"^```[a-z]*\n?", "", raw, flags=re.IGNORECASE)
+            raw = re.sub(r"\n?```$", "", raw).strip()
             jm = re.search(r'\{.*\}', raw, re.DOTALL)
             if jm:
                 data = json.loads(jm.group())
