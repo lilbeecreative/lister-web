@@ -208,7 +208,7 @@ select.field-input { background: #fff; color: #0f172a; }
       <div style="margin-bottom:16px;">
         <div class="field-label">Batch Condition</div>
         <div style="display:flex;gap:10px;margin-top:6px;">
-          <button class="btn btn-primary" id="up-cond-used" onclick="setUpCondition('used')" style="flex:1;">✓ Used</button>
+          <button class="btn btn-primary" id="up-cond-used" onclick="setUpCondition('new')" style="flex:1;">✓ Used</button>
           <button class="btn" id="up-cond-new" onclick="setUpCondition('new')" style="flex:1;">New</button>
         </div>
       </div>
@@ -221,7 +221,7 @@ select.field-input { background: #fff; color: #0f172a; }
       </div>
       <input type="file" id="upload-file-input" accept="image/*,image/heic" multiple style="display:none;" onchange="handleUploadFiles(this)"/>
       <div id="upload-thumbs" class="photo-thumbs"></div>
-      <button class="btn" style="width:100%;margin-bottom:12px;font-size:15px;padding:12px;" onclick="document.getElementById('upload-file-input').click()">📷 Select Photos</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"><button class="btn" style="font-size:14px;padding:12px;" onclick="document.getElementById('upload-camera-input').click()">📷 Take Photo</button><button class="btn" style="font-size:14px;padding:12px;" onclick="document.getElementById('upload-file-input').click()">🖼️ Gallery</button></div><input type="file" id="upload-camera-input" accept="image/*" capture="environment" multiple style="display:none;" onchange="handleUploadFiles(this)"/>
       <div style="margin-bottom:12px;">
         <div class="field-label">Quantity</div>
         <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
@@ -485,7 +485,7 @@ function renderTiles() {
         </div>
       </div>
       <div class="tile-body">
-        <div class="tile-title">${l.title || 'Unknown Item'}</div>
+        <a class="tile-title" href="https://www.google.com/search?q=${encodeURIComponent(l.title || '')}" target="_blank" rel="noopener" style="text-decoration:none;cursor:pointer;">${l.title || 'Unknown Item'} 🔍</a>
         <div class="tile-category">${l.ebay_category || ''}</div>
       </div>
       <div class="tile-controls">
