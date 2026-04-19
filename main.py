@@ -313,7 +313,7 @@ async def export_ebay_csv():
                 pic = ""
             writer.writerow([
                 "Draft", "",
-                str(l.get("ebay_category_id","") or "").replace(".0","") or "99",
+                "99",
                 str(l.get("title",""))[:80],
                 "",
                 f"{max(float(l.get('price',0) or 0), 1.00):.2f}",
