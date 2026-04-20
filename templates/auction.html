@@ -58,8 +58,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .filter-pill.active{background:#412402;border-color:#854F0B;color:#FAC775;}
 .filter-pill.active-blue{background:#1e3a5f;border-color:#1d4ed8;color:#93c5fd;}
 .table-wrap{background:#1e2535;border:1px solid #2d3348;border-radius:12px;overflow:hidden;}
-.tbl-head{display:grid;grid-template-columns:32px 60px 1fr 120px 50px 40px;padding:12px 18px;background:#161b28;border-bottom:1px solid #2d3348;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;align-items:center;gap:10px;}
-.tbl-row{display:grid;grid-template-columns:32px 60px 1fr 120px 50px 40px;padding:14px 18px;border-bottom:1px solid #161b28;align-items:center;font-size:13px;gap:10px;transition:background .1s;}
+.tbl-head{display:grid;grid-template-columns:32px 60px 62px 1fr 120px 50px 40px;padding:12px 18px;background:#161b28;border-bottom:1px solid #2d3348;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;align-items:center;gap:10px;}
+.tbl-row{display:grid;grid-template-columns:32px 60px 62px 1fr 120px 50px 40px;padding:14px 18px;border-bottom:1px solid #161b28;align-items:center;font-size:13px;gap:10px;transition:background .1s;}
 .tbl-row:last-child{border-bottom:none;}
 .tbl-row:hover{background:#242b3d;}
 .tbl-row.hv{background:rgba(239,159,39,.05);border-left:4px solid #EF9F27;padding-left:14px;}
@@ -367,6 +367,7 @@ function renderItems() {
     return '<div class="' + cls + '" id="row-' + item._id + '">' +
       '<input type="checkbox" class="chk" onchange="toggleSelect(\'' + item._id + '\',this.checked)" ' + (item._sel ? 'checked' : '') + '>' +
       '<div class="lot">#' + esc(item.lot||'') + '</div>' +
+      (item._page_img ? '<div><img class="thumb" src="' + esc(item._page_img) + '" onclick="openImgModal(\'' + esc(item._page_img) + '\')"></div>' : '<div><div class="thumb-placeholder"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div>') +
       '<div>' +
         '<div class="item-name" onclick="window.open(\'' + ebayUrl + '\',\'_blank\',\'noopener,width=1200,height=800\')">' + esc(item.title||'') + deepBadge + '</div>' +
         (item.notes ? '<div class="item-desc">' + esc(item.notes) + '</div>' : '') +
@@ -420,5 +421,11 @@ function esc(s) {
 
 loadHistory();
 </script>
+<div class="img-modal" id="img-modal" onclick="closeModal()">
+  <div class="img-modal-inner" onclick="event.stopPropagation()">
+    <button class="img-modal-close" onclick="closeModal()">✕</button>
+    <img id="img-modal-src" src="" alt="">
+  </div>
+</div>
 </body>
 </html>

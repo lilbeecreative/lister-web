@@ -464,13 +464,34 @@ async def export_excel(request: Request):
         headers={"Content-Disposition": f"attachment; filename={fn}"}
     )
 
+
+# ── API: AUCTION PAGE IMAGE ───────────────────────────────────── #
+
+@app.get("/api/auction/page-image/{scan_id}/{page_num}")
+async def get_page_image(scan_id: str, page_num: int):
+    import io, fitz
+    try:
+        pdf_data = supabase.storage.from_("auction-pdfs").download(f"{scan_id}.pdf")
+        doc = fitz.open(stream=pdf_data, filetype="pdf")
+        if page_num < 1 or page_num > len(doc):
+            raise HTTPException(404, "Page not found")
+        page = doc[page_num - 1]
+        mat = fitz.Matrix(1.5, 1.5)
+        pix = page.get_pixmap(matrix=mat)
+        img_bytes = pix.tobytes("jpeg")
+        doc.close()
+        from fastapi.responses import Response
+        return Response(content=img_bytes, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 # ── API: PDF AUCTION SCAN ─────────────────────────────────────── #
 
 from sse_starlette.sse import EventSourceResponse
 
 @app.post("/api/auction/scan-pdf")
 async def scan_pdf_auction(file: UploadFile = File(...)):
-    import os, base64, json, fitz, asyncio
+    import os, base64, json, fitz, asyncio, uuid
     import google.generativeai as genai
 
     contents = await file.read()
@@ -478,7 +499,19 @@ async def scan_pdf_auction(file: UploadFile = File(...)):
     if not gemini_key:
         raise HTTPException(400, "GEMINI_API_KEY not set")
 
-    # Extract text chunks (5 pages per chunk ~ 50 items)
+    # Store PDF in Supabase for later image retrieval
+    scan_id = str(uuid.uuid4())[:8]
+    try:
+        supabase.storage.from_("auction-pdfs").upload(
+            path=f"{scan_id}.pdf",
+            file=contents,
+            file_options={"content-type": "application/pdf", "upsert": "true"}
+        )
+    except Exception as upload_err:
+        print(f"PDF storage warning: {upload_err}")
+        scan_id = None
+
+    # Extract text chunks
     try:
         doc = fitz.open(stream=contents, filetype="pdf")
         total_pages = len(doc)
@@ -547,11 +580,14 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
                 for item in items:
                     item["_page_start"] = page_start
                     item["_page_end"] = page_end
+                    if scan_id:
+                        item["_page_img"] = f"/api/auction/page-image/{scan_id}/{page_start}"
                 yield {
                     "data": json.dumps({
                         "chunk": i + 1,
                         "total_chunks": total_chunks,
                         "items": items,
+                        "scan_id": scan_id,
                         "done": False
                     })
                 }
@@ -565,7 +601,7 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
                     yield {"data": json.dumps({"chunk": i+1, "total_chunks": total_chunks, "items": [], "done": False})}
             await asyncio.sleep(0.1)
 
-        yield {"data": json.dumps({"done": True, "total": len(all_items)})}
+        yield {"data": json.dumps({"done": True, "total": len(all_items), "scan_id": scan_id})}
 
     return EventSourceResponse(generate())
 
