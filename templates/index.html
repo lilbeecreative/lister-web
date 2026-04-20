@@ -457,6 +457,10 @@ async function loadListings() {
   try {
     listings = await api('GET', '/api/listings');
     renderTiles();
+    try {
+      const stats = await api('GET', '/api/stats');
+      updateProcBar(stats);
+    } catch(e) {}
   } catch(e) { toast('Failed to load listings', 'error'); }
 }
 
