@@ -273,7 +273,9 @@ For each lot return a JSON object with these exact fields:
 RULES:
 - estimate_low, estimate_high, your_value MUST be integers (no $, no text)
 - Research real used market values - do not copy text from descriptions
-- Return ONLY a JSON array, no markdown, no explanation
+- Lots are formatted as: #NUMBER â¢ ITEM TITLE
+- If no lots found in this section, return empty array: []
+- Return ONLY a JSON array, no markdown, no explanation, no preamble
 
 Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP meter with case","estimate_low":80,"estimate_high":150,"your_value":100,"notes":"Sells $80-150 used on eBay"}]"""
 
