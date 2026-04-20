@@ -105,6 +105,20 @@ class UpdateField(BaseModel):
     field: str
     value: object
 
+
+@app.get("/api/stats")
+async def get_stats():
+    try:
+        res = supabase.table("listings").select("price, status").neq("status", "archived").execute()
+        items = res.data or []
+        total = len(items)
+        value = sum(float(i.get("price") or 0) for i in items)
+        pending = supabase.table("listing_groups").select("id").in_("status", ["pending", "processing"]).execute()
+        processing = len(pending.data or [])
+        return {"total": total, "processing": processing, "value": round(value, 2)}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 @app.patch("/api/listings/{item_id}")
 async def update_listing(item_id: str, body: UpdateField):
     try:
