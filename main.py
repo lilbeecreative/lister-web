@@ -260,7 +260,7 @@ async def scan_pdf_auction(file: UploadFile = File(...)):
         # Send to Gemini
         import google.generativeai as genai
         genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel("gemini-1.5-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         prompt = """You are an expert auction appraiser. Analyze this auction catalog PDF.
 
@@ -501,7 +501,7 @@ async def scan_parts(body: ScanPartsBody):
     try:
         import google.generativeai as genai
         genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel("gemini-1.5-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
     except Exception:
         try:
             from google import genai as genai2
@@ -539,7 +539,7 @@ If no text visible or no matches, still return the JSON with empty arrays."""
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=gemini_key)
-                model = genai.GenerativeModel("gemini-1.5-pro")
+                model = genai.GenerativeModel("gemini-2.5-flash")
                 import PIL.Image
                 import io
                 img = PIL.Image.open(io.BytesIO(img_bytes))
