@@ -24,7 +24,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .scan-item-del:hover{color:#ef4444;}
 .new-scan-btn{border:2px dashed #2d3348;border-radius:8px;padding:10px;text-align:center;cursor:pointer;color:#64748b;font-size:12px;font-weight:600;margin-top:auto;}
 .new-scan-btn:hover{border-color:#475569;color:#94a3b8;}
-.main{padding:20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+.main{padding:28px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
 .page-title{font-size:20px;font-weight:700;color:#f1f5f9;}
 .btn-primary{background:#854F0B;color:#FAC775;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;}
@@ -44,10 +44,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .prog-bar{height:5px;background:#2d3348;border-radius:3px;overflow:hidden;margin-bottom:8px;}
 .prog-fill{height:100%;background:#EF9F27;border-radius:3px;transition:width .6s ease;width:0%;}
 .prog-sub{font-size:11px;color:#64748b;}
-.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
-.stat-card{background:#1e2535;border:1px solid #2d3348;border-radius:10px;padding:12px;text-align:center;}
-.stat-n{font-size:22px;font-weight:700;color:#f1f5f9;}
-.stat-l{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.stat-card{background:#1e2535;border:2px solid #2d3348;border-radius:12px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color .15s;}
+.stat-n{font-size:32px;font-weight:700;color:#f1f5f9;}
+.stat-l{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-top:6px;}
 .stat-n.amber{color:#EF9F27;}
 .stat-n.blue{color:#93c5fd;}
 .watchlist-banner{background:#1e3a5f;border:1px solid #1d4ed8;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
@@ -58,20 +58,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .filter-pill.active{background:#412402;border-color:#854F0B;color:#FAC775;}
 .filter-pill.active-blue{background:#1e3a5f;border-color:#1d4ed8;color:#93c5fd;}
 .table-wrap{background:#1e2535;border:1px solid #2d3348;border-radius:12px;overflow:hidden;}
-.tbl-head{display:grid;grid-template-columns:32px 54px 1fr 100px 44px 36px;padding:10px 14px;background:#161b28;border-bottom:1px solid #2d3348;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;align-items:center;gap:8px;}
-.tbl-row{display:grid;grid-template-columns:32px 54px 1fr 100px 44px 36px;padding:10px 14px;border-bottom:1px solid #161b28;align-items:center;font-size:12px;gap:8px;transition:background .1s;}
+.tbl-head{display:grid;grid-template-columns:32px 60px 1fr 120px 50px 40px;padding:12px 18px;background:#161b28;border-bottom:1px solid #2d3348;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;align-items:center;gap:10px;}
+.tbl-row{display:grid;grid-template-columns:32px 60px 1fr 120px 50px 40px;padding:14px 18px;border-bottom:1px solid #161b28;align-items:center;font-size:13px;gap:10px;transition:background .1s;}
 .tbl-row:last-child{border-bottom:none;}
 .tbl-row:hover{background:#242b3d;}
-.tbl-row.hv{background:rgba(239,159,39,.05);border-left:3px solid #EF9F27;padding-left:11px;}
+.tbl-row.hv{background:rgba(239,159,39,.05);border-left:4px solid #EF9F27;padding-left:14px;}
 .tbl-row.hv:hover{background:rgba(239,159,39,.1);}
-.tbl-row.watched{background:rgba(29,78,216,.07);border-left:3px solid #1d4ed8;padding-left:11px;}
+.tbl-row.hv.watched{border-left:4px solid #EF9F27;padding-left:14px;}
+.tbl-row.watched{background:rgba(29,78,216,.07);border-left:4px solid #1d4ed8;padding-left:14px;}
 .tbl-row.hv.watched{border-left:3px solid #EF9F27;}
-.lot{color:#64748b;font-size:11px;white-space:nowrap;}
-.item-name{font-weight:600;color:#f1f5f9;line-height:1.3;cursor:pointer;}
+.lot{color:#64748b;font-size:13px;white-space:nowrap;font-weight:500;}
+.item-name{font-weight:600;color:#f1f5f9;line-height:1.4;cursor:pointer;font-size:14px;}
 .item-name:hover{color:#EF9F27;}
-.item-desc{font-size:10px;color:#64748b;margin-top:2px;}
+.item-desc{font-size:11px;color:#64748b;margin-top:4px;line-height:1.4;}
 .badge-deep{font-size:9px;padding:2px 6px;background:#052e16;color:#4ade80;border-radius:4px;margin-left:5px;vertical-align:middle;}
-.val-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+.val-pill{display:inline-block;padding:5px 14px;border-radius:20px;font-size:14px;font-weight:700;white-space:nowrap;}
 .val-high{background:#412402;color:#FAC775;}
 .val-normal{background:#161b28;color:#94a3b8;}
 .chk{width:16px;height:16px;border-radius:4px;border:1.5px solid #2d3348;background:transparent;cursor:pointer;flex-shrink:0;appearance:none;-webkit-appearance:none;}
@@ -137,9 +138,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
 
       <div class="stats-row">
-        <div class="stat-card"><div class="stat-n" id="stat-total">0</div><div class="stat-l">Items found</div></div>
-        <div class="stat-card"><div class="stat-n amber" id="stat-hv">0</div><div class="stat-l">High value (&gt;$500)</div></div>
-        <div class="stat-card"><div class="stat-n blue" id="stat-watch">0</div><div class="stat-l">Watchlisted</div></div>
+        <div class="stat-card" id="stat-card-all" onclick="setFilter('all')" style="border-color:#475569;"><div class="stat-n" id="stat-total">0</div><div class="stat-l">Items found</div></div>
+        <div class="stat-card" id="stat-card-hv" onclick="setFilter('hv')"><div class="stat-n amber" id="stat-hv">0</div><div class="stat-l">High value (&gt;$500)</div></div>
+        <div class="stat-card" id="stat-card-watch" onclick="setFilter('watch')"><div class="stat-n blue" id="stat-watch">0</div><div class="stat-l">Watchlisted</div></div>
       </div>
 
       <div class="watchlist-banner" id="watch-banner" style="display:none">
@@ -150,11 +151,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="btn-blue" onclick="researchWatchlist()">Research watchlist</button>
       </div>
 
-      <div class="filter-bar">
-        <button class="filter-pill active" id="f-all" onclick="setFilter('all')">All</button>
-        <button class="filter-pill" id="f-hv" onclick="setFilter('hv')">High value</button>
-        <button class="filter-pill" id="f-watch" onclick="setFilter('watch')">Watchlist</button>
-      </div>
+
 
       <div class="table-wrap">
         <div class="tbl-head">
@@ -329,10 +326,11 @@ function updateStats() {
   document.getElementById('stat-total').textContent = allItems.length;
   document.getElementById('stat-hv').textContent = hv;
   document.getElementById('stat-watch').textContent = wl;
-  // Update filter pills
-  document.getElementById('f-all').textContent = 'All (' + allItems.length + ')';
-  document.getElementById('f-hv').textContent = 'High value (' + hv + ')';
-  document.getElementById('f-watch').textContent = 'Watchlist (' + wl + ')';
+  // Highlight active stat card
+  document.querySelectorAll('.stat-card').forEach(function(c){c.style.borderColor='#2d3348';});
+  if (currentFilter==='all') document.getElementById('stat-card-all').style.borderColor='#475569';
+  if (currentFilter==='hv') document.getElementById('stat-card-hv').style.borderColor='#854F0B';
+  if (currentFilter==='watch') document.getElementById('stat-card-watch').style.borderColor='#1d4ed8';
   // Watch banner
   if (wl > 0) {
     document.getElementById('watch-banner').style.display = '';
@@ -344,8 +342,7 @@ function updateStats() {
 
 function setFilter(f) {
   currentFilter = f;
-  document.querySelectorAll('.filter-pill').forEach(function(p) { p.className = 'filter-pill'; });
-  document.getElementById('f-' + f).className = 'filter-pill ' + (f === 'watch' ? 'active-blue' : 'active');
+  updateStats();
   renderItems();
 }
 
