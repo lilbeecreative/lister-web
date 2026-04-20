@@ -334,7 +334,6 @@ revised_value must be an integer"""
             raw = raw.strip()
         raw = " ".join(raw.splitlines())
 
-]+", " ", raw)
         raw = " ".join(raw.splitlines())
         # Find JSON object boundaries
         start = raw.find("{")
