@@ -1147,6 +1147,7 @@ function renderNoMatchThumb(r) {
 
 // ── INIT ───────────────────────────────────────────────────────
 loadListings();
+initTileListeners();
 
 // Auto-refresh dashboard every 30s when on that tab
 setInterval(() => { if (activeTab === 'dashboard') loadListings(); }, 30000);
