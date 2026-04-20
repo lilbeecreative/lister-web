@@ -243,7 +243,7 @@ async def scan_pdf_auction(file: UploadFile = File(...)):
     try:
         doc = fitz.open(stream=contents, filetype="pdf")
         total_pages = len(doc)
-        chunk_size = 10
+        chunk_size = 2
         page_chunks = []
         for start in range(0, total_pages, chunk_size):
             end = min(start + chunk_size, total_pages)
