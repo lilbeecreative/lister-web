@@ -262,32 +262,36 @@ async def scan_pdf_auction(file: UploadFile = File(...)):
         genai.configure(api_key=gemini_key)
         model = genai.GenerativeModel("gemini-2.5-flash")
 
-        prompt = """You are an expert auction appraiser. Analyze this auction catalog PDF.
+        prompt = """You are an expert industrial auction appraiser with deep knowledge of used equipment markets.
 
-For each auction lot/item found, extract:
-1. Lot number (if present)
-2. Item title/description
-3. Any photos or image references
-4. Any listed estimate or starting bid
-5. Direct URL to the listing (if present in text)
+Analyze this auction catalog PDF and extract each lot. For EACH lot you find:
 
-Then research each item and provide your estimated market value based on recent eBay sold listings.
+1. Extract: lot number, full title, brief description
+2. Use your knowledge of eBay sold listings and industrial equipment markets to estimate realistic USED market values
+3. Provide estimate_low and estimate_high as integers (dollar amounts only, no text)
+4. your_value should be your single best estimate as an integer
+5. listing_url: leave empty string "" unless a real URL is present in the text
 
-Return ONLY a JSON array with this exact structure:
+CRITICAL PRICING RULES:
+- Values must be INTEGERS (numbers only, no $ signs, no text like "TDS" or "conductivity")
+- Base prices on actual used market values for that specific item/brand/model
+- If you truly cannot estimate, use 0
+- Common lab equipment: meters $50-300, analyzers $500-5000, freezers $200-800
+- Industrial equipment: mixers $100-2000, tanks $1000-50000, compressors $500-10000
+
+Return ONLY a valid JSON array, no other text, no markdown:
 [
   {
     "lot": "12",
-    "title": "Item name here",
-    "description": "Brief description",
-    "estimate_low": 50,
-    "estimate_high": 100,
-    "your_value": 75,
-    "listing_url": "https://...",
-    "notes": "Brief market notes"
+    "title": "Item name",
+    "description": "One sentence description",
+    "estimate_low": 100,
+    "estimate_high": 300,
+    "your_value": 200,
+    "listing_url": "",
+    "notes": "Common on eBay for $150-250 used"
   }
-]
-
-Return ONLY the JSON array, no other text."""
+]"""
 
         parts = [prompt, f"\n\nPDF TEXT CONTENT:\n{pdf_text[:8000]}"]
         for img in images[:5]:
