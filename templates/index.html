@@ -571,8 +571,8 @@ function renderTiles() {
       <div class="tile-body">
         <input class="tile-title-input" type="text" value="${(l.title||'').replace(/"/g,'&quot;')}" data-id="${l.id}" placeholder="Title">
         <div class="tile-search-btns">
-          <button class="tile-search-btn" onclick="window.open('https://www.google.com/search?q='+encodeURIComponent(document.querySelector('.tile-title-input[data-id=&quot;${l.id}&quot;]').value),'_blank','noopener')">Google</button>
-          <button class="tile-search-btn" onclick="window.open('https://www.ebay.com/sch/i.html?_nkw='+encodeURIComponent(document.querySelector('.tile-title-input[data-id=&quot;${l.id}&quot;]').value)+'&LH_Sold=1&LH_Complete=1','_blank','noopener')">eBay Sold</button>
+          <button class="tile-search-btn" onclick="window.open('https://www.google.com/search?q='+encodeURIComponent(document.querySelector('.tile-title-input[data-id=&quot;${l.id}&quot;]').value),'popupwin','noopener,width=1200,height=800')">Google</button>
+          <button class="tile-search-btn" onclick="window.open('https://www.ebay.com/sch/i.html?_nkw='+encodeURIComponent(document.querySelector('.tile-title-input[data-id=&quot;${l.id}&quot;]').value)+'&LH_Sold=1&LH_Complete=1','popupwin','noopener,width=1200,height=800')">eBay Sold</button>
         </div>
         <div class="tile-price-cond-row">
           <span style="color:var(--muted);font-size:11px;">$</span>
