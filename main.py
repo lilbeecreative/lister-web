@@ -278,14 +278,22 @@ RULES:
 Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP meter with case","estimate_low":80,"estimate_high":150,"your_value":100,"notes":"Sells $80-150 used on eBay"}]"""
 
     async def generate():
+        import asyncio
+        from concurrent.futures import ThreadPoolExecutor
+        loop = asyncio.get_event_loop()
+        executor = ThreadPoolExecutor(max_workers=1)
+
+        def call_gemini(chunk_text, i):
+            return model.generate_content(
+                [prompt_template, f"\nCATALOG SECTION {i+1}/{total_chunks}:\n{chunk_text[:10000]}"],
+                generation_config={"max_output_tokens": 8192}
+            )
+
         total_chunks = len(page_chunks)
         all_items = []
         for i, chunk_text in enumerate(page_chunks):
             try:
-                response = model.generate_content(
-                    [prompt_template, f"\nCATALOG SECTION {i+1}/{total_chunks}:\n{chunk_text[:10000]}"],
-                    generation_config={"max_output_tokens": 8192}
-                )
+                response = await loop.run_in_executor(executor, call_gemini, chunk_text, i)
                 raw = response.text.strip()
                 if raw.startswith("```"):
                     raw = raw.split("\n", 1)[1].rsplit("\n", 1)[0].strip()
