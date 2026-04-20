@@ -445,7 +445,7 @@ async function submitItem(){
       document.getElementById('uploadText').textContent='Uploading photo '+(i+1)+' of '+pendingFiles.length+'...';
       var blob=await compressImage(pendingFiles[i]);
       var fd=new FormData();fd.append('file',blob,'photo_'+i+'.jpg');
-      await fetch('/api/photos/upload?group_id='+currentGroupId,{method:'POST',body:fd});
+      fd.append('group_id',currentGroupId);await fetch('/api/photos/upload',{method:'POST',body:fd});
     }
     document.getElementById('uploadText').textContent='Submitting...';
     await fetch('/api/groups/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({group_id:currentGroupId,condition:itemCond,quantity:itemQty})});
