@@ -148,7 +148,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div class="watch-title" id="watch-title">0 items watchlisted</div>
           <div class="watch-sub">Check the watch column to add items for deeper research</div>
         </div>
-        <button class="btn-blue" onclick="researchWatchlist()">Research watchlist</button>
+        <button class="btn-blue" onclick="goToResearch()">Research watchlist</button>
       </div>
 
 
@@ -391,31 +391,12 @@ function toggleWatch(id, checked) {
   saveCurrentScan();
 }
 
-async function researchWatchlist() {
+function goToResearch() {
   var watched = allItems.filter(function(i) { return i._watch; });
-  if (!watched.length) return;
-  if (!confirm('Run deeper Gemini research on ' + watched.length + ' watchlisted items?')) return;
-
-  for (var i = 0; i < watched.length; i++) {
-    var item = watched[i];
-    try {
-      var r = await fetch('/api/auction/deep-research', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({title: item.title, current_value: item.your_value})
-      });
-      if (r.ok) {
-        var data = await r.json();
-        item.your_value = data.your_value || item.your_value;
-        item.notes = data.notes || item.notes;
-        item._deep = true;
-      }
-    } catch(e) {}
-    renderItems();
-    updateStats();
-  }
-  saveCurrentScan();
-  alert('Deep research complete!');
+  if (!watched.length) { alert('No watchlisted items. Check the watch column on items first.'); return; }
+  localStorage.setItem('auction_research_items', JSON.stringify(watched));
+  localStorage.setItem('auction_research_scan_id', currentScanId||'');
+  window.location.href = '/auction/research';
 }
 
 async function exportExcel() {

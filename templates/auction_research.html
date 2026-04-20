@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src * blob: data: 'unsafe-inline' 'unsafe-eval';">
+<title>Deep Research — Auction Scanner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#f1f5f9;min-height:100vh;padding:28px;max-width:900px;margin:0 auto;}
+.back{font-size:13px;color:#64748b;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:20px;text-decoration:none;}
+.back:hover{color:#94a3b8;}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.page-title{font-size:22px;font-weight:700;color:#f1f5f9;margin-bottom:4px;}
+.page-sub{font-size:13px;color:#64748b;}
+.btn-amber{background:#854F0B;color:#FAC775;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-amber:hover{background:#633806;}
+.btn-amber:disabled{opacity:.4;cursor:not-allowed;}
+.btn-ghost{background:transparent;color:#94a3b8;border:1px solid #2d3348;border-radius:8px;padding:10px 16px;font-size:12px;cursor:pointer;}
+.btn-ghost:hover{background:#1e2535;}
+.pdf-zone{background:#1e2535;border:2px dashed #2d3348;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:20px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .15s;}
+.pdf-zone:hover{border-color:#854F0B;}
+.pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.pdf-zone.loaded{border-color:#16a34a;border-style:solid;}
+.pdf-icon{width:42px;height:42px;border-radius:10px;background:#412402;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pdf-title{font-size:13px;font-weight:600;color:#f1f5f9;margin-bottom:3px;}
+.pdf-sub{font-size:11px;color:#64748b;}
+.badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;}
+.badge-green{background:#052e16;color:#4ade80;}
+.badge-amber{background:#412402;color:#FAC775;}
+.badge-blue{background:#1e3a5f;color:#93c5fd;}
+.badge-gray{background:#1e2535;color:#64748b;}
+.progress-banner{background:#1e2535;border:1px solid #2d3348;border-radius:10px;padding:14px 16px;margin-bottom:16px;}
+.prog-hdr{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.prog-track{height:5px;background:#2d3348;border-radius:3px;overflow:hidden;margin-bottom:6px;}
+.prog-fill{height:100%;background:#EF9F27;border-radius:3px;transition:width .5s;}
+.prog-sub{font-size:11px;color:#64748b;}
+.research-card{background:#1e2535;border:1px solid #2d3348;border-radius:14px;overflow:hidden;margin-bottom:14px;}
+.rc-head{padding:13px 16px;background:#161b28;border-bottom:1px solid #2d3348;display:flex;align-items:center;gap:10px;}
+.rc-lot{font-size:11px;font-weight:700;color:#64748b;background:#1e2535;padding:3px 8px;border-radius:6px;white-space:nowrap;}
+.rc-title{font-size:14px;font-weight:700;color:#f1f5f9;flex:1;line-height:1.3;}
+.rc-body{display:grid;grid-template-columns:170px 1fr;}
+.rc-img-col{padding:12px;background:#161b28;border-right:1px solid #2d3348;}
+.rc-img-box{width:100%;aspect-ratio:4/3;border-radius:8px;background:#0f1117;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.rc-img-box img{width:100%;height:100%;object-fit:cover;display:block;}
+.rc-img-label{font-size:10px;color:#64748b;text-align:center;margin-top:6px;}
+.rc-detail{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+.section-lbl{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;}
+.value-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.old-val{font-size:14px;color:#475569;text-decoration:line-through;}
+.new-val{font-size:28px;font-weight:700;color:#EF9F27;}
+.conf-badge{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;}
+.conf-high{background:#052e16;color:#4ade80;}
+.conf-medium{background:#412402;color:#FAC775;}
+.conf-low{background:#1a1f2e;color:#64748b;}
+.comps-list{display:flex;flex-direction:column;gap:5px;}
+.comp-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#161b28;border-radius:7px;font-size:12px;}
+.comp-title{flex:1;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.comp-price{font-weight:700;color:#f1f5f9;white-space:nowrap;}
+.comp-date{font-size:10px;color:#475569;white-space:nowrap;}
+.comp-src{font-size:9px;padding:2px 6px;border-radius:4px;background:#1e2535;color:#64748b;white-space:nowrap;}
+.image-notes{font-size:12px;color:#94a3b8;background:#161b28;border-radius:8px;padding:10px 12px;line-height:1.5;border-left:3px solid #2d3348;}
+.rec-box{padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;line-height:1.4;}
+.rec-buy{background:#052e16;color:#4ade80;border-left:3px solid #16a34a;}
+.rec-watch{background:#412402;color:#FAC775;border-left:3px solid #854F0B;}
+.rec-pass{background:#1a1f2e;color:#64748b;border-left:3px solid #2d3348;}
+.scanning-anim{display:flex;flex-direction:column;gap:8px;padding:20px;}
+.scan-line{height:12px;background:#2d3348;border-radius:4px;animation:shimmer 1.5s infinite;}
+.scan-line:nth-child(2){width:70%;}
+.scan-line:nth-child(3){width:50%;}
+@keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.8}}
+.queued-body{padding:16px;font-size:12px;color:#475569;font-style:italic;}
+.empty-state{text-align:center;padding:60px 20px;color:#475569;font-size:14px;}
+</style>
+</head>
+<body>
+
+<a class="back" href="/auction">← Back to auction scanner</a>
+
+<div class="topbar">
+  <div>
+    <div class="page-title">Deep Research</div>
+    <div class="page-sub" id="page-sub">Loading watchlist...</div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn-ghost" id="export-btn" onclick="exportResults()" style="display:none;">Export results</button>
+    <button class="btn-amber" id="start-btn" onclick="startResearch()" disabled>Start research</button>
+  </div>
+</div>
+
+<div class="pdf-zone" id="pdf-zone">
+  <input type="file" id="pdf-input" accept=".pdf" onchange="handlePdf(this)">
+  <div class="pdf-icon">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+  </div>
+  <div>
+    <div class="pdf-title" id="pdf-title">Upload the auction PDF for image analysis</div>
+    <div class="pdf-sub" id="pdf-sub">Gemini will analyze the actual catalog photo for each item — highly recommended</div>
+  </div>
+</div>
+
+<div id="progress-banner" style="display:none;" class="progress-banner">
+  <div class="prog-hdr">
+    <span id="prog-label">Researching...</span>
+    <span id="prog-pct" style="color:#EF9F27;">0%</span>
+  </div>
+  <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="prog-sub" id="prog-sub-text">Starting...</div>
+</div>
+
+<div id="cards-container">
+  <div class="empty-state" id="empty-msg">Loading watchlist...</div>
+</div>
+
+<script>
+var watchItems = [];
+var pdfFile = null;
+var results = {};
+var scanning = false;
+
+function init() {
+  var data = localStorage.getItem('auction_research_items');
+  if (!data) {
+    document.getElementById('empty-msg').textContent = 'No watchlisted items found. Go back and add items to your watchlist.';
+    return;
+  }
+  try {
+    watchItems = JSON.parse(data);
+  } catch(e) {
+    document.getElementById('empty-msg').textContent = 'Error loading items.';
+    return;
+  }
+  if (!watchItems.length) {
+    document.getElementById('empty-msg').textContent = 'No watchlisted items. Go back and check the watch column on items.';
+    return;
+  }
+  document.getElementById('page-sub').textContent = watchItems.length + ' items to research';
+  document.getElementById('start-btn').disabled = false;
+  renderCards();
+}
+
+function handlePdf(input) {
+  if (!input.files[0]) return;
+  pdfFile = input.files[0];
+  document.getElementById('pdf-zone').classList.add('loaded');
+  document.getElementById('pdf-title').innerHTML = input.files[0].name + ' <span class="badge badge-green">Image analysis enabled</span>';
+  document.getElementById('pdf-sub').textContent = 'Gemini will analyze the actual lot photo from the catalog';
+}
+
+function renderCards() {
+  var container = document.getElementById('cards-container');
+  document.getElementById('empty-msg').style.display = 'none';
+  container.innerHTML = watchItems.map(function(item, i) {
+    var res = results[item.lot];
+    return buildCard(item, res, i);
+  }).join('');
+}
+
+function buildCard(item, res, idx) {
+  var statusHtml = '';
+  var bodyHtml = '';
+
+  if (!res) {
+    statusHtml = '<span class="badge badge-gray">Queued</span>';
+    bodyHtml = '<div class="queued-body">Waiting to start research...</div>';
+  } else if (res.type === 'start') {
+    statusHtml = '<span class="badge badge-amber">Scanning...</span>';
+    bodyHtml = '<div class="rc-body"><div class="rc-img-col"><div class="rc-img-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="rc-img-label">Extracting...</div></div><div class="scanning-anim"><div class="scan-line"></div><div class="scan-line"></div><div class="scan-line"></div></div></div>';
+  } else if (res.type === 'error') {
+    statusHtml = '<span class="badge" style="background:#450a0a;color:#ef4444;">Error</span>';
+    bodyHtml = '<div class="queued-body" style="color:#ef4444;">Research failed: ' + esc(res.error||'Unknown error') + '</div>';
+  } else {
+    statusHtml = '<span class="badge badge-green">Complete</span>';
+    var conf = res.confidence || 'medium';
+    var confClass = conf === 'high' ? 'conf-high' : conf === 'low' ? 'conf-low' : 'conf-medium';
+    var recClass = res.recommendation === 'buy' ? 'rec-buy' : res.recommendation === 'pass' ? 'rec-pass' : 'rec-watch';
+    var recLabel = res.recommendation === 'buy' ? 'Strong buy' : res.recommendation === 'pass' ? 'Pass' : 'Watch';
+    var compsHtml = (res.comps||[]).map(function(c) {
+      return '<div class="comp-row"><div class="comp-title">' + esc(c.title||'') + '</div><div class="comp-price">$' + (c.price||0).toLocaleString() + '</div><div class="comp-date">' + esc(c.date||'') + '</div><div class="comp-src">' + esc(c.source||'eBay') + '</div></div>';
+    }).join('');
+    var imgHtml = res.image_url
+      ? '<img src="' + esc(res.image_url) + '" alt="">'
+      : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+    var imgLabel = res.has_image ? 'Lot image analyzed' : 'No image available';
+    bodyHtml = '<div class="rc-body">' +
+      '<div class="rc-img-col"><div class="rc-img-box">' + imgHtml + '</div><div class="rc-img-label">' + imgLabel + '</div></div>' +
+      '<div class="rc-detail">' +
+        '<div><div class="section-lbl">Revised estimate</div><div class="value-row"><span class="old-val">$' + (item.your_value||0).toLocaleString() + '</span><span class="new-val">$' + (res.revised_value||0).toLocaleString() + '</span><span class="conf-badge ' + confClass + '">' + conf.charAt(0).toUpperCase() + conf.slice(1) + ' confidence</span></div></div>' +
+        (compsHtml ? '<div><div class="section-lbl">Comparable sales</div><div class="comps-list">' + compsHtml + '</div></div>' : '') +
+        (res.image_notes ? '<div><div class="section-lbl">Image analysis</div><div class="image-notes">' + esc(res.image_notes) + '</div></div>' : '') +
+        '<div class="rec-box ' + recClass + '">' + recLabel + ' — ' + esc(res.rec_reason||res.notes||'') + '</div>' +
+      '</div></div>';
+  }
+
+  var borderStyle = res && res.type !== 'start' && res.type !== 'error' && res.revised_value >= 500
+    ? 'border-color:#854F0B;' : '';
+
+  return '<div class="research-card" id="card-' + esc(item.lot) + '" style="' + borderStyle + '">' +
+    '<div class="rc-head"><span class="rc-lot">#' + esc(item.lot||'') + '</span><span class="rc-title">' + esc(item.title||'') + '</span>' + statusHtml + '</div>' +
+    bodyHtml +
+    '</div>';
+}
+
+function updateCard(lot) {
+  var item = watchItems.find(function(i) { return i.lot == lot; });
+  if (!item) return;
+  var idx = watchItems.indexOf(item);
+  var card = document.getElementById('card-' + lot);
+  if (card) card.outerHTML = buildCard(item, results[lot], idx);
+}
+
+async function startResearch() {
+  if (scanning) return;
+  scanning = true;
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('start-btn').textContent = 'Researching...';
+  document.getElementById('progress-banner').style.display = '';
+
+  var fd = new FormData();
+  fd.append('items', JSON.stringify(watchItems));
+  if (pdfFile) fd.append('pdf', pdfFile);
+
+  try {
+    var r = await fetch('/api/auction/deep-research-full', {method:'POST', body:fd});
+    if (!r.ok) {
+      var err = await r.json().catch(function(){return{};});
+      alert('Research failed: ' + (err.detail||'Unknown error'));
+      scanning = false;
+      document.getElementById('start-btn').disabled = false;
+      document.getElementById('start-btn').textContent = 'Start research';
+      return;
+    }
+
+    var reader = r.body.getReader();
+    var decoder = new TextDecoder();
+    var buffer = '';
+    var completed = 0;
+
+    while (true) {
+      var chunk = await reader.read();
+      if (chunk.done) break;
+      buffer += decoder.decode(chunk.value, {stream:true});
+      var lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line.startsWith('data: ')) continue;
+        try {
+          var msg = JSON.parse(line.slice(6));
+          if (msg.type === 'done') {
+            document.getElementById('prog-fill').style.width = '100%';
+            document.getElementById('prog-pct').textContent = '100%';
+            document.getElementById('prog-label').textContent = 'Complete!';
+            document.getElementById('prog-sub-text').textContent = 'All items researched';
+            document.getElementById('start-btn').textContent = 'Done';
+            document.getElementById('export-btn').style.display = '';
+            saveResults();
+          } else if (msg.type === 'start') {
+            results[msg.lot] = msg;
+            updateCard(msg.lot);
+            var pct = Math.round((msg.index / msg.total) * 95);
+            document.getElementById('prog-fill').style.width = pct + '%';
+            document.getElementById('prog-pct').textContent = pct + '%';
+            document.getElementById('prog-label').textContent = 'Researching lot #' + msg.lot + '...';
+            document.getElementById('prog-sub-text').textContent = (msg.index + 1) + ' of ' + msg.total + ' items';
+          } else if (msg.type === 'result' || msg.type === 'error') {
+            results[msg.lot] = msg;
+            updateCard(msg.lot);
+            completed++;
+          }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {
+    alert('Research error: ' + e.message);
+  }
+  scanning = false;
+}
+
+function saveResults() {
+  var scanId = localStorage.getItem('auction_research_scan_id');
+  if (!scanId) return;
+  var scans = JSON.parse(localStorage.getItem('auction_scans')||'[]');
+  var scan = scans.find(function(s){return s.id===scanId;});
+  if (!scan) return;
+  scan.items = scan.items.map(function(item) {
+    var res = results[item.lot];
+    if (res && res.type === 'result') {
+      item.your_value = res.revised_value || item.your_value;
+      item.notes = res.notes || item.notes;
+      item._deep = true;
+    }
+    return item;
+  });
+  localStorage.setItem('auction_scans', JSON.stringify(scans));
+}
+
+function exportResults() {
+  var rows = [['Lot','Title','Original Value','Revised Value','Confidence','Recommendation','Comparable Sales','Image Notes']];
+  watchItems.forEach(function(item) {
+    var res = results[item.lot];
+    var compsText = res && res.comps ? res.comps.map(function(c){return c.title+' $'+c.price+' ('+c.date+')'}).join('; ') : '';
+    rows.push([
+      item.lot||'', item.title||'',
+      '$'+(item.your_value||0), res?'$'+(res.revised_value||0):'',
+      res?res.confidence:'', res?res.recommendation:'',
+      compsText, res?res.image_notes||'':''
+    ]);
+  });
+  var csv = rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'deep_research.csv';
+  a.click();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+init();
+</script>
+</body>
+</html>
