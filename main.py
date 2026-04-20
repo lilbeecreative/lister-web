@@ -325,6 +325,7 @@ revised_value must be an integer"""
 
         response = model.generate_content(parts, generation_config={"max_output_tokens": 1500})
         raw = response.text.strip()
+        print(f"   Deep research raw response (lot {lot}): {raw[:300]}")
         # Strip markdown fences
         if "```" in raw:
             raw = raw.split("```")[1]
@@ -336,7 +337,16 @@ revised_value must be an integer"""
         end = raw.rfind("}") + 1
         if start >= 0 and end > start:
             raw = raw[start:end]
-        return json.loads(raw)
+        data = json.loads(raw)
+        # Sanitize string fields to prevent SSE encoding issues
+        for key in ["image_notes", "rec_reason", "notes", "confidence", "recommendation"]:
+            if key in data:
+                data[key] = str(data[key]).replace("\n", " ").replace("\r", " ")
+        if "comps" in data:
+            for comp in data["comps"]:
+                for k in comp:
+                    comp[k] = str(comp[k]).replace("\n", " ") if isinstance(comp[k], str) else comp[k]
+        return data
 
     async def generate():
         total = len(items)
