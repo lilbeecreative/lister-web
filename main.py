@@ -332,6 +332,8 @@ revised_value must be an integer"""
             if raw.startswith("json"):
                 raw = raw[4:]
             raw = raw.strip()
+        raw = re.sub(r"[
+]+", " ", raw)
         # Find JSON object boundaries
         start = raw.find("{")
         end = raw.rfind("}") + 1
