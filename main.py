@@ -311,6 +311,9 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
     return EventSourceResponse(generate())
 
 
+class ScanAuction(BaseModel):
+    url: str
+
 @app.post("/api/auction/scan")
 async def scan_auction(body: ScanAuction):
     try:
