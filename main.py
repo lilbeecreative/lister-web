@@ -323,8 +323,19 @@ revised_value must be an integer"""
         for img_bytes in images[:3]:
             parts.append({"mime_type": "image/jpeg", "data": img_bytes})
 
-        response = model.generate_content(parts, generation_config={"max_output_tokens": 1000})
-        raw = response.text.strip().replace("```json", "").replace("```", "").strip()
+        response = model.generate_content(parts, generation_config={"max_output_tokens": 1500})
+        raw = response.text.strip()
+        # Strip markdown fences
+        if "```" in raw:
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+        # Find JSON object boundaries
+        start = raw.find("{")
+        end = raw.rfind("}") + 1
+        if start >= 0 and end > start:
+            raw = raw[start:end]
         return json.loads(raw)
 
     async def generate():
@@ -346,6 +357,22 @@ revised_value must be an integer"""
                     "total": total,
                     "has_image": len(images) > 0,
                     **result
+                })}
+            except json.JSONDecodeError as e:
+                print(f"JSON parse error for lot {item.get('lot')}: {e}")
+                yield {"data": json.dumps({
+                    "type": "result",
+                    "lot": item.get("lot"),
+                    "index": i,
+                    "total": total,
+                    "has_image": len(images) > 0,
+                    "revised_value": item.get("your_value", 0),
+                    "confidence": "low",
+                    "comps": [],
+                    "image_notes": "Research completed but response parsing failed",
+                    "recommendation": "watch",
+                    "rec_reason": "Could not parse research results — try again",
+                    "notes": ""
                 })}
             except Exception as e:
                 print(f"Deep research error for lot {item.get('lot')}: {e}")
