@@ -38,6 +38,15 @@ def photo_url(photo_id: str, thumb: bool = False) -> str:
 
 # ── PAGES ─────────────────────────────────────────────────────── #
 
+@app.get("/auction", response_class=HTMLResponse)
+async def auction_page(request: Request):
+    import os
+    with open(os.path.join(os.path.dirname(__file__), "templates", "auction.html")) as f:
+        html = f.read()
+    return HTMLResponse(content=html, headers={
+        "Content-Security-Policy": "default-src * blob: data:; script-src * blob: data: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * blob: data:;"
+    })
+
 @app.get("/v2", response_class=HTMLResponse)
 async def dashboard_v2(request: Request):
     from fastapi.responses import HTMLResponse

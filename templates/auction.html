@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src * blob: data: 'unsafe-inline' 'unsafe-eval';">
+<title>Auction Scanner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#f1f5f9;min-height:100vh;display:flex;flex-direction:column;}
+.app{display:grid;grid-template-columns:240px 1fr;flex:1;min-height:100vh;}
+.sidebar{background:#1a1f2e;border-right:1px solid #2d3348;padding:16px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid #2d3348;margin-bottom:6px;}
+.logo-mark{width:30px;height:30px;border-radius:8px;background:#412402;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-mark svg{color:#EF9F27;}
+.logo-text{font-size:15px;font-weight:700;color:#f1f5f9;}
+.sidebar-hdr{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:8px 0 4px;}
+.scan-item{background:#1e2535;border:1px solid #2d3348;border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .15s;position:relative;}
+.scan-item:hover{border-color:#475569;}
+.scan-item.active{border-color:#854F0B;background:rgba(65,36,2,.4);}
+.scan-item-title{font-size:12px;font-weight:600;color:#f1f5f9;margin-bottom:3px;padding-right:20px;}
+.scan-item-meta{font-size:10px;color:#64748b;}
+.scan-item-del{position:absolute;top:8px;right:10px;font-size:12px;color:#475569;cursor:pointer;line-height:1;}
+.scan-item-del:hover{color:#ef4444;}
+.new-scan-btn{border:2px dashed #2d3348;border-radius:8px;padding:10px;text-align:center;cursor:pointer;color:#64748b;font-size:12px;font-weight:600;margin-top:auto;}
+.new-scan-btn:hover{border-color:#475569;color:#94a3b8;}
+.main{padding:20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.page-title{font-size:20px;font-weight:700;color:#f1f5f9;}
+.btn-primary{background:#854F0B;color:#FAC775;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-primary:hover{background:#633806;}
+.btn-ghost{background:transparent;color:#94a3b8;border:1px solid #2d3348;border-radius:8px;padding:9px 14px;font-size:12px;cursor:pointer;}
+.btn-ghost:hover{background:#1e2535;}
+.btn-blue{background:#1e3a5f;color:#93c5fd;border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-blue:hover{background:#1d4ed8;}
+.upload-zone{border:2px dashed #2d3348;border-radius:14px;padding:36px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;overflow:hidden;}
+.upload-zone:hover{border-color:#854F0B;}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{width:48px;height:48px;border-radius:12px;background:#1e2535;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
+.upload-title{font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:6px;}
+.upload-sub{font-size:12px;color:#64748b;}
+.progress-card{background:#1e2535;border:1px solid #2d3348;border-radius:12px;padding:16px;}
+.prog-header{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.prog-bar{height:5px;background:#2d3348;border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.prog-fill{height:100%;background:#EF9F27;border-radius:3px;transition:width .6s ease;width:0%;}
+.prog-sub{font-size:11px;color:#64748b;}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.stat-card{background:#1e2535;border:1px solid #2d3348;border-radius:10px;padding:12px;text-align:center;}
+.stat-n{font-size:22px;font-weight:700;color:#f1f5f9;}
+.stat-l{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}
+.stat-n.amber{color:#EF9F27;}
+.stat-n.blue{color:#93c5fd;}
+.watchlist-banner{background:#1e3a5f;border:1px solid #1d4ed8;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.watch-title{font-size:13px;color:#93c5fd;font-weight:600;margin-bottom:2px;}
+.watch-sub{font-size:11px;color:#2563eb;}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;}
+.filter-pill{font-size:11px;padding:5px 14px;border-radius:20px;border:1px solid #2d3348;background:transparent;color:#64748b;cursor:pointer;font-family:inherit;}
+.filter-pill.active{background:#412402;border-color:#854F0B;color:#FAC775;}
+.filter-pill.active-blue{background:#1e3a5f;border-color:#1d4ed8;color:#93c5fd;}
+.table-wrap{background:#1e2535;border:1px solid #2d3348;border-radius:12px;overflow:hidden;}
+.tbl-head{display:grid;grid-template-columns:32px 54px 1fr 100px 44px 36px;padding:10px 14px;background:#161b28;border-bottom:1px solid #2d3348;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;align-items:center;gap:8px;}
+.tbl-row{display:grid;grid-template-columns:32px 54px 1fr 100px 44px 36px;padding:10px 14px;border-bottom:1px solid #161b28;align-items:center;font-size:12px;gap:8px;transition:background .1s;}
+.tbl-row:last-child{border-bottom:none;}
+.tbl-row:hover{background:#242b3d;}
+.tbl-row.hv{background:rgba(239,159,39,.05);border-left:3px solid #EF9F27;padding-left:11px;}
+.tbl-row.hv:hover{background:rgba(239,159,39,.1);}
+.tbl-row.watched{background:rgba(29,78,216,.07);border-left:3px solid #1d4ed8;padding-left:11px;}
+.tbl-row.hv.watched{border-left:3px solid #EF9F27;}
+.lot{color:#64748b;font-size:11px;white-space:nowrap;}
+.item-name{font-weight:600;color:#f1f5f9;line-height:1.3;cursor:pointer;}
+.item-name:hover{color:#EF9F27;}
+.item-desc{font-size:10px;color:#64748b;margin-top:2px;}
+.badge-deep{font-size:9px;padding:2px 6px;background:#052e16;color:#4ade80;border-radius:4px;margin-left:5px;vertical-align:middle;}
+.val-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+.val-high{background:#412402;color:#FAC775;}
+.val-normal{background:#161b28;color:#94a3b8;}
+.chk{width:16px;height:16px;border-radius:4px;border:1.5px solid #2d3348;background:transparent;cursor:pointer;flex-shrink:0;appearance:none;-webkit-appearance:none;}
+.chk:checked{background:#1d4ed8;border-color:#1d4ed8;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4l3 3 5-6' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:10px;background-repeat:no-repeat;background-position:center;}
+.watch-chk{width:16px;height:16px;border-radius:4px;border:1.5px solid #2d3348;background:transparent;cursor:pointer;flex-shrink:0;appearance:none;-webkit-appearance:none;}
+.watch-chk:checked{background:#1d4ed8;border-color:#1d4ed8;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 10 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4l3 3 5-6' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:10px;background-repeat:no-repeat;background-position:center;}
+.ico-btn{width:28px;height:28px;border-radius:6px;border:1px solid #2d3348;background:transparent;color:#64748b;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.ico-btn:hover{background:#2d3348;color:#f1f5f9;}
+.empty-state{text-align:center;padding:48px 20px;color:#64748b;font-size:13px;}
+.hidden{display:none!important;}
+@media(max-width:700px){.app{grid-template-columns:1fr;}.sidebar{display:none;}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <span class="logo-text">Auction Scanner</span>
+    </div>
+    <div class="sidebar-hdr">Scan history</div>
+    <div id="scan-history"></div>
+    <div class="new-scan-btn" onclick="showUpload()">+ New scan</div>
+  </div>
+
+  <div class="main" id="main-content">
+    <div id="upload-view">
+      <div class="topbar">
+        <div class="page-title">Auction Scanner</div>
+      </div>
+      <div style="margin-top:40px;">
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="pdf-input" accept=".pdf" onchange="startScan(this)">
+          <div class="upload-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
+          </div>
+          <div class="upload-title">Upload auction catalog PDF</div>
+          <div class="upload-sub" style="margin-top:4px;">Gemini will extract all lots and estimate market values</div>
+          <div class="upload-sub" style="margin-top:8px;font-size:10px;">Items populate as each section completes · High value items auto-flagged</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="results-view" class="hidden">
+      <div class="topbar">
+        <div class="page-title" id="scan-title">Scan results</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-ghost" onclick="exportExcel()">Download Excel</button>
+          <button class="btn-primary" onclick="showUpload()">New scan</button>
+        </div>
+      </div>
+
+      <div class="progress-card" id="progress-card">
+        <div class="prog-header">
+          <span id="prog-label">Scanning...</span>
+          <span id="prog-pct" style="color:#EF9F27;">0%</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+        <div class="prog-sub" id="prog-sub">Starting scan...</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-n" id="stat-total">0</div><div class="stat-l">Items found</div></div>
+        <div class="stat-card"><div class="stat-n amber" id="stat-hv">0</div><div class="stat-l">High value (&gt;$500)</div></div>
+        <div class="stat-card"><div class="stat-n blue" id="stat-watch">0</div><div class="stat-l">Watchlisted</div></div>
+      </div>
+
+      <div class="watchlist-banner" id="watch-banner" style="display:none">
+        <div>
+          <div class="watch-title" id="watch-title">0 items watchlisted</div>
+          <div class="watch-sub">Check the watch column to add items for deeper research</div>
+        </div>
+        <button class="btn-blue" onclick="researchWatchlist()">Research watchlist</button>
+      </div>
+
+      <div class="filter-bar">
+        <button class="filter-pill active" id="f-all" onclick="setFilter('all')">All</button>
+        <button class="filter-pill" id="f-hv" onclick="setFilter('hv')">High value</button>
+        <button class="filter-pill" id="f-watch" onclick="setFilter('watch')">Watchlist</button>
+      </div>
+
+      <div class="table-wrap">
+        <div class="tbl-head">
+          <div></div>
+          <div>Lot</div>
+          <div>Item</div>
+          <div>Est. value</div>
+          <div>Watch</div>
+          <div></div>
+        </div>
+        <div id="items-body">
+          <div class="empty-state">Scanning...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var allItems = [];
+var currentFilter = 'all';
+var currentScanId = null;
+var scanName = '';
+
+function loadHistory() {
+  var scans = JSON.parse(localStorage.getItem('auction_scans') || '[]');
+  var el = document.getElementById('scan-history');
+  if (!scans.length) {
+    el.innerHTML = '<div style="font-size:11px;color:#475569;text-align:center;padding:8px;">No scans yet</div>';
+    return;
+  }
+  el.innerHTML = scans.map(function(s) {
+    var hvCount = (s.items || []).filter(function(i) { return (i.your_value||0) >= 500; }).length;
+    return '<div class="scan-item' + (s.id === currentScanId ? ' active' : '') + '" onclick="loadScan(\'' + s.id + '\')">' +
+      '<div class="scan-item-del" onclick="event.stopPropagation();deleteScan(\'' + s.id + '\')">✕</div>' +
+      '<div class="scan-item-title">' + esc(s.name) + '</div>' +
+      '<div class="scan-item-meta">' + (s.items||[]).length + ' lots · ' + hvCount + ' high value</div>' +
+      '</div>';
+  }).join('');
+}
+
+function saveCurrentScan() {
+  if (!currentScanId || !allItems.length) return;
+  var scans = JSON.parse(localStorage.getItem('auction_scans') || '[]');
+  var idx = scans.findIndex(function(s) { return s.id === currentScanId; });
+  var scanObj = {id: currentScanId, name: scanName, items: allItems, ts: Date.now()};
+  if (idx >= 0) scans[idx] = scanObj;
+  else scans.unshift(scanObj);
+  localStorage.setItem('auction_scans', JSON.stringify(scans));
+  loadHistory();
+}
+
+function loadScan(id) {
+  var scans = JSON.parse(localStorage.getItem('auction_scans') || '[]');
+  var scan = scans.find(function(s) { return s.id === id; });
+  if (!scan) return;
+  currentScanId = id;
+  scanName = scan.name;
+  allItems = scan.items || [];
+  document.getElementById('scan-title').textContent = scan.name;
+  document.getElementById('upload-view').classList.add('hidden');
+  document.getElementById('results-view').classList.remove('hidden');
+  document.getElementById('progress-card').classList.add('hidden');
+  updateStats();
+  renderItems();
+  loadHistory();
+}
+
+function deleteScan(id) {
+  var scans = JSON.parse(localStorage.getItem('auction_scans') || '[]');
+  scans = scans.filter(function(s) { return s.id !== id; });
+  localStorage.setItem('auction_scans', JSON.stringify(scans));
+  if (currentScanId === id) {
+    currentScanId = null;
+    allItems = [];
+    showUpload();
+  }
+  loadHistory();
+}
+
+function showUpload() {
+  document.getElementById('upload-view').classList.remove('hidden');
+  document.getElementById('results-view').classList.add('hidden');
+  currentScanId = null;
+  allItems = [];
+  loadHistory();
+}
+
+async function startScan(input) {
+  if (!input.files[0]) return;
+  var file = input.files[0];
+  scanName = file.name.replace('.pdf','').replace(/_/g,' ');
+  currentScanId = 'scan_' + Date.now();
+  allItems = [];
+
+  document.getElementById('upload-view').classList.add('hidden');
+  document.getElementById('results-view').classList.remove('hidden');
+  document.getElementById('progress-card').classList.remove('hidden');
+  document.getElementById('items-body').innerHTML = '<div class="empty-state">Starting scan...</div>';
+  document.getElementById('scan-title').textContent = scanName;
+  setProgress(0, 'Uploading PDF...', 'Preparing...');
+  updateStats();
+
+  try {
+    var fd = new FormData();
+    fd.append('file', file);
+    var r = await fetch('/api/auction/scan-pdf', {method:'POST', body:fd});
+    if (!r.ok) {
+      var err = await r.json().catch(function(){return{};});
+      alert('Scan failed: ' + (err.detail || 'Unknown error'));
+      showUpload();
+      return;
+    }
+
+    var reader = r.body.getReader();
+    var decoder = new TextDecoder();
+    var buffer = '';
+
+    while (true) {
+      var result = await reader.read();
+      if (result.done) break;
+      buffer += decoder.decode(result.value, {stream:true});
+      var lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line.startsWith('data: ')) continue;
+        try {
+          var msg = JSON.parse(line.slice(6));
+          if (msg.done) {
+            setProgress(100, 'Complete!', allItems.length + ' items found');
+            document.getElementById('scan-title').textContent = scanName;
+            saveCurrentScan();
+            setTimeout(function() {
+              document.getElementById('progress-card').classList.add('hidden');
+            }, 1500);
+          } else {
+            var pct = Math.round((msg.chunk / msg.total_chunks) * 95);
+            setProgress(pct, 'Section ' + msg.chunk + ' of ' + msg.total_chunks, (allItems.length + msg.items.length) + ' items found so far');
+            addItems(msg.items);
+          }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {
+    alert('Scan error: ' + e.message);
+    showUpload();
+  }
+  input.value = '';
+}
+
+function setProgress(pct, label, sub) {
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-label').textContent = label;
+  document.getElementById('prog-sub').textContent = sub;
+}
+
+function addItems(items) {
+  items.forEach(function(item) {
+    item._id = 'item_' + allItems.length;
+    item._watch = false;
+    allItems.push(item);
+  });
+  updateStats();
+  renderItems();
+}
+
+function updateStats() {
+  var hv = allItems.filter(function(i) { return (i.your_value||0) >= 500; }).length;
+  var wl = allItems.filter(function(i) { return i._watch; }).length;
+  document.getElementById('stat-total').textContent = allItems.length;
+  document.getElementById('stat-hv').textContent = hv;
+  document.getElementById('stat-watch').textContent = wl;
+  // Update filter pills
+  document.getElementById('f-all').textContent = 'All (' + allItems.length + ')';
+  document.getElementById('f-hv').textContent = 'High value (' + hv + ')';
+  document.getElementById('f-watch').textContent = 'Watchlist (' + wl + ')';
+  // Watch banner
+  if (wl > 0) {
+    document.getElementById('watch-banner').style.display = '';
+    document.getElementById('watch-title').textContent = wl + ' item' + (wl !== 1 ? 's' : '') + ' watchlisted — ready for deeper research';
+  } else {
+    document.getElementById('watch-banner').style.display = 'none';
+  }
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(function(p) { p.className = 'filter-pill'; });
+  document.getElementById('f-' + f).className = 'filter-pill ' + (f === 'watch' ? 'active-blue' : 'active');
+  renderItems();
+}
+
+function renderItems() {
+  var items = allItems;
+  if (currentFilter === 'hv') items = items.filter(function(i) { return (i.your_value||0) >= 500; });
+  if (currentFilter === 'watch') items = items.filter(function(i) { return i._watch; });
+
+  if (!items.length) {
+    document.getElementById('items-body').innerHTML = '<div class="empty-state">' +
+      (currentFilter === 'watch' ? 'No watchlisted items yet — check the watch column to add items.' :
+       currentFilter === 'hv' ? 'No high value items found yet.' : 'No items yet.') + '</div>';
+    return;
+  }
+
+  document.getElementById('items-body').innerHTML = items.map(function(item) {
+    var isHv = (item.your_value||0) >= 500;
+    var cls = 'tbl-row' + (isHv ? ' hv' : '') + (item._watch ? ' watched' : '');
+    var valCls = isHv ? 'val-pill val-high' : 'val-pill val-normal';
+    var deepBadge = item._deep ? '<span class="badge-deep">Deep scan</span>' : '';
+    var ebayUrl = 'https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent(item.title||'') + '&LH_Sold=1&LH_Complete=1';
+    return '<div class="' + cls + '" id="row-' + item._id + '">' +
+      '<input type="checkbox" class="chk" onchange="toggleSelect(\'' + item._id + '\',this.checked)" ' + (item._sel ? 'checked' : '') + '>' +
+      '<div class="lot">#' + esc(item.lot||'') + '</div>' +
+      '<div>' +
+        '<div class="item-name" onclick="window.open(\'' + ebayUrl + '\',\'_blank\',\'noopener,width=1200,height=800\')">' + esc(item.title||'') + deepBadge + '</div>' +
+        (item.notes ? '<div class="item-desc">' + esc(item.notes) + '</div>' : '') +
+      '</div>' +
+      '<div><span class="' + valCls + '">$' + (item.your_value||0).toLocaleString() + '</span></div>' +
+      '<input type="checkbox" class="watch-chk" onchange="toggleWatch(\'' + item._id + '\',this.checked)" ' + (item._watch ? 'checked' : '') + '>' +
+      '<button class="ico-btn" onclick="window.open(\'' + ebayUrl + '\',\'_blank\',\'noopener,width=1200,height=800\')" title="eBay sold">↗</button>' +
+      '</div>';
+  }).join('');
+}
+
+function toggleSelect(id, checked) {
+  var item = allItems.find(function(i) { return i._id === id; });
+  if (item) item._sel = checked;
+}
+
+function toggleWatch(id, checked) {
+  var item = allItems.find(function(i) { return i._id === id; });
+  if (item) { item._watch = checked; }
+  updateStats();
+  if (currentFilter === 'watch') renderItems();
+  saveCurrentScan();
+}
+
+async function researchWatchlist() {
+  var watched = allItems.filter(function(i) { return i._watch; });
+  if (!watched.length) return;
+  if (!confirm('Run deeper Gemini research on ' + watched.length + ' watchlisted items?')) return;
+
+  for (var i = 0; i < watched.length; i++) {
+    var item = watched[i];
+    try {
+      var r = await fetch('/api/auction/deep-research', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({title: item.title, current_value: item.your_value})
+      });
+      if (r.ok) {
+        var data = await r.json();
+        item.your_value = data.your_value || item.your_value;
+        item.notes = data.notes || item.notes;
+        item._deep = true;
+      }
+    } catch(e) {}
+    renderItems();
+    updateStats();
+  }
+  saveCurrentScan();
+  alert('Deep research complete!');
+}
+
+async function exportExcel() {
+  if (!allItems.length) return;
+  var r = await fetch('/api/auction/export-excel', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name: scanName, items: allItems})
+  });
+  if (!r.ok) { alert('Export failed'); return; }
+  var blob = await r.blob();
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (scanName||'auction_scan') + '.xlsx';
+  a.click();
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+loadHistory();
+</script>
+</body>
+</html>
