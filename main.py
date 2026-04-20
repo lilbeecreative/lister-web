@@ -317,7 +317,8 @@ Return ONLY a JSON object (no markdown):
 
 confidence must be: high, medium, or low
 recommendation must be: buy, watch, or pass
-revised_value must be an integer"""
+revised_value must be an integer
+CRITICAL: All string values must use only standard ASCII characters. No apostrophes, smart quotes, or special characters in any field."""
 
         parts = [prompt]
         for img_bytes in images[:3]:
