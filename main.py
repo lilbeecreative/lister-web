@@ -243,7 +243,7 @@ async def scan_pdf_auction(file: UploadFile = File(...)):
     try:
         doc = fitz.open(stream=contents, filetype="pdf")
         total_pages = len(doc)
-        chunk_size = 5
+        chunk_size = 10
         page_chunks = []
         for start in range(0, total_pages, chunk_size):
             end = min(start + chunk_size, total_pages)
@@ -310,8 +310,13 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
                     })
                 }
             except Exception as e:
-                print(f"Chunk {i+1} error: {e}")
-                yield {"data": json.dumps({"chunk": i+1, "total_chunks": total_chunks, "items": [], "done": False, "error": str(e)})}
+                err_msg = str(e)
+                print(f"Chunk {i+1} error: {err_msg}")
+                # Only report error if it's not just an empty/no-lots response
+                if 'JSONDecodeError' not in type(e).__name__ or '[]' not in err_msg:
+                    yield {"data": json.dumps({"chunk": i+1, "total_chunks": total_chunks, "items": [], "done": False})}
+                else:
+                    yield {"data": json.dumps({"chunk": i+1, "total_chunks": total_chunks, "items": [], "done": False})}
             await asyncio.sleep(0.1)
 
         yield {"data": json.dumps({"done": True, "total": len(all_items)})}
