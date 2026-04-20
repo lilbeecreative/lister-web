@@ -499,7 +499,7 @@ async function handleQuickBatch(e){
       var gd=await r.json();var gid=gd.group_id||gd.id;
       var blob=await compressImage(files[i]);
       var fd=new FormData();fd.append('file',blob,'photo_0.jpg');
-      await fetch('/api/photos/upload?group_id='+gid,{method:'POST',body:fd});
+      fd.append('group_id',gid);await fetch('/api/photos/upload',{method:'POST',body:fd});
       await fetch('/api/groups/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({group_id:gid,condition:batchCond,quantity:1})});
       items[i].innerHTML='<div class="bi-dot dot-done"></div><div class="bi-info"><div class="bi-title">Photo '+(i+1)+'</div><div class="bi-meta">'+batchCond+'</div></div><span class="bi-badge badge-done">Submitted</span>';
     }catch(err){
