@@ -332,7 +332,7 @@ revised_value must be an integer"""
             if raw.startswith("json"):
                 raw = raw[4:]
             raw = raw.strip()
-        raw = re.sub(r"[
+        raw = " ".join(raw.splitlines())
 
 ]+", " ", raw)
         raw = " ".join(raw.splitlines())
