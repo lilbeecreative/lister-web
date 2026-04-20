@@ -38,6 +38,10 @@ def photo_url(photo_id: str, thumb: bool = False) -> str:
 
 # ── PAGES ─────────────────────────────────────────────────────── #
 
+@app.get("/v2", response_class=HTMLResponse)
+async def dashboard_v2(request: Request):
+    return templates.TemplateResponse("v2.html", {"request": request})
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
