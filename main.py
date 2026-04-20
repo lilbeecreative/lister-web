@@ -227,119 +227,89 @@ async def upload_photo(request: Request):
 
 # ── API: PDF AUCTION SCAN ─────────────────────────────────────── #
 
+from sse_starlette.sse import EventSourceResponse
+
 @app.post("/api/auction/scan-pdf")
 async def scan_pdf_auction(file: UploadFile = File(...)):
-    import os, base64, json, io, csv
+    import os, base64, json, fitz, asyncio
+    import google.generativeai as genai
+
+    contents = await file.read()
+    gemini_key = os.getenv("GEMINI_API_KEY", "")
+    if not gemini_key:
+        raise HTTPException(400, "GEMINI_API_KEY not set")
+
+    # Extract text chunks (5 pages per chunk ~ 50 items)
     try:
-        contents = await file.read()
-        gemini_key = os.getenv("GEMINI_API_KEY", "")
-        if not gemini_key:
-            raise HTTPException(400, "GEMINI_API_KEY not set")
-
-        # Extract text from PDF using PyMuPDF
-        try:
-            import fitz
-            doc = fitz.open(stream=contents, filetype="pdf")
-            pdf_text = ""
-            images = []
-            for page_num in range(min(len(doc), 20)):
-                page = doc[page_num]
-                pdf_text += page.get_text() + "\n"
-                for img in page.get_images():
-                    xref = img[0]
-                    base_image = doc.extract_image(xref)
-                    images.append({
-                        "data": base64.b64encode(base_image["image"]).decode(),
-                        "mime": "image/" + base_image["ext"]
-                    })
-            doc.close()
-        except Exception as e:
-            pdf_text = f"PDF text extraction failed: {e}"
-            images = []
-
-        # Send to Gemini
-        import google.generativeai as genai
-        genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel("gemini-2.5-flash")
-
-        prompt = """You are an expert industrial auction appraiser with deep knowledge of used equipment markets.
-
-Analyze this auction catalog PDF and extract each lot. For EACH lot you find:
-
-1. Extract: lot number, full title, brief description
-2. Use your knowledge of eBay sold listings and industrial equipment markets to estimate realistic USED market values
-3. Provide estimate_low and estimate_high as integers (dollar amounts only, no text)
-4. your_value should be your single best estimate as an integer
-5. listing_url: leave empty string "" unless a real URL is present in the text
-
-CRITICAL PRICING RULES:
-- Values must be INTEGERS (numbers only, no $ signs, no text like "TDS" or "conductivity")
-- Base prices on actual used market values for that specific item/brand/model
-- If you truly cannot estimate, use 0
-- Common lab equipment: meters $50-300, analyzers $500-5000, freezers $200-800
-- Industrial equipment: mixers $100-2000, tanks $1000-50000, compressors $500-10000
-
-Return ONLY a valid JSON array, no other text, no markdown:
-[
-  {
-    "lot": "12",
-    "title": "Item name",
-    "description": "One sentence description",
-    "estimate_low": 100,
-    "estimate_high": 300,
-    "your_value": 200,
-    "listing_url": "",
-    "notes": "Common on eBay for $150-250 used"
-  }
-]"""
-
-        parts = [prompt, f"\n\nPDF TEXT CONTENT:\n{pdf_text[:8000]}"]
-        for img in images[:5]:
-            parts.append({"mime_type": img["mime"], "data": base64.b64decode(img["data"])})
-
-        response = model.generate_content(parts)
-        raw = response.text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1].rsplit("\n", 1)[0].strip()
-            if raw.startswith("json"):
-                raw = raw[4:].strip()
-
-        items = json.loads(raw)
-
-        # Build CSV
-        output = io.StringIO()
-        writer = csv.writer(output, quoting=csv.QUOTE_ALL)
-        writer.writerow(["Lot", "Title", "Description", "Est. Low", "Est. High", "Your Value", "Listing URL", "Notes"])
-        for item in items:
-            writer.writerow([
-                item.get("lot", ""),
-                item.get("title", ""),
-                item.get("description", ""),
-                f"${item.get('estimate_low', 0)}",
-                f"${item.get('estimate_high', 0)}",
-                f"${item.get('your_value', 0)}",
-                item.get("listing_url", ""),
-                item.get("notes", ""),
-            ])
-
-        from datetime import datetime
-        fn = f"auction_scan_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
-        return StreamingResponse(
-            io.BytesIO(output.getvalue().encode("utf-8")),
-            media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={fn}"}
-        )
-    except json.JSONDecodeError:
-        raise HTTPException(500, "Gemini returned invalid JSON — try again")
+        doc = fitz.open(stream=contents, filetype="pdf")
+        total_pages = len(doc)
+        chunk_size = 5
+        page_chunks = []
+        for start in range(0, total_pages, chunk_size):
+            end = min(start + chunk_size, total_pages)
+            chunk_text = ""
+            for page_num in range(start, end):
+                chunk_text += doc[page_num].get_text() + "\n"
+            if chunk_text.strip():
+                page_chunks.append(chunk_text)
+        doc.close()
     except Exception as e:
-        import traceback; traceback.print_exc()
-        raise HTTPException(500, str(e))
+        raise HTTPException(500, f"PDF read error: {e}")
 
+    genai.configure(api_key=gemini_key)
+    model = genai.GenerativeModel("gemini-2.5-flash")
 
-# ── API: AUCTION ──────────────────────────────────────────────── #
+    prompt_template = """You are an expert auction appraiser. Extract EVERY auction lot from this catalog section.
 
-class ScanAuction(BaseModel):
-    url: str
+For each lot return a JSON object with these exact fields:
+- lot: lot number as string
+- title: full item title
+- description: one sentence description
+- estimate_low: integer dollar amount (your low estimate)
+- estimate_high: integer dollar amount (your high estimate)
+- your_value: integer dollar amount (single best estimate)
+- notes: brief market note
+
+RULES:
+- estimate_low, estimate_high, your_value MUST be integers (no $, no text)
+- Research real used market values - do not copy text from descriptions
+- Return ONLY a JSON array, no markdown, no explanation
+
+Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP meter with case","estimate_low":80,"estimate_high":150,"your_value":100,"notes":"Sells $80-150 used on eBay"}]"""
+
+    async def generate():
+        total_chunks = len(page_chunks)
+        all_items = []
+        for i, chunk_text in enumerate(page_chunks):
+            try:
+                response = model.generate_content(
+                    [prompt_template, f"\nCATALOG SECTION {i+1}/{total_chunks}:\n{chunk_text[:10000]}"],
+                    generation_config={"max_output_tokens": 8192}
+                )
+                raw = response.text.strip()
+                if raw.startswith("```"):
+                    raw = raw.split("\n", 1)[1].rsplit("\n", 1)[0].strip()
+                    if raw.startswith("json"):
+                        raw = raw[4:].strip()
+                items = json.loads(raw)
+                all_items.extend(items)
+                yield {
+                    "data": json.dumps({
+                        "chunk": i + 1,
+                        "total_chunks": total_chunks,
+                        "items": items,
+                        "done": False
+                    })
+                }
+            except Exception as e:
+                print(f"Chunk {i+1} error: {e}")
+                yield {"data": json.dumps({"chunk": i+1, "total_chunks": total_chunks, "items": [], "done": False, "error": str(e)})}
+            await asyncio.sleep(0.1)
+
+        yield {"data": json.dumps({"done": True, "total": len(all_items)})}
+
+    return EventSourceResponse(generate())
+
 
 @app.post("/api/auction/scan")
 async def scan_auction(body: ScanAuction):
