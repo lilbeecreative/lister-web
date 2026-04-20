@@ -40,7 +40,13 @@ def photo_url(photo_id: str, thumb: bool = False) -> str:
 
 @app.get("/v2", response_class=HTMLResponse)
 async def dashboard_v2(request: Request):
-    return templates.TemplateResponse("v2.html", {"request": request})
+    from fastapi.responses import HTMLResponse
+    import os
+    with open(os.path.join(os.path.dirname(__file__), "templates", "v2.html")) as f:
+        html = f.read()
+    return HTMLResponse(content=html, headers={
+        "Content-Security-Policy": "default-src * blob: data:; script-src * blob: data: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * blob: data:;"
+    })
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
