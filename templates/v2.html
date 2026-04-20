@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Lister AI</title>
+<link rel="stylesheet" href="/static/v2.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-mark">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+  </div>
+  <span class="logo-text">Lister AI</span>
+  <div class="spacer"></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="navScan">Scan</button>
+    <button class="nav-tab" id="navDashboard">Dashboard</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- SCAN VIEW -->
+<div class="view active" id="scanView">
+
+  <!-- START STATE -->
+  <div id="startState">
+    <div class="sec-label mb10">Batch condition</div>
+    <div class="cond-grid">
+      <div class="cond-opt new on" id="batchNew">
+        <div class="cond-icon ci-new"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <div><div class="cond-label">New</div><div class="cond-sub">Unused</div></div>
+        <div class="check-ring"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      </div>
+      <div class="cond-opt used" id="batchUsed">
+        <div class="cond-icon ci-used"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/></svg></div>
+        <div><div class="cond-label">Used</div><div class="cond-sub">Pre-owned</div></div>
+        <div class="check-ring"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+      </div>
+    </div>
+    <div class="h8"></div>
+    <button class="btn-green" id="startBatchBtn">Start batch scan</button>
+    <div class="h8"></div>
+    <div class="sec-label mb8">Quick batch — one photo per item</div>
+    <div class="quick-batch-zone" id="quickBatchZone">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <div class="qb-title">Select multiple photos from gallery</div>
+      <div class="qb-sub">Each photo becomes a separate listing</div>
+      <input type="file" id="quickBatchInput" accept="image/*" multiple>
+    </div>
+    <div class="hint mt8" id="batchHint">All items will be marked as <strong>new</strong></div>
+  </div>
+
+  <!-- ACTIVE BATCH STATE -->
+  <div id="activeState" class="hidden">
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="sc-scanned">0</div><div class="stat-l">Scanned</div></div>
+      <div class="stat"><div class="stat-n" id="sc-proc">0</div><div class="stat-l">Processing</div></div>
+      <div class="stat"><div class="stat-n" id="sc-done">0</div><div class="stat-l">Done</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-head-title" id="itemLabel">Item 1</span>
+        <span class="card-ready">Ready</span>
+      </div>
+      <div class="card-body">
+        <div class="upload-btns">
+          <div class="upload-btn" id="camBtn">
+            <input type="file" accept="image/*" capture="environment" id="cameraInput" multiple>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>Take Photo</span>
+          </div>
+          <div class="upload-btn" id="galBtn">
+            <input type="file" accept="image/*" id="galleryInput" multiple>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Upload from Gallery</span>
+          </div>
+        </div>
+        <div id="photoStrip" class="photo-strip hidden"></div>
+        <div>
+          <div class="sec-label mb6">Condition</div>
+          <div class="cond-toggle">
+            <div class="tog on-new" id="togNew">New</div>
+            <div class="tog" id="togUsed">Used</div>
+          </div>
+        </div>
+        <div class="qty-row">
+          <span class="qty-label">Quantity</span>
+          <div class="qty-ctrl">
+            <button class="qty-b" id="qtyMinus">−</button>
+            <div class="qty-v" id="qtyVal">1</div>
+            <button class="qty-b" id="qtyPlus">+</button>
+          </div>
+        </div>
+        <div id="uploadBadge" class="uploading hidden">
+          <div class="spinner"></div>
+          <span id="uploadText">Uploading...</span>
+        </div>
+        <button class="btn-green" id="doneBtn" disabled>Add photos to continue</button>
+      </div>
+    </div>
+    <div id="batchListWrap" class="hidden">
+      <div class="sec-label mb8">This batch</div>
+      <div class="batch-list" id="batchList"></div>
+    </div>
+    <button class="btn-ghost" id="endBatchBtn">End batch</button>
+  </div>
+
+  <!-- COMPLETE STATE -->
+  <div id="completeState" class="hidden">
+    <div class="complete-card">
+      <div class="complete-title">Batch complete</div>
+      <div class="complete-sub" id="completeSub">Items submitted</div>
+    </div>
+    <div class="batch-list" id="completeList"></div>
+    <button class="btn-green" id="newBatchBtn">Start new batch</button>
+    <button class="btn-ghost" id="viewDashBtn">View dashboard</button>
+  </div>
+
+  <!-- QUICK BATCH PROCESSING -->
+  <div id="quickBatchState" class="hidden">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-head-title">Quick batch</span>
+        <span class="card-ready" id="qbProgress">0 / 0</span>
+      </div>
+      <div class="card-body">
+        <div id="qbProgressBar" style="height:6px;background:var(--surface);border-radius:3px;overflow:hidden;margin-bottom:8px;">
+          <div id="qbBar" style="height:100%;width:0%;background:#27500A;border-radius:3px;transition:width 0.3s;"></div>
+        </div>
+        <div class="batch-list" id="qbList"></div>
+      </div>
+    </div>
+    <button class="btn-ghost" id="qbDoneBtn">Done — view dashboard</button>
+  </div>
+
+</div>
+
+<!-- DASHBOARD VIEW -->
+<div class="view" id="dashView">
+
+  <div id="clearBanner" class="hidden">
+    <div class="confirm-banner">
+      <div class="confirm-text">Delete all items? Cannot be undone.</div>
+      <div class="confirm-actions">
+        <button class="btn-cancel" id="cancelClearBtn">Cancel</button>
+        <button class="btn-confirm-del" id="confirmClearBtn">Delete all</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Processing status bar -->
+  <div class="card" id="procCard">
+    <div class="card-body" style="gap:8px;">
+      <div class="proc-header">
+        <span class="sec-label">Processing queue</span>
+        <span class="proc-count" id="procCount">0 of 0 done</span>
+      </div>
+      <div class="prog-track">
+        <div class="prog-bar" id="progBar" style="width:0%"></div>
+      </div>
+      <div class="proc-pills">
+        <span class="pill pill-done" id="pillDone">0 complete</span>
+        <span class="pill pill-scan" id="pillScan">0 scanning</span>
+        <span class="pill pill-queue" id="pillQueue">0 queued</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="d-total">—</div><div class="stat-l">Items</div></div>
+    <div class="stat"><div class="stat-n" id="d-proc">—</div><div class="stat-l">Processing</div></div>
+    <div class="stat"><div class="stat-n" id="d-value">—</div><div class="stat-l">Value</div></div>
+  </div>
+
+  <div class="dash-btns">
+    <button class="btn-green" id="downloadCsvBtn">Download eBay CSV</button>
+    <button class="btn-ghost" id="newBatchFromDashBtn">New batch</button>
+    <button class="btn-red" id="clearAllBtn">Clear all</button>
+  </div>
+
+  <div class="items-grid" id="itemsGrid">
+    <div class="empty-state">No items yet — start a batch scan.</div>
+  </div>
+
+</div>
+</div>
+
+<script src="/static/v2.js"></script>
+</body>
+</html>
