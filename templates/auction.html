@@ -390,7 +390,7 @@ function renderItems() {
     return '<div class="' + cls + '" id="row-' + item._id + '">' +
       '<div class="lot">#' + esc(item.lot||'') + '</div>' +
       (item._page_img ? '<div><img class="thumb" src="' + esc(item._page_img) + '" onclick="openImgModal(\'' + esc(item._page_img) + '\')"></div>' : '<div><div class="thumb-placeholder"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div></div>') +
-      '<div>' +
+      '<div style="min-width:0;overflow:hidden">' +
         '<div class="item-name" onclick="window.open(\'' + ebayUrl + '\',\'_blank\',\'noopener,width=1200,height=800\')">' + esc(item.title||'') + deepBadge + '</div>' +
         (item.notes ? '<div class="item-desc">' + esc(item.notes) + '</div>' : '') +
       '</div>' +
