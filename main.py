@@ -341,7 +341,11 @@ CRITICAL: All string values must use only standard ASCII characters. No apostrop
         end = raw.rfind("}") + 1
         if start >= 0 and end > start:
             raw = raw[start:end]
-        data = json.loads(raw)
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            from json_repair import repair_json
+            data = json.loads(repair_json(raw))
         # Sanitize string fields to prevent SSE encoding issues
         for key in ["image_notes", "rec_reason", "notes", "confidence", "recommendation"]:
             if key in data:
@@ -435,7 +439,11 @@ your_value must be an integer."""
     try:
         response = await loop.run_in_executor(executor, lambda: model.generate_content(prompt, generation_config={"max_output_tokens": 300}))
         raw = response.text.strip().replace("```json","").replace("```","").strip()
-        data = json.loads(raw)
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            from json_repair import repair_json
+            data = json.loads(repair_json(raw))
         return data
     except Exception as e:
         raise HTTPException(500, str(e))
