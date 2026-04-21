@@ -307,14 +307,33 @@ async def deep_research_full(request: Request):
             print(f"Image extract error: {e}")
             return []
 
+    def identify_item_from_image(images, title):
+        if not images:
+            return title
+        try:
+            id_prompt = f"Look at this auction item image carefully. The listing title says: {title}. Identify the exact make, model number, and condition. Look for nameplates, labels, screens. Return one line with the most accurate description possible. If unsure, return the original title."
+            parts = [id_prompt] + [{"mime_type": "image/jpeg", "data": img} for img in images[:1]]
+            r = model.generate_content(parts, generation_config={"max_output_tokens": 150})
+            result = r.text.strip().strip('"')
+            return result if result else title
+        except Exception as e:
+            print(f"Image ID error: {e}")
+            return title
+
     def research_item(item, images):
         title = item.get("title", "")
         lot = item.get("lot", "")
         current_val = item.get("your_value", 0) or 0
 
+        # Step 1: identify exact model from image
+        identified = identify_item_from_image(images, title)
+        if identified != title:
+            print(f"Lot {lot} image ID: {identified}")
+
         prompt = f"""You are an expert industrial equipment appraiser. Research this auction item using web search.
 
 Item: Lot #{lot} — {title}
+Image-identified model: {identified}
 Current estimate: ${current_val}
 
 TASKS:
