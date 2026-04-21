@@ -650,8 +650,7 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
                     item["_page_start"] = page_start
                     item["_page_end"] = page_end
                     if scan_id:
-                        img_idx = len(all_items) + items.index(item)
-                    item["_page_img"] = f"/api/auction/page-image/{scan_id}/{img_idx}"
+                        item["_page_img"] = f"/api/auction/page-image/{scan_id}/{len(all_items) + items.index(item)}"
                 yield {
                     "data": json.dumps({
                         "chunk": i + 1,
