@@ -176,7 +176,7 @@ function buildCard(item, res, idx) {
     var recClass = res.recommendation === 'buy' ? 'rec-buy' : res.recommendation === 'pass' ? 'rec-pass' : 'rec-watch';
     var recLabel = res.recommendation === 'buy' ? 'Strong buy' : res.recommendation === 'pass' ? 'Pass' : 'Watch';
     var compsHtml = (res.comps||[]).map(function(c) {
-      return '<div class="comp-row"><div class="comp-title">' + esc(c.title||'') + '</div><div class="comp-price">$' + (c.price||0).toLocaleString() + '</div><div class="comp-date">' + esc(c.date||'') + '</div><div class="comp-src">' + esc(c.source||'eBay') + '</div></div>';
+      return '<div class="comp-row"><div class="comp-title">' + esc(c.title||'') + '</div><div class="comp-price">' + (c.price ? '$' + parseInt(c.price).toLocaleString() : 'N/A') + '</div><div class="comp-date">' + esc(c.date||'') + '</div><div class="comp-src">' + esc(c.source||'eBay') + '</div></div>';
     }).join('');
     var imgHtml = res.image_url
       ? '<img src="' + esc(res.image_url) + '" alt="">'
@@ -188,7 +188,7 @@ function buildCard(item, res, idx) {
         '<div><div class="section-lbl">Revised estimate</div><div class="value-row"><span class="old-val">$' + (item.your_value||0).toLocaleString() + '</span><span class="new-val">$' + (res.revised_value||0).toLocaleString() + '</span><span class="conf-badge ' + confClass + '">' + conf.charAt(0).toUpperCase() + conf.slice(1) + ' confidence</span></div></div>' +
         (compsHtml ? '<div><div class="section-lbl">Comparable sales</div><div class="comps-list">' + compsHtml + '</div></div>' : '') +
         (res.image_notes ? '<div><div class="section-lbl">Image analysis</div><div class="image-notes">' + esc(res.image_notes) + '</div></div>' : '') +
-        '<div class="rec-box ' + recClass + '">' + recLabel + ' — ' + esc(res.rec_reason||res.notes||'') + '</div>' +
+        '<div class="rec-box ' + recClass + '">' + recLabel + (res.rec_reason||res.notes ? ' — ' + esc(res.rec_reason||res.notes||'') : '') + '</div>' +
       '</div></div>';
   }
 
