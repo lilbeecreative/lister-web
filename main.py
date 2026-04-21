@@ -626,9 +626,9 @@ PRICING RULES:
 
 Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP meter with case","estimate_low":80,"estimate_high":150,"your_value":100,"notes":"Sells $80-150 used on eBay"}]"""
 
-    def call_gemini(chunk_text, i):
+    def call_gemini(chunk_text, i, total):
         response = model.generate_content(
-            [prompt_template, f"\nCATALOG SECTION {i+1}/{total_chunks}:\n{chunk_text[:10000]}"],
+            [prompt_template, f"\nCATALOG SECTION {i+1}/{total}:\n{chunk_text[:10000]}"],
             generation_config={"max_output_tokens": 16000}
         )
         return response.text
@@ -643,7 +643,7 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
 
         for i, chunk_text in enumerate(page_chunks):
             try:
-                raw = await loop.run_in_executor(executor, call_gemini, chunk_text, i)
+                raw = await loop.run_in_executor(executor, call_gemini, chunk_text, i, total_chunks)
                 raw = " ".join(raw.splitlines())
                 if "```" in raw:
                     raw = raw.split("```")[1]
