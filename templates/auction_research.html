@@ -176,19 +176,21 @@ function buildCard(item, res, idx) {
     var recClass = res.recommendation === 'buy' ? 'rec-buy' : res.recommendation === 'pass' ? 'rec-pass' : 'rec-watch';
     var recLabel = res.recommendation === 'buy' ? 'Strong buy' : res.recommendation === 'pass' ? 'Pass' : 'Watch';
     var compsHtml = (res.comps||[]).map(function(c) {
-      return '<div class="comp-row"><div class="comp-title">' + esc(c.title||'') + '</div><div class="comp-price">' + (c.price ? '$' + parseInt(c.price).toLocaleString() : 'N/A') + '</div><div class="comp-date">' + esc(c.date||'') + '</div><div class="comp-src">' + esc(c.source||'eBay') + '</div></div>';
+      var ebaySearch = 'https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent(c.title||'') + '&LH_Sold=1&LH_Complete=1';
+      return '<div class="comp-row" style="cursor:pointer" onclick="window.open(\'' + ebaySearch + '\',\'_blank\',\'noopener,width=1200,height=800\')"><div class="comp-title">' + esc(c.title||'') + '</div><div class="comp-price">' + (c.price ? '$' + parseInt(c.price).toLocaleString() : 'N/A') + '</div><div class="comp-date">' + esc(c.date||'') + '</div><div class="comp-src">' + esc(c.source||'eBay') + '</div></div>';
     }).join('');
-    var imgHtml = res.image_url
-      ? '<img src="' + esc(res.image_url) + '" alt="">'
+    var pageImg = item._page_img || '';
+    var imgHtml = pageImg
+      ? '<img src="' + esc(pageImg) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'">'
       : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
-    var imgLabel = res.has_image ? 'Lot image analyzed' : 'No image available';
+    var imgLabel = res.has_image ? 'Lot image analyzed' : (pageImg ? 'Catalog page' : 'No image available');
     bodyHtml = '<div class="rc-body">' +
       '<div class="rc-img-col"><div class="rc-img-box">' + imgHtml + '</div><div class="rc-img-label">' + imgLabel + '</div></div>' +
       '<div class="rc-detail">' +
         '<div><div class="section-lbl">Revised estimate</div><div class="value-row"><span class="old-val">$' + (item.your_value||0).toLocaleString() + '</span><span class="new-val">$' + (res.revised_value||0).toLocaleString() + '</span><span class="conf-badge ' + confClass + '">' + conf.charAt(0).toUpperCase() + conf.slice(1) + ' confidence</span></div></div>' +
         (compsHtml ? '<div><div class="section-lbl">Comparable sales</div><div class="comps-list">' + compsHtml + '</div></div>' : '') +
         (res.image_notes ? '<div><div class="section-lbl">Image analysis</div><div class="image-notes">' + esc(res.image_notes) + '</div></div>' : '') +
-        '<div class="rec-box ' + recClass + '">' + recLabel + (res.rec_reason||res.notes ? ' — ' + esc(res.rec_reason||res.notes||'') : '') + '</div>' +
+        (res.rec_reason||res.notes ? '<div class="rec-box ' + recClass + '">' + recLabel + ' — ' + esc(res.rec_reason||res.notes||'') + '</div>' : '') +
       '</div></div>';
   }
 
