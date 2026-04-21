@@ -461,7 +461,7 @@ async function exportExcel() {
 function openGemini(title, imgUrl) {
   title = title.replace(/QTY[^,]*/gi,'').replace(/[(][0-9]+[)]/g,'').replace(/,+$/,'').trim();
   var prompt = 'I am evaluating this auction item for resale. Research and give me:\\n\\nItem: ' + title + '\\n\\n1. Current eBay sold prices\\n2. Typical resale value range\\n3. Key value factors\\n4. Buy recommendation';
-  window.open('https://gemini.google.com/app?q=' + encodeURIComponent(prompt), '_blank', 'noopener,width=1000,height=800');
+  window.open('https://www.google.com/search?q=' + encodeURIComponent(title + ' resale value sold price'), '_blank', 'noopener,width=1000,height=800');
 }
 
 async function startUrlScan() {
