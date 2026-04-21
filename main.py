@@ -270,6 +270,28 @@ async def deep_research_full(request: Request):
     loop = asyncio.get_event_loop()
     executor = ThreadPoolExecutor(max_workers=1)
 
+    def extract_single_image(pdf_bytes, img_index):
+        try:
+            import fitz
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            seen = set()
+            all_images = []
+            for page in doc:
+                for img in page.get_images(full=True):
+                    xref = img[0]
+                    if xref in seen: continue
+                    seen.add(xref)
+                    bi = doc.extract_image(xref)
+                    if bi and len(bi.get("image","")) > 8000:
+                        all_images.append(bi["image"])
+            doc.close()
+            if img_index < len(all_images):
+                return [all_images[img_index]]
+            return []
+        except Exception as e:
+            print(f"extract_single_image error: {e}")
+            return []
+
     def extract_page_image(pdf_bytes, page_start, page_end):
         try:
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
@@ -364,11 +386,27 @@ Return ONLY valid JSON (no markdown, no apostrophes in strings):
             yield {"data": json.dumps({"type": "start", "lot": item.get("lot"), "index": i, "total": total})}
             try:
                 images = []
+                # Try to get image from uploaded PDF first
                 if pdf_bytes and item.get("_page_start"):
                     images = await loop.run_in_executor(
                         executor, extract_page_image, pdf_bytes,
                         item["_page_start"], item.get("_page_end", item["_page_start"])
                     )
+                # Fall back to fetching from stored PDF via scan_id
+                if not images and item.get("_page_img"):
+                    try:
+                        img_url = item["_page_img"]
+                        # Extract scan_id and img_index from URL like /api/auction/page-image/{scan_id}/{idx}
+                        parts_url = img_url.strip("/").split("/")
+                        if len(parts_url) >= 2:
+                            sid = parts_url[-2]
+                            idx = int(parts_url[-1])
+                            stored_pdf = supabase.storage.from_("auction-pdfs").download(f"{sid}.pdf")
+                            images = await loop.run_in_executor(
+                                executor, lambda: extract_single_image(stored_pdf, idx)
+                            )
+                    except Exception as img_e:
+                        print(f"Auto image fetch error: {img_e}")
                 result = await loop.run_in_executor(executor, research_item, item, images)
                 yield {"data": json.dumps({
                     "type": "result",
