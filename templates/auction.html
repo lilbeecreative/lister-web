@@ -402,7 +402,7 @@ function renderItems() {
       '<div><span class="' + valCls + '">$' + (item.your_value||0).toLocaleString() + '</span></div>' +
       '<input type="checkbox" class="watch-chk" onchange="toggleWatch(\'' + item._id + '\',this.checked)" ' + (item._watch ? 'checked' : '') + '>' +
       '<button class="ico-btn" onclick="window.open(\'' + ebayUrl + '\',\'_blank\',\'noopener,width=1200,height=800\')" title="eBay sold">↗</button>' +
-      '<button class="ico-btn-gemini" onclick="openGemini(encodeURIComponent(cleanTitle), encodeURIComponent(item._page_img||\'\'))">✨</button>' +
+      '<button class="ico-btn-gemini" onclick="openGemini(\'' + esc((item.title||'')) + '\', \'' + esc(item._page_img||'') + '\')" >✨</button>' +
       '</div>';
   }).join('');
 }
