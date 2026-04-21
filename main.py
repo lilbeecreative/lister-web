@@ -523,13 +523,18 @@ async def get_page_image(scan_id: str, img_index: int):
     try:
         pdf_data = supabase.storage.from_("auction-pdfs").download(f"{scan_id}.pdf")
         doc = fitz.open(stream=pdf_data, filetype="pdf")
+        # Collect all large embedded images (skip logos/watermarks < 5KB)
         all_images = []
+        seen_xrefs = set()
         for page in doc:
-            for img in page.get_images():
+            for img in page.get_images(full=True):
                 xref = img[0]
+                if xref in seen_xrefs:
+                    continue
+                seen_xrefs.add(xref)
                 try:
                     base_image = doc.extract_image(xref)
-                    if base_image and base_image.get("image") and len(base_image["image"]) > 2000:
+                    if base_image and base_image.get("image") and len(base_image["image"]) > 8000:
                         all_images.append(base_image)
                 except Exception:
                     pass
