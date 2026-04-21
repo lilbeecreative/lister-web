@@ -622,7 +622,11 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
                     raw = raw.split("\n", 1)[1].rsplit("\n", 1)[0].strip()
                     if raw.startswith("json"):
                         raw = raw[4:].strip()
-                items = json.loads(raw)
+                try:
+                    items = json.loads(raw)
+                except Exception:
+                    from json_repair import repair_json
+                    items = json.loads(repair_json(raw))
                 all_items.extend(items)
                 page_start = i * chunk_size + 1
                 page_end = min((i + 1) * chunk_size, total_pages)
