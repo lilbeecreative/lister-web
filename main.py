@@ -620,7 +620,7 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
         def call_gemini(chunk_text, i):
             return model.generate_content(
                 [prompt_template, f"\nCATALOG SECTION {i+1}/{total_chunks}:\n{chunk_text[:10000]}"],
-                generation_config={"max_output_tokens": 8192}
+                generation_config={"max_output_tokens": 16000}
             )
 
         total_chunks = len(page_chunks)
