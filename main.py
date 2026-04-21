@@ -645,6 +645,7 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
                 except Exception:
                     from json_repair import repair_json
                     items = json.loads(repair_json(raw))
+                base_idx = len(all_items)
                 all_items.extend(items)
                 page_start = i * chunk_size + 1
                 page_end = min((i + 1) * chunk_size, total_pages)
@@ -652,7 +653,7 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
                     item["_page_start"] = page_start
                     item["_page_end"] = page_end
                     if scan_id:
-                        item["_page_img"] = f"/api/auction/page-image/{scan_id}/{len(all_items) + items.index(item)}"
+                        item["_page_img"] = f"/api/auction/page-image/{scan_id}/{base_idx + items.index(item)}"
                 yield {
                     "data": json.dumps({
                         "chunk": i + 1,
