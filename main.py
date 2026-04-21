@@ -598,220 +598,33 @@ async def scan_pdf_auction(file: UploadFile = File(...)):
     genai.configure(api_key=gemini_key)
     model = genai.GenerativeModel("gemini-2.5-flash")
 
-    prompt_template = """You are an expert auction appraiser. Extract EVERY auction lot from this catalog section.
+    prompt_template = """You are a world-class auction appraiser with deep expertise in industrial equipment, lab instruments, and commercial goods.
 
-For each lot return a JSON object with these exact fields:
+Extract EVERY auction lot from this catalog section.
+
+For each lot return a JSON object:
 - lot: lot number as string
-- title: full item title
+- title: full item title as written
 - description: one sentence description
-- estimate_low: integer dollar amount (your low estimate)
-- estimate_high: integer dollar amount (your high estimate)
-- your_value: integer dollar amount (single best estimate)
-- notes: brief market note
+- estimate_low: integer dollar amount
+- estimate_high: integer dollar amount
+- your_value: integer (your single best estimate - total lot value)
+- notes: brief market note with price source
 
-RULES:
-- estimate_low, estimate_high, your_value MUST be integers (no $, no text)
-- Research real used market values - do not copy text from descriptions
-- Lots are formatted as: #NUMBER â¢ ITEM TITLE
-- If no lots found in this section, return empty array: []
-- Return ONLY a JSON array, no markdown, no explanation, no preamble
+EXPERT AUCTION TITLE INTERPRETATION:
+- Quantities: "(2)", "QTY (3)", "SET OF 4", "PAIR", "x3" = price TOTAL for ALL units combined
+- Vague lots: "SHELF OF...", "PALLET OF...", "BOX OF..." = estimate total resale of all contents
+- Condition notes like "AS-IS", "UNTESTED", "ACTIVATION NOT GUARANTEED" = still price as normal working condition
+- Always search for the SPECIFIC brand + model for accurate pricing
+- Ignore auction house names, catalog numbers, location references in titles
 
-Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP meter with case","estimate_low":80,"estimate_high":150,"your_value":100,"notes":"Sells $80-150 used on eBay"}]"""
+PRICING RULES:
+- All values MUST be plain integers (no $, no text)
+- Base on ACTUAL used market values from eBay sold listings
+- If no lots found, return: []
+- Return ONLY a JSON array, no markdown
 
-    async def generate():
-        import asyncio
-        from concurrent.futures import ThreadPoolExecutor
-        loop = asyncio.get_event_loop()
-        executor = ThreadPoolExecutor(max_workers=1)
-
-        def call_gemini(chunk_text, i):
-            return model.generate_content(
-                [prompt_template, f"\nCATALOG SECTION {i+1}/{total_chunks}:\n{chunk_text[:10000]}"],
-                generation_config={"max_output_tokens": 16000}
-            )
-
-        total_chunks = len(page_chunks)
-        all_items = []
-        for i, chunk_text in enumerate(page_chunks):
-            try:
-                response = await loop.run_in_executor(executor, call_gemini, chunk_text, i)
-                raw = response.text.strip()
-                if raw.startswith("```"):
-                    raw = raw.split("\n", 1)[1].rsplit("\n", 1)[0].strip()
-                    if raw.startswith("json"):
-                        raw = raw[4:].strip()
-                try:
-                    items = json.loads(raw)
-                except Exception:
-                    from json_repair import repair_json
-                    items = json.loads(repair_json(raw))
-                base_idx = len(all_items)
-                all_items.extend(items)
-                page_start = i * chunk_size + 1
-                page_end = min((i + 1) * chunk_size, total_pages)
-                for item in items:
-                    item["_page_start"] = page_start
-                    item["_page_end"] = page_end
-                    if scan_id:
-                        item["_page_img"] = f"/api/auction/page-image/{scan_id}/{base_idx + items.index(item)}"
-                yield {
-                    "data": json.dumps({
-                        "chunk": i + 1,
-                        "total_chunks": total_chunks,
-                        "items": items,
-                        "scan_id": scan_id,
-                        "done": False
-                    })
-                }
-            except Exception as e:
-                err_msg = str(e)
-                print(f"Chunk {i+1} error: {err_msg}")
-                # Only report error if it's not just an empty/no-lots response
-                if 'JSONDecodeError' not in type(e).__name__ or '[]' not in err_msg:
-                    yield {"data": json.dumps({"chunk": i+1, "total_chunks": total_chunks, "items": [], "done": False})}
-                else:
-                    yield {"data": json.dumps({"chunk": i+1, "total_chunks": total_chunks, "items": [], "done": False})}
-            await asyncio.sleep(0.1)
-
-        yield {"data": json.dumps({"done": True, "total": len(all_items), "scan_id": scan_id})}
-
-    return EventSourceResponse(generate())
-
-
-class ScanAuction(BaseModel):
-    url: str
-
-@app.post("/api/auction/scan")
-async def scan_auction(body: ScanAuction):
-    try:
-        import uuid, threading
-        session_id = str(uuid.uuid4())[:8]
-        # Store session first
-        supabase.table("auction_sessions").insert({
-            "session_id":    session_id,
-            "source_url":    body.url,
-            "label":         body.url.split("/")[-1][:40] or "Scan",
-            "item_count":    0,
-            "status":        "active",
-        }).execute()
-
-        def run_scan():
-            try:
-                from auction_scraper import scrape_and_store
-                ids = scrape_and_store(body.url, session_id, [1])
-                supabase.table("auction_sessions").update({
-                    "item_count": len(ids),
-                }).eq("session_id", session_id).execute()
-                # Enrich in same thread (auction_worker will handle it if deployed)
-                try:
-                    from auction_scraper import enrich_values
-                    enrich_values(ids)
-                except Exception as e:
-                    print(f"Enrich error: {e}")
-            except Exception as e:
-                print(f"Scan error: {e}")
-
-        t = threading.Thread(target=run_scan, daemon=True)
-        t.start()
-        return {"ok": True, "session_id": session_id, "count": 0}
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
-@app.get("/api/auction/sessions")
-async def get_sessions():
-    try:
-        res = supabase.table("auction_sessions").select("*").order("created_at", desc=True).execute()
-        return JSONResponse(res.data or [])
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
-@app.get("/api/auction/items/{session_id}")
-async def get_items(session_id: str):
-    try:
-        res = supabase.table("auction_items").select("*").eq("session_id", session_id).order("scraped_at").execute()
-        return JSONResponse(res.data or [])
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
-@app.patch("/api/auction/items/{item_id}/favorite")
-async def toggle_favorite(item_id: str):
-    try:
-        cur = supabase.table("auction_items").select("favorited").eq("id", item_id).single().execute()
-        new_val = not bool(cur.data.get("favorited", False))
-        supabase.table("auction_items").update({"favorited": new_val}).eq("id", item_id).execute()
-        return {"favorited": new_val}
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
-@app.patch("/api/auction/sessions/{session_id}/archive")
-async def archive_session(session_id: str):
-    try:
-        supabase.table("auction_sessions").update({"status": "archived"}).eq("session_id", session_id).execute()
-        return {"ok": True}
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
-# ── DOWNLOAD: eBay CSV ────────────────────────────────────────── #
-
-@app.get("/api/export/ebay-csv")
-async def export_ebay_csv():
-    try:
-        res = supabase.table("listings").select("*").neq("status", "archived").execute()
-        listings = res.data or []
-
-        output = io.StringIO()
-        output.write('#INFO,Version=0.0.2,Template= eBay-draft-listings-template_US,,,,,,,,\n')
-        output.write('#INFO Action and Category ID are required fields.,,,,,,,,,,\n')
-        output.write('#INFO,,,,,,,,,,\n')
-        output.write('Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition ID,Description,Format\n')
-        writer = csv.writer(output, quoting=csv.QUOTE_ALL)
-
-        for l in listings:
-            cond = str(l.get("condition") or "used").strip().lower()
-            if cond not in ("new", "used"):
-                cond = "used"
-            cond_id = "1000" if cond == "new" else "3000"
-            pid = str(l.get("photo_id","") or "")
-            if pid:
-                try:
-                    gp = supabase.table("group_photos").select("group_id").eq("photo_id", pid).execute()
-                    if gp.data and gp.data[0].get("group_id"):
-                        gid = gp.data[0]["group_id"]
-                        all_p = supabase.table("group_photos").select("photo_id").eq("group_id", gid).execute()
-                        urls = [photo_url(p["photo_id"]) for p in (all_p.data or []) if p.get("photo_id")]
-                        pic = "|".join(urls[:12]) if urls else photo_url(pid)
-                    else:
-                        pic = photo_url(pid)
-                except Exception:
-                    pic = photo_url(pid)
-            else:
-                pic = ""
-            writer.writerow([
-                "Draft", "",
-                "26261",
-                str(l.get("title",""))[:80],
-                "",
-                f"{max(float(l.get('price',0) or 0), 1.00):.2f}",
-                str(int(l.get("quantity",1) or 1)),
-                pic, cond_id,
-                EBAY_DESCRIPTION,
-                "FixedPrice",
-            ])
-
-        csv_bytes = output.getvalue().encode("utf-8")
-        fn = f"listerai_ebay_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
-        return StreamingResponse(io.BytesIO(csv_bytes),
-            media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={fn}"})
-    except Exception as e:
-        raise HTTPException(500, str(e))
-
-
-# ── API: PARTS LOOKUP ────────────────────────────────────────── #
-
-@app.get("/api/parts/photos")
-async def get_unmatched_photos():
-    """Get all photos from storage that haven't been matched yet."""
+Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP meter with case","estimate_low":80,"estimate_high":150,"your_value":100,"notes":"Sells $80-150 used on eBay"}]"""Get all photos from storage that haven't been matched yet."""
     try:
         # Get all files in part-photos bucket
         res = supabase.storage.from_("part-photos").list()
