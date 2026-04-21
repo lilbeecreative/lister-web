@@ -61,8 +61,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .filter-pill.active{background:#412402;border-color:#854F0B;color:#FAC775;}
 .filter-pill.active-blue{background:#1e3a5f;border-color:#1d4ed8;color:#93c5fd;}
 .table-wrap{background:#1e2535;border:1px solid #2d3348;border-radius:12px;overflow:hidden;}
-.tbl-head{display:grid;grid-template-columns:64px 90px 1fr 100px 48px 32px;padding:12px 18px;background:#161b28;border-bottom:1px solid #2d3348;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;align-items:center;gap:10px;}
-.tbl-row{display:grid;grid-template-columns:64px 90px 1fr 100px 48px 32px;padding:12px 18px;border-bottom:1px solid #161b28;align-items:center;font-size:13px;gap:12px;transition:background .1s;min-height:80px;}
+.tbl-head{display:grid;grid-template-columns:64px 90px 1fr 100px 48px 60px 60px;padding:12px 18px;background:#161b28;border-bottom:1px solid #2d3348;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;align-items:center;gap:10px;}
+.tbl-row{display:grid;grid-template-columns:64px 90px 1fr 100px 48px 60px 60px;padding:12px 18px;border-bottom:1px solid #161b28;align-items:center;font-size:13px;gap:12px;transition:background .1s;min-height:80px;}
 .tbl-row:last-child{border-bottom:none;}
 .tbl-row:hover{background:#242b3d;}
 .tbl-row.hv{background:rgba(239,159,39,.05);border-left:4px solid #EF9F27;padding-left:14px;}
@@ -183,6 +183,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div>Item</div>
           <div>Est. value</div>
           <div>Watch</div>
+          <div></div>
           <div></div>
         </div>
         <div id="items-body">
@@ -451,6 +452,11 @@ async function exportExcel() {
   a.href = URL.createObjectURL(blob);
   a.download = (scanName||'auction_scan') + '.xlsx';
   a.click();
+}
+
+function openGemini(title, imgUrl) {
+  var prompt = 'I am evaluating this auction item for resale. Research and give me:\\n\\nItem: ' + title + '\\n\\n1. Current eBay sold prices\\n2. Typical resale value range\\n3. Key value factors\\n4. Buy recommendation';
+  window.open('https://gemini.google.com/app?q=' + encodeURIComponent(prompt), '_blank', 'noopener,width=1000,height=800');
 }
 
 async function startUrlScan() {
