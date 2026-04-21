@@ -311,7 +311,7 @@ async def deep_research_full(request: Request):
         if not images:
             return title
         try:
-            id_prompt = f"Look at this auction item image carefully. The listing title says: {title}. Identify the exact make, model number, and condition. Look for nameplates, labels, screens. Return one line with the most accurate description possible. If unsure, return the original title."
+            id_prompt = f"You are an auction appraiser. Use BOTH the image AND the listing title equally to identify this item. Title: {title}. Look at the image for: exact model numbers on labels/nameplates, brand logos, condition, visible accessories. Combine both sources and return one precise description. Do not ignore the title — it may contain info not visible in the image."
             parts = [id_prompt] + [{"mime_type": "image/jpeg", "data": img} for img in images[:1]]
             r = model.generate_content(parts, generation_config={"max_output_tokens": 150})
             result = r.text.strip().strip('"')
