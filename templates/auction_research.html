@@ -176,8 +176,9 @@ function buildCard(item, res, idx) {
     var recClass = res.recommendation === 'buy' ? 'rec-buy' : res.recommendation === 'pass' ? 'rec-pass' : 'rec-watch';
     var recLabel = res.recommendation === 'buy' ? 'Strong buy' : res.recommendation === 'pass' ? 'Pass' : 'Watch';
     var compsHtml = (res.comps||[]).map(function(c) {
-      var ebaySearch = 'https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent(c.title||'') + '&LH_Sold=1&LH_Complete=1';
-      return '<div class="comp-row" style="cursor:pointer" onclick="window.open(\'' + ebaySearch + '\',\'_blank\',\'noopener,width=1200,height=800\')"><div class="comp-title">' + esc(c.title||'') + '</div><div class="comp-price">' + (c.price ? '$' + parseInt(c.price).toLocaleString() : 'N/A') + '</div><div class="comp-date">' + esc(c.date||'') + '</div><div class="comp-src">' + esc(c.source||'eBay') + '</div></div>';
+      var itemTitle = item.title || '';
+      var ebaySearch = 'https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent(itemTitle) + '&LH_Sold=1&LH_Complete=1';
+      return '<div class="comp-row" style="cursor:pointer" onclick="window.open(\'' + ebaySearch + '\',\'_blank\',\'noopener,width=1200,height=800\')"><div class="comp-title">' + esc(c.title||'') + '</div><div class="comp-price">' + (c.price ? '$' + parseInt(c.price).toLocaleString() : 'N/A') + '</div><div class="comp-date">' + esc(c.date||'') + '</div><div class="comp-src">eBay Sold ↗</div></div>';
     }).join('');
     var pageImg = item._page_img || '';
     var imgHtml = pageImg
