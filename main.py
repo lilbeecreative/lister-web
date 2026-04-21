@@ -624,7 +624,11 @@ PRICING RULES:
 - If no lots found, return: []
 - Return ONLY a JSON array, no markdown
 
-Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP meter with case","estimate_low":80,"estimate_high":150,"your_value":100,"notes":"Sells $80-150 used on eBay"}]"""Get all photos from storage that haven't been matched yet."""
+Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP meter with case","estimate_low":80,"estimate_high":150,"your_value":100,"notes":"Sells $80-150 used on eBay"}]"""
+
+
+def get_unmatched_photos():
+    """Get all photos from storage that haven't been matched yet."""
     try:
         # Get all files in part-photos bucket
         res = supabase.storage.from_("part-photos").list()
