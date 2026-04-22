@@ -469,7 +469,8 @@ async def deep_research_full(request: Request):
             # Preserve brand names with quotes for precision
             import re as _re
             _words = clean.split()
-            search_query = clean if len(_words) <= 3 else clean
+            _w = clean.split()
+            search_query = '"' + clean + '"' if len(_w) >= 3 else clean if len(_words) <= 3 else clean
             print(f"   SerpAPI eBay sold search: '{search_query}'")
             serp_results = serp_ebay_sold(search_query, serp_key)
             if serp_results:
