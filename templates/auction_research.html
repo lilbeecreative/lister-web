@@ -84,6 +84,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div style="display:flex;gap:8px;">
     <button class="btn-ghost" id="export-btn" onclick="exportResults()" style="display:none;">Export results</button>
+    <button class="btn-ghost" id="share-btn" onclick="shareResults()" style="display:none;">🔗 Share results</button>
     <button class="btn-amber" id="start-btn" onclick="startResearch()" disabled>Start research</button>
   </div>
 </div>
@@ -137,6 +138,27 @@ function init() {
   document.getElementById('page-sub').textContent = watchItems.length + ' items to research';
   document.getElementById('start-btn').disabled = false;
   renderCards();
+}
+
+function tryLoadShared() {
+  var parts = window.location.pathname.split('/');
+  var shareId = parts[parts.length - 1];
+  // Only treat as share ID if it's 8 hex chars (uuid short)
+  if (!/^[a-f0-9]{8}$/.test(shareId)) return false;
+  fetch('/api/auction/load-research/' + shareId)
+    .then(function(r){ if(!r.ok) throw new Error('not found'); return r.json(); })
+    .then(function(d){
+      watchItems = d.items || [];
+      results = d.results || {};
+      document.getElementById('page-sub').textContent = watchItems.length + ' items (shared view)';
+      document.getElementById('start-btn').disabled = true;
+      document.getElementById('start-btn').style.display = 'none';
+      document.getElementById('export-btn').style.display = '';
+      document.getElementById('empty-msg').style.display = 'none';
+      renderCards();
+    })
+    .catch(function(){ init(); });
+  return true;
 }
 
 function handlePdf(input) {
@@ -331,6 +353,35 @@ function saveResults() {
     return item;
   });
   localStorage.setItem('auction_scans', JSON.stringify(scans));
+  // Push to Supabase for sharing
+  var shareId = localStorage.getItem('auction_share_id_' + scanId);
+  fetch('/api/auction/save-research', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      share_id: shareId || undefined,
+      title: scan.name || scanId,
+      items: watchItems,
+      results: results
+    })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.share_id) {
+      localStorage.setItem('auction_share_id_' + scanId, d.share_id);
+      document.getElementById('share-btn').style.display = '';
+    }
+  }).catch(function(){});
+}
+
+function shareResults() {
+  var scanId = localStorage.getItem('auction_research_scan_id');
+  var shareId = scanId ? localStorage.getItem('auction_share_id_' + scanId) : null;
+  if (!shareId) { alert('Save not ready yet — try again in a moment'); return; }
+  var url = window.location.origin + '/auction/research/' + shareId;
+  navigator.clipboard.writeText(url).then(function(){
+    var btn = document.getElementById('share-btn');
+    btn.textContent = '✓ Link copied!';
+    setTimeout(function(){ btn.textContent = '🔗 Share results'; }, 2500);
+  }).catch(function(){ prompt('Copy this link:', url); });
 }
 
 async function exportResults() {

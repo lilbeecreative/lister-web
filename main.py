@@ -507,6 +507,43 @@ weight fields: use null if truly unknown"""
     return EventSourceResponse(generate())
 
 
+
+@app.post("/api/auction/save-research")
+async def save_research(request: Request):
+    import json, uuid
+    body = await request.json()
+    share_id = body.get("share_id") or str(uuid.uuid4())[:8]
+    title    = body.get("title", "Auction Research")
+    items    = body.get("items", [])
+    results  = body.get("results", {})
+    try:
+        supabase.table("auction_research_sessions").upsert({
+            "share_id": share_id,
+            "title":    title,
+            "items":    json.dumps(items),
+            "results":  json.dumps(results),
+        }, on_conflict="share_id").execute()
+    except Exception as e:
+        raise HTTPException(500, f"Save failed: {e}")
+    return {"share_id": share_id}
+
+
+@app.get("/api/auction/load-research/{share_id}")
+async def load_research(share_id: str):
+    import json
+    try:
+        row = supabase.table("auction_research_sessions")             .select("*").eq("share_id", share_id).single().execute()
+        data = row.data
+        return {
+            "share_id": data["share_id"],
+            "title":    data.get("title", ""),
+            "items":    json.loads(data.get("items", "[]")),
+            "results":  json.loads(data.get("results", "{}")),
+        }
+    except Exception as e:
+        raise HTTPException(404, f"Session not found: {e}")
+
+
 @app.post("/api/auction/research-export")
 async def research_export(request: Request):
     import io, json
