@@ -879,7 +879,7 @@ async def get_page_image(scan_id: str, img_index: int):
                     if base_image and base_image.get("image") and len(base_image["image"]) > 8000:
                         all_images.append(base_image)
                 except Exception as search_err:
-            print(f"   Search grounding failed: {search_err}")
+                    print(f"   Search grounding failed: {search_err}")
                     pass
         doc.close()
         if not all_images or img_index < 0 or img_index >= len(all_images):
@@ -998,7 +998,7 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
                 try:
                     items = json.loads(raw)
                 except Exception as search_err:
-            print(f"   Search grounding failed: {search_err}")
+                    print(f"   Search grounding failed: {search_err}")
                     from json_repair import repair_json
                     items = json.loads(repair_json(raw))
                 base_idx = len(all_items)
@@ -1108,7 +1108,7 @@ If no text visible or no matches, still return the JSON with empty arrays."""
                 response = model.generate_content([prompt, img])
                 raw = response.text or ""
             except Exception as search_err:
-            print(f"   Search grounding failed: {search_err}")
+                print(f"   Search grounding failed: {search_err}")
                 try:
                     from google import genai as gc
                     from google.genai import types as gt
