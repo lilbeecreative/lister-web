@@ -386,10 +386,53 @@ async def deep_research_full(request: Request):
         t = ' '.join(t.split()).strip().strip(',').strip()
         return t
 
+    def serp_ebay_sold(query, serp_key):
+        """
+        Call SerpAPI to get eBay completed/sold listings for a query.
+        Returns a list of dicts with title, price, date, condition, url.
+        """
+        import urllib.request, urllib.parse, json as _json
+        params = urllib.parse.urlencode({
+            "engine": "ebay",
+            "ebay_domain": "ebay.com",
+            "_nkw": query,
+            "LH_Sold": "1",
+            "LH_Complete": "1",
+            "LH_ItemCondition": "3000",  # used
+            "_sop": "13",  # sort by recently sold
+            "api_key": serp_key,
+        })
+        url = f"https://serpapi.com/search?{params}"
+        try:
+            with urllib.request.urlopen(url, timeout=10) as r:
+                data = _json.loads(r.read())
+            results = []
+            for item in (data.get("organic_results") or [])[:8]:
+                price_raw = item.get("price", {})
+                price = price_raw.get("extracted") or price_raw.get("raw") or 0
+                try:
+                    price = float(str(price).replace("$","").replace(",",""))
+                except Exception:
+                    price = 0
+                if price > 0:
+                    results.append({
+                        "title": item.get("title","")[:80],
+                        "price": price,
+                        "condition": item.get("condition","Used"),
+                        "date": item.get("selling_states",{}).get("sold_date","") or "",
+                        "url": item.get("link",""),
+                    })
+            return results
+        except Exception as e:
+            print(f"   SerpAPI error: {e}")
+            return []
+
     def research_item(item, images):
+        import os as _os
         title = item.get("title", "")
         lot = item.get("lot", "")
         current_val = item.get("your_value", 0) or 0
+        serp_key = _os.getenv("SERP_API_KEY", "")
 
         # Clean title before research — remove address/company junk
         clean = clean_title(title)
@@ -401,12 +444,39 @@ async def deep_research_full(request: Request):
         if identified != clean:
             print(f"Lot {lot} image ID: {identified}")
 
+        # Step 2: SerpAPI eBay sold lookup (if key available)
+        serp_results = []
+        serp_context = ""
+        if serp_key:
+            search_query = identified if identified != clean else clean
+            print(f"   SerpAPI eBay sold search: '{search_query}'")
+            serp_results = serp_ebay_sold(search_query, serp_key)
+            if serp_results:
+                prices = [r["price"] for r in serp_results]
+                avg = sum(prices) / len(prices)
+                low = min(prices)
+                high = max(prices)
+                lines = [f"  - ${r['price']:.0f} — {r['title']} ({r['condition']}) {r['date']}" for r in serp_results]
+                serp_context = f"""
+REAL EBAY SOLD DATA (from live eBay completed listings — use this as primary pricing source):
+Found {len(serp_results)} sold comps: low ${low:.0f}, high ${high:.0f}, avg ${avg:.0f}
+{chr(10).join(lines)}
+
+Base your revised_value on these actual sold prices. Do not override this with guesses.
+"""
+                print(f"   SerpAPI: {len(serp_results)} comps, avg ${avg:.0f}, range ${low:.0f}-${high:.0f}")
+            else:
+                serp_context = "
+No eBay sold comps found via SerpAPI — use web search grounding for pricing.
+"
+                print(f"   SerpAPI: no results for '{search_query}'")
+
         prompt = f"""You are an expert resale market researcher and appraiser. Research this auction item thoroughly.
 
 Item: Lot #{lot} — {clean}
 Image-identified model: {identified}
 Current estimate: ${current_val}
-
+{serp_context}
 IMPORTANT — SEARCH TERM CONSTRUCTION:
 Before searching, extract just the brand name and model number from the item title.
 Strip out: company addresses, "GmbH", "Inc", street names, loading fees, lot numbers, and any other non-product text.
