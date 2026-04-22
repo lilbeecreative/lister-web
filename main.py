@@ -405,8 +405,6 @@ async def deep_research_full(request: Request):
             "_nkw": query,
             "LH_Sold": "1",
             "LH_Complete": "1",
-            "LH_ItemCondition": "3000",  # used
-            "_sop": "13",  # sort by recently sold
             "api_key": serp_key,
         })
         url = f"https://serpapi.com/search?{params}"
