@@ -172,7 +172,7 @@ async def export_ebay_csv():
             str(int(item.get("quantity") or 1)),
             pic,
             cond_id,
-            "",
+            str(item.get("description","") or ""),
             "FixedPrice",
         ])
 
