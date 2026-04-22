@@ -176,6 +176,44 @@ function buildCard(item, res, idx) {
     var recClass = res.recommendation === 'buy' ? 'rec-buy' : res.recommendation === 'pass' ? 'rec-pass' : 'rec-watch';
     var recLabel = res.recommendation === 'buy' ? 'Strong buy' : res.recommendation === 'pass' ? 'Pass' : 'Watch';
 
+    // ── Pricing tier badge ──
+    var tier = res.pricing_tier || '';
+    var tierHtml = '';
+    if (tier === 'SOLD_COMPS') {
+      tierHtml = '<span style="background:#052e16;color:#4ade80;border:1px solid #166534;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.4px;">✓ SOLD COMPS</span>';
+    } else if (tier === 'ASKING_PRICES') {
+      tierHtml = '<span style="background:#422006;color:#fb923c;border:1px solid #9a3412;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.4px;">⚠ ASKING PRICES</span>';
+    } else if (tier === 'MSRP_ONLY') {
+      tierHtml = '<span style="background:#450a0a;color:#f87171;border:1px solid #991b1b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.4px;">⚠ MSRP ONLY</span>';
+    } else if (tier === 'COMPARABLE_ITEMS') {
+      tierHtml = '<span style="background:#1e1b4b;color:#a5b4fc;border:1px solid #3730a3;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.4px;">~ COMPARABLE</span>';
+    } else if (tier === 'NO_DATA') {
+      tierHtml = '<span style="background:#1e2535;color:#64748b;border:1px solid #2d3348;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.4px;">— NO DATA</span>';
+    }
+
+    // ── Pricing flag warning ──
+    var flagHtml = res.pricing_flag ? '<div style="background:#1c1007;border:1px solid #78350f;border-radius:6px;padding:7px 11px;color:#fb923c;font-size:11px;margin-top:6px;">⚠️ ' + esc(res.pricing_flag) + '</div>' : '';
+    var compNoteHtml = res.comp_note ? '<div style="background:#0f172a;border:1px solid #1e3a5f;border-radius:6px;padding:7px 11px;color:#93c5fd;font-size:11px;margin-top:4px;">ℹ️ ' + esc(res.comp_note) + '</div>' : '';
+
+    // ── Liquidity score ──
+    var liq = parseInt(res.liquidity_score) || 0;
+    var liqColor = liq >= 4 ? '#4ade80' : liq === 3 ? '#facc15' : '#f87171';
+    var liqDots = '';
+    for (var d = 1; d <= 5; d++) {
+      liqDots += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px;background:' + (d <= liq ? liqColor : '#2d3348') + ';"></span>';
+    }
+    var liqHtml = liq > 0 ? '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;"><span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.5px;text-transform:uppercase;">Liquidity</span><span>' + liqDots + '</span><span style="font-size:11px;color:#94a3b8;">' + liq + '/5' + (res.liquidity_note ? ' — ' + esc(res.liquidity_note) : '') + '</span></div>' : '';
+
+    // ── Shipping weight ──
+    var weightHtml = '';
+    if (res.weight_item_lbs || res.weight_packaged_lbs) {
+      var wStr = '';
+      if (res.weight_item_lbs) wStr += res.weight_item_lbs + ' lbs item';
+      if (res.weight_packaged_lbs) wStr += (wStr ? ' / ' : '') + res.weight_packaged_lbs + ' lbs packaged';
+      if (res.weight_note) wStr += ' <span style="color:#64748b;">(' + esc(res.weight_note) + ')</span>';
+      weightHtml = '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;"><span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.5px;text-transform:uppercase;">Shipping</span><span style="font-size:11px;color:#94a3b8;">📦 ' + wStr + '</span></div>';
+    }
+
     var pageImg = item._page_img || '';
     var imgHtml = pageImg
       ? '<img src="' + esc(pageImg) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=&quot;none&quot;">'
@@ -184,7 +222,8 @@ function buildCard(item, res, idx) {
     bodyHtml = '<div class="rc-body">' +
       '<div class="rc-img-col"><div class="rc-img-box">' + imgHtml + '</div><div class="rc-img-label">' + imgLabel + '</div></div>' +
       '<div class="rc-detail">' +
-        '<div><div class="section-lbl">Revised estimate</div><div class="value-row"><span class="old-val">$' + (item.your_value||0).toLocaleString() + '</span><span class="new-val">$' + (res.revised_value||0).toLocaleString() + '</span><span class="conf-badge ' + confClass + '">' + conf.charAt(0).toUpperCase() + conf.slice(1) + ' confidence</span></div></div>' +
+        '<div><div class="section-lbl">Revised estimate</div><div class="value-row" style="align-items:center;gap:10px;flex-wrap:wrap;"><span class="old-val">$' + (item.your_value||0).toLocaleString() + '</span><span class="new-val">$' + (res.revised_value||0).toLocaleString() + '</span><span class="conf-badge ' + confClass + '">' + conf.charAt(0).toUpperCase() + conf.slice(1) + ' confidence</span>' + tierHtml + '</div>' + flagHtml + compNoteHtml + '</div>' +
+        (liqHtml || weightHtml ? '<div>' + liqHtml + weightHtml + '</div>' : '') +
         '<div><a href="https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent((item.title||'').replace(/\s*,?\s*QTY\s*\(?\d*\)?/gi,'').replace(/\s*,?\s*\(\d+\)/g,'').replace(/,\s*$/,'').trim()) + '&LH_Sold=1&LH_Complete=1' + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#1e2535;border:1px solid #2d3348;border-radius:8px;padding:9px 14px;color:#94a3b8;font-size:12px;font-weight:600;text-decoration:none;">Search eBay Sold Listings ↗</a></div>' +
         (res.image_notes ? '<div><div class="section-lbl">Image analysis</div><div class="image-notes">' + esc(res.image_notes) + '</div></div>' : '') +
         (res.rec_reason||res.notes ? '<div class="rec-box ' + recClass + '">' + recLabel + ' — ' + esc(res.rec_reason||res.notes||'') + '</div>' : '') +
