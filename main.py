@@ -101,8 +101,8 @@ async def get_listings():
                     for pid, gid in pid_to_gid.items():
                         group_photo_map[pid] = gid_to_photos.get(gid, [pid])
             except Exception as search_err:
-            print(f"   Search grounding failed: {search_err}")
-                pass
+                print(f"   Search grounding failed: {search_err}")
+
 
         for l in listings:
             pid = str(l.get("photo_id") or "")
