@@ -414,7 +414,9 @@ async def deep_research_full(request: Request):
             with urllib.request.urlopen(url, timeout=10) as r:
                 data = _json.loads(r.read())
             results = []
-            for item in (data.get("organic_results") or [])[:8]:
+            print(f"   SerpAPI response keys: {list(data.keys())}")
+            results_list = data.get("organic_results") or data.get("ebay_results") or data.get("shopping_results") or []
+            for item in results_list[:8]:
                 price_raw = item.get("price", {})
                 price = price_raw.get("extracted") or price_raw.get("raw") or 0
                 try:
