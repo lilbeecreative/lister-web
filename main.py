@@ -396,7 +396,7 @@ weight fields: use null if truly unknown"""
         # Use Gemini with search grounding if available
         try:
             from google.generativeai import types as gtypes
-            search_tool = gtypes.Tool(google_search_retrieval=gtypes.GoogleSearchRetrieval())
+            search_tool = gtypes.Tool(google_search_retrieval={"dynamic_retrieval_config": {"mode": "MODE_DYNAMIC"}})
             parts = [prompt]
             for img_bytes in images[:2]:
                 parts.append({"mime_type": "image/jpeg", "data": img_bytes})
