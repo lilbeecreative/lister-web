@@ -505,11 +505,18 @@ TIER 2 — ACTIVE ASKING PRICES (only if fewer than 3 sold comps found):
 - Dealer/retailer sites, Google Shopping
 Label these clearly as ASKING prices, not confirmed sales.
 
-TIER 3 — ORIGINAL MSRP (only if tiers 1 and 2 both fail):
-- Manufacturer original retail price, catalog pricing
-Label clearly as MSRP — resale is typically 20-60% of original retail.
+TIER 3 — INDUSTRIAL DEALER ASKING PRICES (only if no sold comps found):
+- Reputable industrial surplus dealers: Maverick Industrial, surplus.net, radwell.com, labx.com
+- For specialized industrial/laser/scientific equipment, dealer asking prices ARE the market
+- Do NOT apply a 20-60% discount to dealer prices for specialized equipment
+- Dealer prices for rare industrial equipment reflect actual resale value, not inflated retail
+Label clearly as ASKING PRICE — but treat as reliable market signal for specialty equipment.
 
-TIER 4 — COMPARABLE ITEMS (if exact item not found at any tier):
+TIER 4 — ORIGINAL MSRP (last resort):
+- Manufacturer original retail price only if no dealer prices found
+Label clearly as MSRP — resale is typically 20-60% of original retail for common items.
+
+TIER 5 — COMPARABLE ITEMS (if exact item not found at any tier):
 - Same category, similar specs, different brand or model
 Label clearly and note what item was used as proxy.
 
