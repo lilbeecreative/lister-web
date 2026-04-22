@@ -466,9 +466,7 @@ Base your revised_value on these actual sold prices. Do not override this with g
 """
                 print(f"   SerpAPI: {len(serp_results)} comps, avg ${avg:.0f}, range ${low:.0f}-${high:.0f}")
             else:
-                serp_context = "
-No eBay sold comps found via SerpAPI — use web search grounding for pricing.
-"
+                serp_context = "No eBay sold comps found via SerpAPI — use web search grounding for pricing."
                 print(f"   SerpAPI: no results for '{search_query}'")
 
         prompt = f"""You are an expert resale market researcher and appraiser. Research this auction item thoroughly.
