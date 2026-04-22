@@ -131,6 +131,53 @@ class UpdateField(BaseModel):
     value: object
 
 
+
+@app.get("/api/export/ebay-csv")
+async def export_ebay_csv():
+    import csv, io
+    from fastapi.responses import StreamingResponse
+    try:
+        res = supabase.table("listings").select(
+            "title,description,price,price_used,price_new,quantity,condition,listing_type,status"
+        ).neq("status", "archived").execute()
+        items = res.data or []
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # eBay flat file compatible headers
+    writer.writerow([
+        "Title", "Description", "StartPrice", "BuyItNowPrice",
+        "Quantity", "Condition", "ListingType", "Status"
+    ])
+
+    for item in items:
+        cond = str(item.get("condition") or "used").strip().lower()
+        ebay_condition = "Used" if cond == "used" else "New"
+        listing_type = str(item.get("listing_type") or "fixed").strip().lower()
+        ebay_listing = "FixedPriceItem" if listing_type == "fixed" else "Chinese"
+        price = item.get("price") or item.get("price_used") or 0
+        writer.writerow([
+            item.get("title", ""),
+            item.get("description", ""),
+            round(float(price), 2),
+            round(float(item.get("price_new") or price), 2),
+            int(item.get("quantity") or 1),
+            ebay_condition,
+            ebay_listing,
+            item.get("status", ""),
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=ebay-listings.csv"}
+    )
+
+
 @app.get("/api/stats")
 async def get_stats():
     try:
