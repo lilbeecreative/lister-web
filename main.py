@@ -409,8 +409,31 @@ weight fields: use null if truly unknown"""
             for img_bytes in images[:2]:
                 parts.append({"mime_type": "image/jpeg", "data": img_bytes})
             response = model.generate_content(parts, generation_config={"max_output_tokens": 1500})
+        # Extract AI overview + sources from grounding metadata
+        ai_overview_html = ""
+        grounding_sources = []
+        try:
+            candidates = response.candidates
+            if candidates:
+                gm = getattr(candidates[0], "grounding_metadata", None)
+                if gm:
+                    sep = getattr(gm, "search_entry_point", None)
+                    if sep:
+                        ai_overview_html = getattr(sep, "rendered_content", "") or ""
+                    chunks = getattr(gm, "grounding_chunks", []) or []
+                    for chunk in chunks:
+                        web = getattr(chunk, "web", None)
+                        if web:
+                            grounding_sources.append({
+                                "title": getattr(web, "title", ""),
+                                "uri":   getattr(web, "uri", ""),
+                            })
+        except Exception as gm_err:
+            print(f"   Grounding metadata error: {gm_err}")
+
         raw = response.text.strip()
         print(f"   Deep research raw response (lot {lot}): {raw[:300]}")
+        print(f"   AI overview chars: {len(ai_overview_html)}, sources: {len(grounding_sources)}")
         # Strip markdown fences
         if "```" in raw:
             raw = raw.split("```")[1]
