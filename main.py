@@ -66,6 +66,17 @@ async def dashboard_v2(request: Request):
         "Content-Security-Policy": "default-src * blob: data:; script-src * blob: data: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * blob: data:;"
     })
 
+@app.get("/portal", response_class=HTMLResponse)
+async def portal(request: Request):
+    import os
+    with open(os.path.join(os.path.dirname(__file__), "templates", "portal.html")) as f:
+        html = f.read()
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(content=html, headers={
+        "Content-Security-Policy": "default-src * blob: data:; script-src * blob: data: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * blob: data:;"
+    })
+
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -455,7 +466,10 @@ async def deep_research_full(request: Request):
         serp_results = []
         serp_context = ""
         if serp_key:
-            search_query = clean
+            # Preserve brand names with quotes for precision
+            import re as _re
+            _words = clean.split()
+            search_query = clean if len(_words) <= 3 else clean
             print(f"   SerpAPI eBay sold search: '{search_query}'")
             serp_results = serp_ebay_sold(search_query, serp_key)
             if serp_results:
