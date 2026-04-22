@@ -618,7 +618,7 @@ weight fields: use null if truly unknown"""
             print(f"   Grounding metadata error: {gm_err}")
 
         raw = response.text.strip()
-        print(f"   Deep research raw response (lot {lot}): {raw[:300]}")
+        print(f"   Deep research raw response (lot {lot}): {raw[:800]}")
         print(f"   AI overview chars: {len(ai_overview_html)}, sources: {len(grounding_sources)}")
         # Strip markdown fences
         if "```" in raw:
