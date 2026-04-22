@@ -470,16 +470,18 @@ async def deep_research_full(request: Request):
             import re as _re
             _words = clean.split()
             _w = clean.split()
-            search_query = '"' + clean + '"' if len(_w) >= 3 else clean if len(_words) <= 3 else clean
+            search_query = '"' + clean + '"' if len(_w) >= 3 else clean
             print(f"   SerpAPI eBay sold search: '{search_query}'")
             serp_results = serp_ebay_sold(search_query, serp_key)
-            # Sanity check — discard SerpAPI results if avg is less than 15% of current estimate
-        if serp_results:
+            # Discard if avg is less than 15% of current estimate
+            if serp_results:
                 prices = [r["price"] for r in serp_results]
-                _avg = sum(prices)/len(prices)
+                _avg = sum(prices) / len(prices)
                 if current_val > 0 and _avg < current_val * 0.15:
                     print(f"   SerpAPI results discarded — avg ${_avg:.0f} too low vs estimate ${current_val}")
                     serp_results = []
+            if serp_results:
+                prices = [r["price"] for r in serp_results]
                 avg = sum(prices) / len(prices)
                 low = min(prices)
                 high = max(prices)
