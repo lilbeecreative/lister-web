@@ -395,16 +395,40 @@ weight fields: use null if truly unknown"""
 
         # Use Gemini with search grounding if available
         try:
-            from google.generativeai import types as gtypes
-            search_tool = {"google_search": {}}
-            parts = [prompt]
+            from google import genai as _gc
+            from google.genai import types as _gt
+            _client = _gc.Client(api_key=gemini_key)
+            _parts = [prompt]
             for img_bytes in images[:2]:
-                parts.append({"mime_type": "image/jpeg", "data": img_bytes})
-            response = model.generate_content(
-                parts,
-                tools=[search_tool],
-                generation_config={"max_output_tokens": 1500}
+                _parts.append(_gt.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"))
+            _cfg = _gt.GenerateContentConfig(
+                tools=[_gt.Tool(google_search=_gt.GoogleSearch())],
+                max_output_tokens=1500
             )
+            _resp = _client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=_parts,
+                config=_cfg
+            )
+            response = _resp
+            # Extract grounding from new SDK response
+            try:
+                gm = _resp.candidates[0].grounding_metadata
+                if gm and gm.search_entry_point:
+                    ai_overview_html = gm.search_entry_point.rendered_content or ""
+                for chunk in (gm.grounding_chunks or []):
+                    if hasattr(chunk, "web") and chunk.web:
+                        grounding_sources.append({"title": chunk.web.title or "", "uri": chunk.web.uri or ""})
+            except Exception:
+                pass
+            # Make .text work for downstream parsing
+            class _Wrap:
+                def __init__(self, r): self._r = r
+                @property
+                def text(self): return self._r.text
+                @property
+                def candidates(self): return self._r.candidates
+            response = _Wrap(_resp)
         except Exception as search_err:
             print(f"   Search grounding failed: {search_err}")
             parts = [prompt]
