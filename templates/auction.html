@@ -122,7 +122,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
       <div style="margin-top:40px;">
         <div class="upload-zone" id="upload-zone">
-          <input type="file" id="pdf-input" accept=".pdf" onchange="startScan(this)">
+          <input type="file" id="pdf-input" accept=".pdf,.txt" onchange="startScan(this)">
           <div class="upload-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EF9F27" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="12" y2="12"/><line x1="15" y1="15" x2="12" y2="12"/></svg>
           </div>
@@ -270,7 +270,7 @@ function showUpload() {
 async function startScan(input) {
   if (!input.files[0]) return;
   var file = input.files[0];
-  scanName = file.name.replace('.pdf','').replace(/_/g,' ');
+  scanName = file.name.replace('.pdf','').replace('.txt','').replace(/_/g,' ');
   currentScanId = 'scan_' + Date.now();
   allItems = [];
 
@@ -279,13 +279,15 @@ async function startScan(input) {
   document.getElementById('progress-card').classList.remove('hidden');
   document.getElementById('items-body').innerHTML = '<div class="empty-state">Starting scan...</div>';
   document.getElementById('scan-title').textContent = scanName;
-  setProgress(0, 'Uploading PDF...', 'Preparing...');
+  var isTxt = file.name.toLowerCase().endsWith('.txt');
+  setProgress(0, isTxt ? 'Reading TXT...' : 'Uploading PDF...', 'Preparing...');
   updateStats();
 
   try {
     var fd = new FormData();
     fd.append('file', file);
-    var r = await fetch('/api/auction/scan-pdf', {method:'POST', body:fd});
+    var endpoint = file.name.toLowerCase().endsWith('.txt') ? '/api/auction/scan-txt' : '/api/auction/scan-pdf';
+    var r = await fetch(endpoint, {method:'POST', body:fd});
     if (!r.ok) {
       var err = await r.json().catch(function(){return{};});
       alert('Scan failed: ' + (err.detail || 'Unknown error'));
