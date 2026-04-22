@@ -508,6 +508,24 @@ weight fields: use null if truly unknown"""
 
 
 
+
+@app.get("/api/auction/research-items/{scan_id}")
+async def get_research_items(scan_id: str):
+    """Return watchlisted items for a scan so any client can load them."""
+    import json
+    try:
+        row = supabase.table("auction_research_sessions")             .select("items,results,title").eq("share_id", scan_id).single().execute()
+        data = row.data
+        return {
+            "scan_id": scan_id,
+            "title":   data.get("title",""),
+            "items":   json.loads(data.get("items","[]")),
+            "results": json.loads(data.get("results","{}")),
+        }
+    except Exception:
+        return {"scan_id": scan_id, "items": [], "results": {}}
+
+
 @app.post("/api/auction/save-research")
 async def save_research(request: Request):
     import json, uuid

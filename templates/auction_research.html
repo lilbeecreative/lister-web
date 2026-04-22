@@ -119,25 +119,65 @@ var pdfFile = null;
 var results = {};
 var scanning = false;
 
+function getScanId() {
+  var params = new URLSearchParams(window.location.search);
+  return params.get('scan') || localStorage.getItem('auction_research_scan_id') || '';
+}
+
 function init() {
-  var data = localStorage.getItem('auction_research_items');
-  if (!data) {
-    document.getElementById('empty-msg').textContent = 'No watchlisted items found. Go back and add items to your watchlist.';
-    return;
+  var scanId = getScanId();
+  if (scanId) {
+    fetch('/api/auction/research-items/' + encodeURIComponent(scanId))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        watchItems = d.items || [];
+        if (d.results && Object.keys(d.results).length) {
+          results = d.results;
+        }
+        if (!watchItems.length) {
+          document.getElementById('empty-msg').textContent = 'No items found for this scan. Go back and watchlist some items.';
+          return;
+        }
+        document.getElementById('page-sub').textContent = watchItems.length + ' items to research';
+        document.getElementById('start-btn').disabled = false;
+        // If results already exist, show export + share buttons
+        if (Object.keys(results).length) {
+          document.getElementById('export-btn').style.display = '';
+          document.getElementById('share-btn').style.display = '';
+        }
+        renderCards();
+      })
+      .catch(function(){
+        // Fallback to localStorage
+        var data = localStorage.getItem('auction_research_items');
+        if (data) { try { watchItems = JSON.parse(data); } catch(e){} }
+        if (!watchItems.length) {
+          document.getElementById('empty-msg').textContent = 'No watchlisted items found. Go back and add items to your watchlist.';
+          return;
+        }
+        document.getElementById('page-sub').textContent = watchItems.length + ' items to research';
+        document.getElementById('start-btn').disabled = false;
+        renderCards();
+      });
+  } else {
+    // No scan ID at all — legacy localStorage fallback
+    var data = localStorage.getItem('auction_research_items');
+    if (!data) {
+      document.getElementById('empty-msg').textContent = 'No watchlisted items found. Go back and add items to your watchlist.';
+      return;
+    }
+    try { watchItems = JSON.parse(data); } catch(e) {
+      document.getElementById('empty-msg').textContent = 'Error loading items.';
+      return;
+    }
+    if (!watchItems.length) {
+      document.getElementById('empty-msg').textContent = 'No watchlisted items. Go back and check the watch column on items.';
+      return;
+    }
+    document.getElementById('page-sub').textContent = watchItems.length + ' items to research';
+    document.getElementById('start-btn').disabled = false;
+    renderCards();
   }
-  try {
-    watchItems = JSON.parse(data);
-  } catch(e) {
-    document.getElementById('empty-msg').textContent = 'Error loading items.';
-    return;
-  }
-  if (!watchItems.length) {
-    document.getElementById('empty-msg').textContent = 'No watchlisted items. Go back and check the watch column on items.';
-    return;
-  }
-  document.getElementById('page-sub').textContent = watchItems.length + ' items to research';
-  document.getElementById('start-btn').disabled = false;
-  renderCards();
 }
 
 function tryLoadShared() {
@@ -338,7 +378,7 @@ async function startResearch() {
 }
 
 function saveResults() {
-  var scanId = localStorage.getItem('auction_research_scan_id');
+  var scanId = getScanId();
   if (!scanId) return;
   var scans = JSON.parse(localStorage.getItem('auction_scans')||'[]');
   var scan = scans.find(function(s){return s.id===scanId;});
