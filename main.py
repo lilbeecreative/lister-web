@@ -160,11 +160,11 @@ async def export_ebay_csv():
         cond_id = "1000" if cond == "new" else "3000"
         pid = str(item.get("photo_id") or "")
         pic = photo_url(pid) if pid else ""
-        category_id = str(int(item.get("ebay_category_id") or 0)).replace(".0","") if item.get("ebay_category_id") else ""
+        category_id = str(int(item.get("ebay_category_id") or 0)).replace(".0","") if item.get("ebay_category_id") else "12576"
         price = float(item.get("price") or item.get("price_used") or 0)
         writer.writerow([
             "Draft",
-            pid.rsplit(".", 1)[0] if pid else "",
+            "",
             category_id,
             str(item.get("title",""))[:80],
             "",
