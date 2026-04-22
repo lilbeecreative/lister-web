@@ -368,21 +368,50 @@ async def deep_research_full(request: Request):
             print(f"Image ID error: {e}")
             return title
 
+    def clean_title(raw_title):
+        """Strip address fragments, company boilerplate, and catalog noise from auction titles."""
+        import re
+        t = raw_title
+        # Remove street addresses like "Siemensstrasse 7", "123 Main St"
+        t = re.sub(r'\d+\s+[A-Z][a-z]+(?:strasse|street|ave|blvd|rd|st|dr|ln|way)', '', t, flags=re.IGNORECASE)
+        t = re.sub(r'[A-Z][a-z]+(?:strasse|gasse|platz|weg)\s+\d+', '', t, flags=re.IGNORECASE)
+        # Remove "GmbH", "Inc", "LLC", "Ltd", "Corp", "Co." standalone
+        t = re.sub(r'(?:GmbH|Inc\.?|LLC|Ltd\.?|Corp\.?|Co\.)', '', t)
+        # Remove loading fee notes
+        t = re.sub(r'Loading Fee[:\s]*\$?\d+', '', t, flags=re.IGNORECASE)
+        # Remove QTY annotations for search purposes
+        t = re.sub(r'\s*,?\s*QTY\s*\(?\d*\)?', '', t, flags=re.IGNORECASE)
+        t = re.sub(r'\s*\(\d+\)\s*$', '', t)
+        # Collapse extra whitespace
+        t = ' '.join(t.split()).strip().strip(',').strip()
+        return t
+
     def research_item(item, images):
         title = item.get("title", "")
         lot = item.get("lot", "")
         current_val = item.get("your_value", 0) or 0
 
+        # Clean title before research — remove address/company junk
+        clean = clean_title(title)
+        if clean != title:
+            print(f"Lot {lot} title cleaned: '{title}' → '{clean}'")
+
         # Step 1: identify exact model from image
-        identified = identify_item_from_image(images, title)
-        if identified != title:
+        identified = identify_item_from_image(images, clean)
+        if identified != clean:
             print(f"Lot {lot} image ID: {identified}")
 
         prompt = f"""You are an expert resale market researcher and appraiser. Research this auction item thoroughly.
 
-Item: Lot #{lot} — {title}
+Item: Lot #{lot} — {clean}
 Image-identified model: {identified}
 Current estimate: ${current_val}
+
+IMPORTANT — SEARCH TERM CONSTRUCTION:
+Before searching, extract just the brand name and model number from the item title.
+Strip out: company addresses, "GmbH", "Inc", street names, loading fees, lot numbers, and any other non-product text.
+Example: "IPG Laser #YLR-400-SM-EOS IPG Laser GmbH Siemensstrasse 7" → search "IPG YLR-400-SM-EOS fiber laser"
+Use the cleanest possible search term to find accurate comps.
 
 PRICING RESEARCH — follow this exact hierarchy:
 
