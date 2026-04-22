@@ -100,7 +100,8 @@ async def get_listings():
                     # Map primary photo_id -> all photos in its group
                     for pid, gid in pid_to_gid.items():
                         group_photo_map[pid] = gid_to_photos.get(gid, [pid])
-            except Exception:
+            except Exception as search_err:
+            print(f"   Search grounding failed: {search_err}")
                 pass
 
         for l in listings:
@@ -404,7 +405,8 @@ weight fields: use null if truly unknown"""
                 tools=[search_tool],
                 generation_config={"max_output_tokens": 1500}
             )
-        except Exception:
+        except Exception as search_err:
+            print(f"   Search grounding failed: {search_err}")
             parts = [prompt]
             for img_bytes in images[:2]:
                 parts.append({"mime_type": "image/jpeg", "data": img_bytes})
@@ -876,7 +878,8 @@ async def get_page_image(scan_id: str, img_index: int):
                     base_image = doc.extract_image(xref)
                     if base_image and base_image.get("image") and len(base_image["image"]) > 8000:
                         all_images.append(base_image)
-                except Exception:
+                except Exception as search_err:
+            print(f"   Search grounding failed: {search_err}")
                     pass
         doc.close()
         if not all_images or img_index < 0 or img_index >= len(all_images):
@@ -994,7 +997,8 @@ Example: [{"lot":"5","title":"Oakton pH Meter","description":"Portable pH/ORP me
                     raw = raw[start:end]
                 try:
                     items = json.loads(raw)
-                except Exception:
+                except Exception as search_err:
+            print(f"   Search grounding failed: {search_err}")
                     from json_repair import repair_json
                     items = json.loads(repair_json(raw))
                 base_idx = len(all_items)
@@ -1103,7 +1107,8 @@ If no text visible or no matches, still return the JSON with empty arrays."""
                 img = PIL.Image.open(io.BytesIO(img_bytes))
                 response = model.generate_content([prompt, img])
                 raw = response.text or ""
-            except Exception:
+            except Exception as search_err:
+            print(f"   Search grounding failed: {search_err}")
                 try:
                     from google import genai as gc
                     from google.genai import types as gt
