@@ -457,8 +457,7 @@ async def deep_research_full(request: Request):
         serp_results = []
         serp_context = ""
         if serp_key:
-            # Always use clean title for search — identified may be verbose image description
-        search_query = clean
+            search_query = clean
             print(f"   SerpAPI eBay sold search: '{search_query}'")
             serp_results = serp_ebay_sold(search_query, serp_key)
             if serp_results:
