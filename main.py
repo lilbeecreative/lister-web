@@ -138,7 +138,7 @@ async def export_ebay_csv():
     from fastapi.responses import StreamingResponse
     try:
         res = supabase.table("listings").select(
-            "title,description,price,price_used,price_new,quantity,condition,listing_type,status"
+            "title,description,price,price_used,price_new,quantity,condition,status"
         ).neq("status", "archived").execute()
         items = res.data or []
     except Exception as e:
@@ -156,8 +156,7 @@ async def export_ebay_csv():
     for item in items:
         cond = str(item.get("condition") or "used").strip().lower()
         ebay_condition = "Used" if cond == "used" else "New"
-        listing_type = str(item.get("listing_type") or "fixed").strip().lower()
-        ebay_listing = "FixedPriceItem" if listing_type == "fixed" else "Chinese"
+        ebay_listing = "FixedPriceItem"
         price = item.get("price") or item.get("price_used") or 0
         writer.writerow([
             item.get("title", ""),
