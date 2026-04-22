@@ -461,6 +461,8 @@ weight fields: use null if truly unknown"""
             for comp in data["comps"]:
                 for k in comp:
                     comp[k] = str(comp[k]).replace("\n", " ") if isinstance(comp[k], str) else comp[k]
+        data["ai_overview_html"] = ai_overview_html
+        data["grounding_sources"] = grounding_sources
         return data
 
     async def generate():
@@ -780,6 +782,8 @@ your_value must be an integer."""
         except json.JSONDecodeError:
             from json_repair import repair_json
             data = json.loads(repair_json(raw))
+        data["ai_overview_html"] = ai_overview_html
+        data["grounding_sources"] = grounding_sources
         return data
     except Exception as e:
         raise HTTPException(500, str(e))
