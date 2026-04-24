@@ -816,6 +816,9 @@ weight fields: use null if truly unknown"""
                 for k in comp:
                     comp[k] = str(comp[k]).replace("\n", " ") if isinstance(comp[k], str) else comp[k]
         data["ai_overview_html"] = ai_overview_html
+        # Inject grounding summary into notes if available
+        if _gsummary and not data.get("notes"):
+            data["notes"] = _gsummary
         data["grounding_sources"] = grounding_sources
         # If both SerpAPI and grounding failed, override any hallucinated high confidence
         if not serp_results and not ai_overview_html:
