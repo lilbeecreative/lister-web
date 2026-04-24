@@ -432,7 +432,7 @@ async def deep_research_full(request: Request):
                 "3. Auction results\n\n"
                 "Give specific dollar ranges. Mention condition factors that affect price."
             )}]}],
-            "tools": [{"google_search": {}}],
+            "tools": [{"googleSearch": {}}],
             "generationConfig": {"maxOutputTokens": 600}
         }
         try:
