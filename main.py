@@ -170,7 +170,14 @@ async def export_ebay_csv():
         cond = str(item.get("condition") or "used").strip().lower()
         cond_id = "1000" if cond == "new" else "3000"
         pid = str(item.get("photo_id") or "")
-        pic = photo_url(pid) if pid else ""
+        # Build pipe-separated photo URLs from all_photos if available
+        all_photos = item.get("all_photos") or []
+        if all_photos and isinstance(all_photos, list):
+            pic = "|".join(p["full"] for p in all_photos if p.get("full"))
+        elif pid:
+            pic = photo_url(pid)
+        else:
+            pic = ""
         category_id = "12576"
         price = float(item.get("price") or item.get("price_used") or 0)
         writer.writerow([
