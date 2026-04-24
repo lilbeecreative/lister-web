@@ -404,20 +404,23 @@ async def deep_research_full(request: Request):
         t = ' '.join(t.split()).strip().strip(',').strip()
         return t
 
-    def serp_ebay_sold(query, serp_key):
+    def serp_ebay_sold(query, serp_key, sacat='12576'):
         """
         Call SerpAPI to get eBay completed/sold listings for a query.
         Returns a list of dicts with title, price, date, condition, url.
         """
         import urllib.request, urllib.parse, json as _json
-        params = urllib.parse.urlencode({
+        _params = {
             "engine": "ebay",
             "ebay_domain": "ebay.com",
             "_nkw": query,
             "LH_Sold": "1",
             "LH_Complete": "1",
             "api_key": serp_key,
-        })
+        }
+        if sacat and sacat != "12576":
+            _params["_sacat"] = sacat
+        params = urllib.parse.urlencode(_params)
         url = f"https://serpapi.com/search?{params}"
         try:
             with urllib.request.urlopen(url, timeout=10) as r:
@@ -466,20 +469,88 @@ async def deep_research_full(request: Request):
         serp_results = []
         serp_context = ""
         if serp_key:
-            # Preserve brand names with quotes for precision
-            import re as _re
-            _words = clean.split()
+            # --- Pre-classification: get eBay _sacat and negative keywords ---
+            _sacat_map = {
+                "12576": "Business & Industrial - Other",
+                "11804": "CNC, Metalworking & Manufacturing",
+                "11808": "Electrical Equipment & Supplies",
+                "11803": "Semiconductor & PCB Equipment",
+                "78989": "Test, Measurement & Inspection",
+                "4666":  "Pumps & Plumbing",
+                "11816": "Hydraulics, Pneumatics & Plumbing",
+                "11815": "Healthcare, Lab & Dental",
+                "3673":  "Computers & Networking",
+                "58058": "Lasers & Laser Accessories",
+                "11700": "Consumer Electronics",
+                "26230": "Hand Tools",
+                "92074": "Power Tools",
+            }
+            _cat_prompt = f"""You are an eBay category classifier for industrial equipment.
+
+Item: {clean}
+
+Choose the single best eBay category ID from this list:
+{chr(10).join(f'  {k}: {v}' for k,v in _sacat_map.items())}
+
+Also decide if negative keywords are needed to filter out medical/consumer results.
+Negative keywords to consider: -medical -dental -cosmetic -hair -aesthetic -salon
+
+Respond ONLY with valid JSON, no markdown:
+{{"sacat": "12576", "negative_keywords": "-medical -dental", "is_industrial": true}}
+
+If unsure about negative keywords, use empty string for negative_keywords."""
+
+            _sacat = "12576"
+            _negative_kw = ""
+            _is_industrial = True
+            try:
+                _cat_response = model.generate_content(
+                    _cat_prompt,
+                    generation_config={"max_output_tokens": 100, "temperature": 0}
+                )
+                _cat_text = _cat_response.text.strip()
+                if "```" in _cat_text:
+                    _cat_text = _cat_text.split("```")[1]
+                    if _cat_text.startswith("json"):
+                        _cat_text = _cat_text[4:]
+                import json as _json2
+                _cat_data = _json2.loads(_cat_text.strip())
+                _sacat = str(_cat_data.get("sacat", "12576"))
+                _negative_kw = str(_cat_data.get("negative_keywords", ""))
+                _is_industrial = bool(_cat_data.get("is_industrial", True))
+                print(f"   Category: {_sacat_map.get(_sacat, _sacat)}, industrial={_is_industrial}, negatives='{_negative_kw}'")
+            except Exception as _ce:
+                print(f"   Category pre-classification failed: {_ce}, using default sacat=12576")
+
+            # Build search query with phrase matching + negative keywords
             _w = clean.split()
-            search_query = '"' + clean + '"' if len(_w) >= 3 else clean
-            print(f"   SerpAPI eBay sold search: '{search_query}'")
-            serp_results = serp_ebay_sold(search_query, serp_key)
-            # Discard if avg is less than 15% of current estimate
+            _base_query = '"' + clean + '"' if len(_w) >= 3 else clean
+            search_query = (_base_query + " " + _negative_kw).strip()
+            print(f"   SerpAPI eBay sold search: '{search_query}' (sacat={_sacat})")
+            serp_results = serp_ebay_sold(search_query, serp_key, sacat=_sacat)
+
+            # --- IQR variance-based sanity check ---
             if serp_results:
-                prices = [r["price"] for r in serp_results]
-                _avg = sum(prices) / len(prices)
-                if current_val > 0 and _avg < current_val * 0.15:
-                    print(f"   SerpAPI results discarded — avg ${_avg:.0f} too low vs estimate ${current_val}")
-                    serp_results = []
+                prices = sorted([r["price"] for r in serp_results])
+                n = len(prices)
+                if n >= 4:
+                    q1 = prices[n // 4]
+                    q3 = prices[(3 * n) // 4]
+                    iqr = q3 - q1
+                    median = prices[n // 2]
+                    cv = (iqr / median) if median > 0 else 1
+                    if cv > 1.5:
+                        print(f"   SerpAPI results discarded — high variance (CV={cv:.2f}), mixed categories likely")
+                        serp_results = []
+                    else:
+                        print(f"   SerpAPI variance OK: IQR=${iqr:.0f}, CV={cv:.2f}, median=${median:.0f}")
+                elif n >= 2:
+                    # Small sample: check if range is >5x spread
+                    _spread = prices[-1] / prices[0] if prices[0] > 0 else 10
+                    if _spread > 5:
+                        print(f"   SerpAPI results discarded — spread too wide ({prices[0]:.0f}-{prices[-1]:.0f})")
+                        serp_results = []
+
             if serp_results:
                 prices = [r["price"] for r in serp_results]
                 avg = sum(prices) / len(prices)
