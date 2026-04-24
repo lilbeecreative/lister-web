@@ -393,6 +393,8 @@ async def deep_research_full(request: Request):
         # Remove street addresses like "Siemensstrasse 7", "123 Main St"
         t = re.sub(r'\d+\s+[A-Z][a-z]+(?:strasse|street|ave|blvd|rd|st|dr|ln|way)', '', t, flags=re.IGNORECASE)
         t = re.sub(r'[A-Z][a-z]+(?:strasse|gasse|platz|weg)\s+\d+', '', t, flags=re.IGNORECASE)
+        # Remove street addresses
+        t = re.sub(r'\\b[A-Za-z]+(?:strasse|gasse|weg|strase)\\b\\s*\\d*', '', t, flags=re.IGNORECASE)
         # Remove "GmbH", "Inc", "LLC", "Ltd", "Corp", "Co." standalone
         t = re.sub(r'(?:GmbH|Inc\.?|LLC|Ltd\.?|Corp\.?|Co\.)', '', t)
         # Remove loading fee notes
