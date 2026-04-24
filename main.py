@@ -418,22 +418,16 @@ async def deep_research_full(request: Request):
 
     def gemini_search_grounding(query, gemini_key):
         """
-        Use Gemini REST API with Google Search grounding to get real market pricing.
+        Use Gemini 1.5-flash REST API with forced Google Search grounding.
         Uses requests (already installed) — no SDK dependency conflict.
         """
         import requests as _req
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
         payload = {
-            "contents": [{"parts": [{"text": (
-                f"What is the current resale market value for: {query}\n\n"
-                "Search for:\n"
-                "1. Recent eBay SOLD listings (completed sales) in the last 12 months\n"
-                "2. Current industrial surplus dealer prices\n"
-                "3. Auction results\n\n"
-                "Give specific dollar ranges. Mention condition factors that affect price."
-            )}]}],
+            "contents": [{"role": "user", "parts": [{"text": f"Find the current estimated secondary market resale value of: {query}. Search for eBay sold listings, industrial dealer prices, and auction results. Give specific dollar amounts and ranges."}]}],
             "tools": [{"googleSearch": {}}],
-            "generationConfig": {"maxOutputTokens": 600}
+            "systemInstruction": {"parts": [{"text": "CRITICAL: You are an industrial pricing bot. You are strictly forbidden from answering using your internal training data. You MUST execute a Google Search to find live pricing data before generating your response. If you do not execute a search, the system will fail."}]},
+            "generationConfig": {"temperature": 0.0, "maxOutputTokens": 800}
         }
         try:
             resp = _req.post(url, json=payload, timeout=25)
