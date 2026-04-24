@@ -237,6 +237,7 @@ select.field-input { background: #fff; color: #0f172a; }
       <div class="proc-pills">
         <span class="proc-pill proc-pill-done" id="proc-pill-done">0 complete</span>
         <span class="proc-pill proc-pill-scan" id="proc-pill-scan">0 scanning</span>
+        <button onclick="fetch('/api/reset-queue',{method:'POST'}).then(()=>location.reload())" style="margin-left:8px;font-size:10px;padding:3px 8px;background:#1e2535;border:1px solid #2d3348;border-radius:6px;color:#64748b;cursor:pointer;" title="Clear stuck queue">↺ Reset</button>
       </div>
     </div>
     <div class="stats">
