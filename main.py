@@ -400,6 +400,8 @@ async def deep_research_full(request: Request):
         # Remove QTY annotations for search purposes
         t = re.sub(r'\s*,?\s*QTY\s*\(?\d*\)?', '', t, flags=re.IGNORECASE)
         t = re.sub(r'\s*\(\d+\)\s*$', '', t)
+        # Remove # symbol (breaks eBay search)
+        t = t.replace('#', '')
         # Collapse extra whitespace
         t = ' '.join(t.split()).strip().strip(',').strip()
         return t
@@ -472,6 +474,8 @@ async def deep_research_full(request: Request):
             # --- Pre-classification: get eBay _sacat and negative keywords ---
             _sacat_map = {
                 "12576": "Business & Industrial - Other",
+                "58058": "Lasers & Laser Optics (industrial/scientific lasers, fiber lasers, CO2 lasers, laser systems)",
+                "105595": "Laser Accessories & Parts",
                 "11804": "CNC, Metalworking & Manufacturing",
                 "11808": "Electrical Equipment & Supplies",
                 "11803": "Semiconductor & PCB Equipment",
