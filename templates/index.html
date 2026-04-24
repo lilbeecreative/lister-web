@@ -474,7 +474,7 @@ select.field-input { background: #fff; color: #0f172a; }
           </div>
           <div>
             <div class="field-label">Condition</div>
-            <select class="field-input" id="modal-cond-input" onchange="modalDirty=true">
+            <select class="field-input" id="modal-cond-input" onchange="modalDirty=true; (function(){ var l=window._modalListing; if(!l) return; var cond=document.getElementById('modal-cond-input').value; var p=cond==='new'?(l.price_new||l.price):(l.price_used||l.price); if(p>0){document.getElementById('modal-price-input').value=p.toFixed(2); document.getElementById('modal-price').textContent='$'+p.toFixed(2);} })()">
               <option value="used">Used</option>
               <option value="new">New</option>
             </select>
@@ -809,6 +809,7 @@ function openModal(id) {
   img.style.cssText = 'width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px 14px 0 0;image-orientation:from-image;display:' + (img.src ? 'block' : 'none') + ';';
   document.getElementById('modal-title').textContent = l.title || 'Unknown Item';
   document.getElementById('modal-meta').textContent  = `${l.ebay_category || ''} · ${(l.condition||'used').toUpperCase()}`;
+  window._modalListing = l;
   document.getElementById('modal-price').textContent = `$${l.price.toFixed(2)}`;
   const refs = [l.price_used > 0 ? `Used: $${l.price_used.toFixed(0)}` : '', l.price_new > 0 ? `New: $${l.price_new.toFixed(0)}` : ''].filter(Boolean).join('  ·  ');
   document.getElementById('modal-refs').textContent  = refs;
