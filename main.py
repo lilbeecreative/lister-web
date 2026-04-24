@@ -204,6 +204,14 @@ async def export_ebay_csv():
     )
 
 
+@app.post("/api/reset-queue")
+async def reset_queue():
+    try:
+        supabase.table("listing_groups").update({"status": "waiting"}).in_("status", ["processing", "pending"]).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 @app.get("/api/stats")
 async def get_stats():
     try:
