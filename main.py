@@ -513,8 +513,15 @@ If unsure about negative keywords, use empty string for negative_keywords."""
                     _cat_text = _cat_text.split("```")[1]
                     if _cat_text.startswith("json"):
                         _cat_text = _cat_text[4:]
+                _cat_text = _cat_text.strip()
+                # Find the JSON object
+                _s = _cat_text.find("{")
+                _e = _cat_text.rfind("}") + 1
+                if _s >= 0 and _e > _s:
+                    _cat_text = _cat_text[_s:_e]
                 import json as _json2
-                _cat_data = _json2.loads(_cat_text.strip())
+                from json_repair import repair_json as _rj
+                _cat_data = _json2.loads(_rj(_cat_text))
                 _sacat = str(_cat_data.get("sacat", "12576"))
                 _negative_kw = str(_cat_data.get("negative_keywords", ""))
                 _is_industrial = bool(_cat_data.get("is_industrial", True))
