@@ -196,7 +196,7 @@ async def export_ebay_csv():
         ])
 
     csv_bytes = output.getvalue().encode("utf-8")
-    fn = f"listerai_ebay_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    fn = f"ebay_export_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
     return StreamingResponse(
         io.BytesIO(csv_bytes),
         media_type="text/csv",
