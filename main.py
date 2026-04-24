@@ -515,6 +515,7 @@ async def deep_research_full(request: Request):
         # Step 2: Gemini Search Grounding for real market pricing
         serp_results = []
         serp_context = ""
+        _gsummary = ""
         if gemini_key:
             _grounding = gemini_search_grounding(clean, gemini_key)
             _gsummary = _grounding.get("summary", "")
