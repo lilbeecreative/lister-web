@@ -150,7 +150,7 @@ async def export_ebay_csv():
     from datetime import datetime
     try:
         res = supabase.table("listings").select(
-            "title,description,price,price_used,price_new,quantity,condition,photo_id,ebay_category_id"
+            "title,description,price,price_used,price_new,quantity,condition,photo_id,ebay_category_id,all_photos"
         ).neq("status", "archived").execute()
         items = res.data or []
     except Exception as e:
