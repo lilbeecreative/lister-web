@@ -170,7 +170,15 @@ async def export_ebay_csv():
         cond = str(item.get("condition") or "used").strip().lower()
         cond_id = "1000" if cond == "new" else "3000"
         pid = str(item.get("photo_id") or "")
-        pic = photo_url(pid) if pid else ""
+        # Look up all photos for this listing via group_photos table
+        try:
+            _gp = supabase.table("group_photos").select("photo_id").eq("group_id",
+                (supabase.table("group_photos").select("group_id").eq("photo_id", pid).execute().data or [{}])[0].get("group_id", "")
+            ).execute()
+            _all_pids = [r["photo_id"] for r in (_gp.data or [])] if _gp.data else [pid]
+            pic = "|".join(photo_url(p) for p in _all_pids if p) if _all_pids else (photo_url(pid) if pid else "")
+        except Exception:
+            pic = photo_url(pid) if pid else ""
         category_id = "12576"
         price = float(item.get("price") or item.get("price_used") or 0)
         writer.writerow([
