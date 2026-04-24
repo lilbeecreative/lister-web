@@ -396,7 +396,7 @@ async def deep_research_full(request: Request):
         # Remove street addresses
         t = re.sub(r'\\b[A-Za-z]+(?:strasse|gasse|weg|strase)\\b\\s*\\d*', '', t, flags=re.IGNORECASE)
         # Remove "GmbH", "Inc", "LLC", "Ltd", "Corp", "Co." standalone
-        t = re.sub(r'(?:GmbH|Inc\.?|LLC|Ltd\.?|Corp\.?|Co\.)', '', t)
+        t = re.sub(r'\b(?:GmbH|Inc\.?|LLC|Ltd\.?|Corp\.?|Co\.)\b', '', t, flags=re.IGNORECASE)
         # Remove loading fee notes
         t = re.sub(r'Loading Fee[:\s]*\$?\d+', '', t, flags=re.IGNORECASE)
         # Remove QTY annotations for search purposes
