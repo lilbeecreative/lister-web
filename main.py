@@ -450,6 +450,8 @@ async def deep_research_full(request: Request):
                 if c.get("web", {}).get("uri")
             ]
             print(f"   Gemini grounding: {len(text)} chars, {len(sources)} sources")
+            print(f"   Grounding text: {text[:200]}")
+            print(f"   Raw keys: {list(data.get('candidates',[{}])[0].keys())}")
             return {"summary": text, "sources": sources}
         except Exception as e:
             print(f"   Gemini grounding error: {e}")
