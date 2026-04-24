@@ -432,7 +432,7 @@ async def deep_research_full(request: Request):
         import requests as _req
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
         payload = {
-            "contents": [{"role": "user", "parts": [{"text": f"Find the current market value of: {query}. Search for: 1) eBay active listings and sold/completed listings, 2) Industrial surplus dealer asking prices (Radwell, Surplus Record, LabX, Machinery Trader), 3) Recent auction results. Give specific dollar amounts for both asking prices and actual sold prices."}]}],
+            "contents": [{"role": "user", "parts": [{"text": f"Find the resale market value of: {query}. Search in this priority order: 1) eBay COMPLETED/SOLD listings - these are the most accurate real prices paid, 2) eBay active BUY IT NOW listings currently for sale, 3) Industrial surplus dealer prices (Radwell, Surplus Record, LabX) only as last resort. List actual sold prices first, then asking prices. If eBay sold listings exist use those as the primary value. Give specific dollar amounts."}]}],
             "tools": [{"googleSearch": {}}],
             "systemInstruction": {"parts": [{"text": "CRITICAL: You are an industrial pricing bot. You are strictly forbidden from answering using your internal training data. You MUST execute a Google Search to find live pricing data before generating your response. If you do not execute a search, the system will fail."}]},
             "generationConfig": {"temperature": 0.0, "maxOutputTokens": 800}
