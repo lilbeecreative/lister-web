@@ -645,79 +645,52 @@ Base your revised_value on these actual sold prices. Do not override this with g
                 serp_context = "No eBay sold comps found via SerpAPI - use web search grounding for pricing."
                 print(f"   SerpAPI: no results for '{search_query}'")
 
-        prompt = f"""You are an expert resale market researcher and appraiser. Research this auction item thoroughly.
+        prompt = f"""You are an expert industrial machinery appraiser and secondary market researcher.
+Your job is to determine the actual cash value of an industrial asset at auction.
 
-Item: Lot #{lot} — {clean}
-Image-identified model: {identified}
-Current estimate: ${current_val}
+--- ITEM DETAILS ---
+Lot: #{lot}
+Clean Title: {clean}
+Image-Identified Model: {identified}
+Initial Estimate: ${current_val}
+
+--- MARKET RESEARCH DATA ---
 {serp_context}
-IMPORTANT — SEARCH TERM CONSTRUCTION:
-Before searching, extract just the brand name and model number from the item title.
-Strip out: company addresses, "GmbH", "Inc", street names, loading fees, lot numbers, and any other non-product text.
-Example: "IPG Laser #YLR-400-SM-EOS IPG Laser GmbH Siemensstrasse 7" → search "IPG YLR-400-SM-EOS fiber laser"
-Use the cleanest possible search term to find accurate comps.
 
-PRICING RESEARCH — follow this exact hierarchy:
+--- PRICING HIERARCHY RULES (CRITICAL) ---
+You must evaluate the MARKET RESEARCH DATA using this strict waterfall hierarchy. Do NOT skip tiers.
 
-TIER 1 — SOLD / REALIZED PRICES (search first, highest priority):
-- eBay COMPLETED/SOLD listings (most important — real transaction prices)
-- LiveAuctioneers realized hammer prices
-- Heritage Auctions, Invaluable.com sold results
-- Worthpoint if accessible
-If you find 3+ sold comps from the last 90 days, stop here for pricing.
+TIER 1: SOLD/COMPLETED LISTINGS (Highest Priority)
+If the data contains actual verified sold prices, base your estimate entirely on these. Ignore all asking prices.
+-> pricing_tier = "SOLD_COMPS"
 
-TIER 2 — ACTIVE ASKING PRICES (only if fewer than 3 sold comps found):
-- eBay active Buy It Now listings
-- Amazon new and used
-- Dealer/retailer sites, Google Shopping
-Label these clearly as ASKING prices, not confirmed sales.
+TIER 2: ACTIVE MARKETPLACE LISTINGS (The Ceiling)
+If no sold data exists, look for active listings on open marketplaces (eBay, etc).
+Rule: The LOWEST reasonable active listing establishes the absolute CEILING of value. A buyer will not pay $8,000 if they can buy it right now on eBay for $3,995.
+Calculation: Find the lowest active price. Apply a 15-25% discount to estimate actual sell price. Ignore high-priced outliers.
+-> pricing_tier = "ASKING_PRICES"
 
-TIER 3 — INDUSTRIAL DEALER ASKING PRICES (only if no sold comps found):
-- Reputable industrial surplus dealers: Maverick Industrial, surplus.net, radwell.com, labx.com
-- For specialized industrial/laser/scientific equipment, dealer asking prices ARE the market
-- Do NOT apply a 20-60% discount to dealer prices for specialized equipment
-- Dealer prices for rare industrial equipment reflect actual resale value, not inflated retail
-Label clearly as ASKING PRICE — but treat as reliable market signal for specialty equipment.
+TIER 3: INDUSTRIAL DEALER ASKING PRICES (Last Resort Anchor)
+If NO marketplace data exists, use retail/surplus dealer asking prices (Radwell, PLC Center, etc).
+Rule: Dealers charge massive premiums. Apply a 40-60% discount to find auction/resale cash value.
+-> pricing_tier = "ASKING_PRICES"
 
-TIER 4 — ORIGINAL MSRP (last resort):
-- Manufacturer original retail price only if no dealer prices found
-Label clearly as MSRP — resale is typically 20-60% of original retail for common items.
+TIER 4: NO DATA
+If the MARKET RESEARCH DATA contains no dollar values relevant to this item, admit it.
+-> pricing_tier = "NO_DATA"
 
-TIER 5 — COMPARABLE ITEMS (if exact item not found at any tier):
-- Same category, similar specs, different brand or model
-Label clearly and note what item was used as proxy.
+--- HALLUCINATION GUARDRAILS ---
+- You are FORBIDDEN from using pricing_tier "SOLD_COMPS" unless the word "sold" or "completed" is explicitly in the data.
+- Do NOT average a $3,995 eBay listing with a $15,000 dealer listing. The $3,995 becomes the absolute ceiling.
+- Do NOT fabricate comps. Only list prices explicitly found in the MARKET RESEARCH DATA above.
+- confidence must be "high" only with 3+ verified sold comps, otherwise "medium" or "low".
 
-SHIPPING WEIGHT:
-Search manufacturer spec sheets, Amazon listings, or retailer pages for listed weight.
-If exact weight not found, estimate based on item type and visible size.
-Report item weight and estimated packaged weight (add 1-2 lbs for materials).
+SHIPPING WEIGHT: Estimate from item type and visible size.
 
-LIQUIDITY SIGNALS:
-- How many sold comps in last 30 days?
-- How many sold comps in last 90 days?
-- How many active listings currently exist?
-- Price variance: tight (within 20%) / moderate / wide (50%+ spread)
-Liquidity score 1-5:
-  5 = 10+ sold in 30 days, tight range
-  4 = 5-9 sold in 30 days or 10+ in 90 days
-  3 = 3-4 sold in 90 days, moderate variance
-  2 = 1-2 sold comps or asking prices only
-  1 = no sold comps, wide variance, or niche item
-
-STRICT RULES:
-- Only include comps from actual search results — do not fabricate listings
-- revised_value must be an integer
-- confidence: high (3+ real sold comps), medium (1-2 comps or asking prices), low (MSRP only or no data)
-- recommendation: buy / watch / pass
-
-Return ONLY valid JSON (no markdown, no apostrophes in strings):
-{{"revised_value": 1400, "confidence": "high", "pricing_tier": "SOLD_COMPS", "pricing_flag": "", "comps": [{{"title": "Item name", "price": 1200, "date": "Mar 2025", "source": "eBay Sold"}}], "image_notes": "What the image shows", "recommendation": "buy", "rec_reason": "Sells for X on eBay", "notes": "Market summary", "weight_item_lbs": 12.5, "weight_packaged_lbs": 14.0, "weight_note": "Manufacturer spec", "liquidity_score": 4, "liquidity_note": "8 sold comps in 90 days tight range", "sold_30d": 3, "sold_90d": 8, "active_listings": 12}}
+Return ONLY valid JSON, no markdown:
+{{"revised_value": 3200, "confidence": "medium", "pricing_tier": "ASKING_PRICES", "pricing_flag": "Based on lowest active eBay listing $3,995 minus 20% discount", "comps": [{{"title": "Item name", "price": 3995, "date": "Apr 2025", "source": "eBay Active"}}], "image_notes": "What the image shows", "recommendation": "watch", "rec_reason": "One active eBay listing at $3,995 sets ceiling, estimated sell price $3,200", "notes": "Market summary with sources", "weight_item_lbs": 50.0, "weight_packaged_lbs": 55.0, "weight_note": "Estimated", "liquidity_score": 2, "liquidity_note": "Limited market data", "sold_30d": 0, "sold_90d": 0, "active_listings": 1}}
 
 pricing_tier values: SOLD_COMPS | ASKING_PRICES | MSRP_ONLY | COMPARABLE_ITEMS | NO_DATA
-pricing_flag: blank if sold comps found, otherwise plain English warning such as:
-  Based on active asking prices only - no sold comps found
-  Based on original MSRP - resale value may differ significantly
-  No exact match found - priced against comparable [item]
 weight fields: use null if truly unknown"""
 
         # Use Gemini with search grounding if available
