@@ -816,7 +816,7 @@ weight fields: use null if truly unknown"""
             data["notes"] = _gsummary
         data["grounding_sources"] = grounding_sources
         # If both SerpAPI and grounding failed, override any hallucinated high confidence
-        if not serp_results and not ai_overview_html:
+        if not serp_results and not ai_overview_html and not _gsummary:
             if data.get("pricing_tier") == "SOLD_COMPS" and data.get("confidence") == "high":
                 data["confidence"] = "low"
                 data["pricing_tier"] = "NO_DATA"
