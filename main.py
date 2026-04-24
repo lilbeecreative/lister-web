@@ -415,6 +415,45 @@ async def deep_research_full(request: Request):
         t = ' '.join(t.split()).strip().strip(',').strip()
         return t
 
+    def gemini_search_grounding(query, gemini_key):
+        """
+        Use Gemini REST API with Google Search grounding to get real market pricing.
+        Uses requests (already installed) — no SDK dependency conflict.
+        """
+        import requests as _req
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+        payload = {
+            "contents": [{"parts": [{"text": (
+                f"What is the current resale market value for: {query}\n\n"
+                "Search for:\n"
+                "1. Recent eBay SOLD listings (completed sales) in the last 12 months\n"
+                "2. Current industrial surplus dealer prices\n"
+                "3. Auction results\n\n"
+                "Give specific dollar ranges. Mention condition factors that affect price."
+            )}]}],
+            "tools": [{"google_search": {}}],
+            "generationConfig": {"maxOutputTokens": 600}
+        }
+        try:
+            resp = _req.post(url, json=payload, timeout=25)
+            data = resp.json()
+            candidates = data.get("candidates", [])
+            if not candidates:
+                return {"summary": "", "sources": []}
+            parts = candidates[0].get("content", {}).get("parts", [])
+            text = " ".join(p.get("text", "") for p in parts if "text" in p).strip()
+            grounding = candidates[0].get("groundingMetadata", {})
+            sources = [
+                {"url": c["web"]["uri"], "title": c["web"].get("title", "")}
+                for c in grounding.get("groundingChunks", [])
+                if c.get("web", {}).get("uri")
+            ]
+            print(f"   Gemini grounding: {len(text)} chars, {len(sources)} sources")
+            return {"summary": text, "sources": sources}
+        except Exception as e:
+            print(f"   Gemini grounding error: {e}")
+            return {"summary": "", "sources": []}
+
     def serp_ebay_sold(query, serp_key, sacat='12576'):
         """
         Call SerpAPI to get eBay completed/sold listings for a query.
@@ -476,10 +515,21 @@ async def deep_research_full(request: Request):
         if identified != clean:
             print(f"Lot {lot} image ID: {identified}")
 
-        # Step 2: SerpAPI eBay sold lookup (if key available)
+        # Step 2: Gemini Search Grounding for real market pricing
         serp_results = []
         serp_context = ""
-        if serp_key:
+        if gemini_key:
+            _grounding = gemini_search_grounding(clean, gemini_key)
+            _gsummary = _grounding.get("summary", "")
+            if _gsummary:
+                serp_context = f"""MARKET RESEARCH DATA (from live Google Search — use as PRIMARY pricing source):
+{_gsummary}
+
+Extract specific dollar amounts from the above. Base revised_value on actual prices found.
+Do NOT ignore this data. Do NOT use your training knowledge if this data contradicts it.
+"""
+        # Legacy SerpAPI block (disabled — kept for fallback reference)
+        if False and serp_key:
             # --- Pre-classification: get eBay _sacat and negative keywords ---
             _sacat_map = {
                 "12576": "Business & Industrial - Other",
