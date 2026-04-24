@@ -418,7 +418,7 @@ async def deep_research_full(request: Request):
             "LH_Complete": "1",
             "api_key": serp_key,
         }
-        if sacat and sacat != "12576":
+        if sacat and sacat not in ("12576", "", None):
             _params["_sacat"] = sacat
         params = urllib.parse.urlencode(_params)
         url = f"https://serpapi.com/search?{params}"
