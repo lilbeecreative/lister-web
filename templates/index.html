@@ -474,7 +474,7 @@ select.field-input { background: #fff; color: #0f172a; }
           </div>
           <div>
             <div class="field-label">Condition</div>
-            <select class="field-input" id="modal-cond-input" onchange="modalDirty=true; (function(){ var l=window._modalListing; if(!l) return; var cond=document.getElementById('modal-cond-input').value; var p=cond==='new'?(l.price_new||l.price):(l.price_used||l.price); if(p>0){document.getElementById('modal-price-input').value=p.toFixed(2); document.getElementById('modal-price').textContent='$'+p.toFixed(2);} })()">
+            <select class="field-input" id="modal-cond-input" onchange="modalDirty=true; updatePriceByCondition()">
               <option value="used">Used</option>
               <option value="new">New</option>
             </select>
@@ -1422,6 +1422,17 @@ initTileListeners();
 // Auto-refresh dashboard every 30s when on that tab
 setInterval(() => { if (activeTab === 'dashboard') loadListings(); }, 30000);
 setInterval(() => { if (activeTab === 'auction' && activeSession) loadAuctionItems(activeSession); }, 30000);
+
+function updatePriceByCondition() {
+  var l = window._modalListing;
+  if (!l) return;
+  var cond = document.getElementById('modal-cond-input').value;
+  var p = cond === 'new' ? (l.price_new || l.price) : (l.price_used || l.price);
+  if (p > 0) {
+    document.getElementById('modal-price-input').value = p.toFixed(2);
+    document.getElementById('modal-price').textContent = '$' + p.toFixed(2);
+  }
+}
 </script>
 </body>
 </html>
