@@ -1449,7 +1449,8 @@ async function rotatePhoto(dir) {
     const r = await api('POST', '/api/photos/rotate', {photo_id: photoId, direction: dir || 'cw'});
     console.log('rotate response:', r);
     if (r && r.ok) {
-      img.src = '/api/photos/view/' + photoId + '?t=' + Date.now();
+      img.src = '';
+      setTimeout(() => { img.src = '/api/photos/view/' + photoId + '?t=' + Date.now(); }, 50);
     }
   } catch(e) { console.warn('Rotate failed', e); }
   finally {
