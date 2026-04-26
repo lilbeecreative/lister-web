@@ -205,10 +205,14 @@ async def export_ebay_csv():
 
 
 @app.get("/api/photos/view/{photo_id}")
-async def view_photo(photo_id: str):
+async def view_photo(photo_id: str, t: str = ""):
     from fastapi.responses import Response
     img_bytes = supabase.storage.from_("part-photos").download(photo_id)
-    return Response(content=img_bytes, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+    return Response(content=img_bytes, media_type="image/jpeg", headers={
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    })
 
 @app.post("/api/photos/rotate")
 async def rotate_photo(request: Request):
