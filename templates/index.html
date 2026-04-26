@@ -1433,31 +1433,21 @@ initTileListeners();
 setInterval(() => { if (activeTab === 'dashboard') loadListings(); }, 30000);
 setInterval(() => { if (activeTab === 'auction' && activeSession) loadAuctionItems(activeSession); }, 30000);
 
-var _rotating = false;
-async function rotatePhoto(dir, event) {
-  if (_rotating) return;
+async function rotatePhoto(dir) {
   const img = document.getElementById('modal-img');
-  const src = img.src;
-  if (!src || !modalItemId) return;
-  const parts = src.split('/part-photos/');
+  if (!img || !img.src) return;
+  const parts = img.src.split('/part-photos/');
   if (parts.length < 2) return;
-  const photoId = parts[1].split('?')[0];
-  _rotating = true;
-  const btn = event ? event.target : null;
+  const photoId = decodeURIComponent(parts[1].split('?')[0]);
   try {
     const r = await api('POST', '/api/photos/rotate', {photo_id: photoId, direction: dir || 'cw'});
-    console.log('rotate response:', r);
     if (r && r.ok) {
-      // Fetch as blob to bypass all CDN/browser caching
       const freshUrl = '/api/photos/view/' + photoId + '?t=' + Date.now();
       fetch(freshUrl, {cache: 'no-store'})
         .then(res => res.blob())
         .then(blob => { img.src = URL.createObjectURL(blob); });
     }
   } catch(e) { console.warn('Rotate failed', e); }
-  finally {
-    _rotating = false;
-  }
 }
 
 function updatePriceByCondition() {
