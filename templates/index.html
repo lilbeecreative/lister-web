@@ -816,6 +816,7 @@ function openModal(id) {
   const curIdx = parseInt(tile?.dataset?.photoIdx || '0');
   const img = document.getElementById('modal-img');
   img.src = photos[curIdx]?.full || l.full_url || '';
+  img.dataset.photoId = l.photo_id || '';
   img.style.cssText = 'width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px 14px 0 0;image-orientation:from-image;display:' + (img.src ? 'block' : 'none') + ';';
   document.getElementById('modal-title').textContent = l.title || 'Unknown Item';
   document.getElementById('modal-meta').textContent  = `${l.ebay_category || ''} · ${(l.condition||'used').toUpperCase()}`;
