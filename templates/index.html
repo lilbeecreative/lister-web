@@ -1448,7 +1448,7 @@ async function rotatePhoto(dir) {
   try {
     const r = await api('POST', '/api/photos/rotate', {photo_id: photoId, direction: dir || 'cw'});
     console.log('rotate response:', r);
-    if (r.ok) {
+    if (r && r.ok) {
       img.src = '/api/photos/view/' + photoId + '?t=' + Date.now();
     }
   } catch(e) { console.warn('Rotate failed', e); }
