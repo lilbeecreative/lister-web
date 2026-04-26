@@ -79,7 +79,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="topbar">
   <div>
-    <div class="page-title">Deep Research</div>
+    <div class="page-title" id="research-title-display" onclick="editScanTitle()" title="Click to rename" style="cursor:pointer;">Deep Research</div>
     <div class="page-sub" id="page-sub">Loading watchlist...</div>
   </div>
   <div style="display:flex;gap:8px;">
@@ -205,7 +205,7 @@ function handlePdf(input) {
   if (!input.files[0]) return;
   pdfFile = input.files[0];
   document.getElementById('pdf-zone').classList.add('loaded');
-  document.getElementById('pdf-title').innerHTML = input.files[0].name + ' <span class="badge badge-green">Image analysis enabled</span>';
+  document.getElementById('pdf-title').innerHTML = input.files[0].name + ' <span class="badge badge-green">Image analysis enabled</span>'; scanTitle = input.files[0].name;
   document.getElementById('pdf-sub').textContent = 'Gemini will analyze the actual lot photo from the catalog';
 }
 
@@ -290,6 +290,7 @@ function buildCard(item, res, idx) {
         (res.notes||res.rec_reason ? '<div><div class="section-lbl">Market summary</div><div style="background:#0f1117;border:1px solid #2d3348;border-radius:8px;padding:12px 14px;font-size:12px;color:#94a3b8;line-height:1.7;">' + esc(res.notes||res.rec_reason||'') + '</div></div>' : '') +
         (res.image_notes && res.image_notes !== res.notes ? '<div><div class="section-lbl">Image analysis</div><div class="image-notes">' + esc(res.image_notes) + '</div></div>' : '') +
         (res.rec_reason ? '<div class="rec-box ' + recClass + '" style="font-size:13px;padding:12px 14px;">' + recLabel + ' — ' + esc(res.rec_reason) + '</div>' : '') +
+        '<div style="margin-top:10px;"><div class="section-lbl">Your notes</div><textarea rows="2" style="width:100%;background:#0f1117;border:1px solid #2d3348;border-radius:8px;padding:8px 10px;font-size:12px;color:#94a3b8;resize:vertical;font-family:inherit;" placeholder="Add your notes for this lot..." onchange="setUserNote(' + JSON.stringify(item.lot) + ', this.value)" oninput="setUserNote(' + JSON.stringify(item.lot) + ', this.value)">' + esc(item.user_note||'') + '</textarea></div>' +
         (res.ai_overview_html ? '<div style="margin-top:4px;"><div class="section-lbl">Google AI Overview</div><div style="background:#161b28;border:1px solid #2d3348;border-radius:8px;padding:12px 14px;font-size:12px;color:#94a3b8;line-height:1.6;max-height:220px;overflow-y:auto;">' + res.ai_overview_html + '</div></div>' : '') +
         (res.grounding_sources && res.grounding_sources.length ? '<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;">' + res.grounding_sources.slice(0,5).map(function(s){ return '<a href="' + esc(s.uri||'') + '" target="_blank" rel="noopener" style="font-size:10px;background:#1e2535;border:1px solid #2d3348;border-radius:5px;padding:3px 8px;color:#64748b;text-decoration:none;white-space:nowrap;overflow:hidden;max-width:180px;text-overflow:ellipsis;display:inline-block;">↗ ' + esc(s.title||s.uri||'') + '</a>'; }).join('') + '</div>' : '') +
       '</div></div>';
@@ -433,7 +434,7 @@ async function exportResults() {
     var res = results[item.lot] || {};
     var cleanTitle = (item.title||'').replace(/\s*,?\s*QTY\s*\(?\d*\)?/gi,'').replace(/\s*,?\s*\(\d+\)/g,'').replace(/,\s*$/,'').trim();
     var ebayUrl = 'https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent(cleanTitle) + '&LH_Sold=1&LH_Complete=1';
-    return {lot:item.lot||'',title:item.title||'',original_value:item.your_value||0,revised_value:res.revised_value||0,confidence:res.confidence||'',recommendation:res.recommendation||'',rec_reason:res.rec_reason||res.notes||'',image_notes:res.image_notes||'',ebay_search:ebayUrl};
+    return {lot:item.lot||'',title:item.title||'',original_value:item.your_value||0,revised_value:res.revised_value||0,confidence:res.confidence||'',recommendation:res.recommendation||'',rec_reason:res.rec_reason||res.notes||'',image_notes:res.image_notes||'',ebay_search:ebayUrl,user_note:item.user_note||''};
   });
   fd.append('items', JSON.stringify(exportData));
   try {
@@ -448,6 +449,40 @@ async function exportResults() {
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function setUserNote(lot, val) {
+  var item = watchItems.find(function(i){ return i.lot == lot; });
+  if (item) item.user_note = val;
+  // also update in allItems if present
+  if (window.allItemsRef) {
+    var ai = window.allItemsRef.find(function(i){ return i.lot == lot; });
+    if (ai) ai.user_note = val;
+  }
+}
+
+function editScanTitle() {
+  var el = document.getElementById('research-title-display');
+  var current = el.textContent;
+  var input = document.createElement('input');
+  input.value = current;
+  input.style.cssText = 'background:#1e2535;border:1px solid #2d3348;border-radius:6px;color:#f1f5f9;font-size:inherit;font-weight:inherit;padding:2px 8px;width:300px;';
+  input.onblur = function() {
+    var newTitle = input.value.trim() || current;
+    el.textContent = newTitle;
+    el.style.display = '';
+    input.remove();
+    // save updated title
+    var scanId = new URLSearchParams(window.location.search).get('scan');
+    if (scanId) {
+      fetch('/api/auction/scans', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({id: scanId, name: newTitle, items: watchItems})});
+    }
+  };
+  input.onkeydown = function(e){ if(e.key==='Enter') input.blur(); if(e.key==='Escape'){ input.value=current; input.blur(); }};
+  el.style.display = 'none';
+  el.parentNode.insertBefore(input, el.nextSibling);
+  input.focus(); input.select();
+}
 
 if(!tryLoadShared()) init();
 </script>
