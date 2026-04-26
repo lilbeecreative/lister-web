@@ -1434,7 +1434,7 @@ setInterval(() => { if (activeTab === 'dashboard') loadListings(); }, 30000);
 setInterval(() => { if (activeTab === 'auction' && activeSession) loadAuctionItems(activeSession); }, 30000);
 
 var _rotating = false;
-async function rotatePhoto(dir) {
+async function rotatePhoto(dir, event) {
   if (_rotating) return;
   const img = document.getElementById('modal-img');
   const src = img.src;
@@ -1443,8 +1443,7 @@ async function rotatePhoto(dir) {
   if (parts.length < 2) return;
   const photoId = parts[1].split('?')[0];
   _rotating = true;
-  const btn = document.querySelector('[onclick="rotatePhoto()"]');
-  if (btn) btn.textContent = '⏳';
+  const btn = event ? event.target : null;
   try {
     const r = await api('POST', '/api/photos/rotate', {photo_id: photoId, direction: dir || 'cw'});
     console.log('rotate response:', r);
@@ -1455,7 +1454,6 @@ async function rotatePhoto(dir) {
   } catch(e) { console.warn('Rotate failed', e); }
   finally {
     _rotating = false;
-    if (btn) btn.textContent = '↻';
   }
 }
 
