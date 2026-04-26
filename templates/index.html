@@ -1449,8 +1449,6 @@ async function rotatePhoto() {
     const r = await api('POST', '/api/photos/rotate', {photo_id: photoId});
     console.log('rotate response:', r);
     if (r.ok) {
-      // Force fresh load via backend proxy to bypass CDN cache
-      const photoId = parts[1].split('?')[0];
       img.src = '/api/photos/view/' + photoId + '?t=' + Date.now();
     }
   } catch(e) { console.warn('Rotate failed', e); }
