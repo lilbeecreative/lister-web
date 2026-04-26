@@ -1000,10 +1000,11 @@ async def save_scan(request: Request):
         scan_id = body.get("id")
         name = body.get("name", scan_id)
         items = body.get("items", [])
+        import json as _j
         supabase.table("auction_research_sessions").upsert({
             "share_id": scan_id,
             "title": name,
-            "items": items,
+            "items": _j.dumps(items),
         }, on_conflict="share_id").execute()
         return {"ok": True, "id": scan_id}
     except Exception as e:
