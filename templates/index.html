@@ -1433,22 +1433,30 @@ initTileListeners();
 setInterval(() => { if (activeTab === 'dashboard') loadListings(); }, 30000);
 setInterval(() => { if (activeTab === 'auction' && activeSession) loadAuctionItems(activeSession); }, 30000);
 
+var _rotating = false;
 async function rotatePhoto() {
+  if (_rotating) return;
   const img = document.getElementById('modal-img');
   const src = img.src;
   if (!src || !modalItemId) return;
-  // Extract photo_id from URL
   const parts = src.split('/part-photos/');
   if (parts.length < 2) return;
   const photoId = parts[1].split('?')[0];
+  _rotating = true;
+  const btn = document.querySelector('[onclick="rotatePhoto()"]');
+  if (btn) btn.textContent = '⏳';
   try {
     const r = await api('POST', '/api/photos/rotate', {photo_id: photoId});
+    console.log('rotate response:', r);
     if (r.ok) {
-      // Force reload with cache bust - strip any existing query params first
       const baseUrl = src.split('?')[0];
       img.src = baseUrl + '?t=' + Date.now();
     }
   } catch(e) { console.warn('Rotate failed', e); }
+  finally {
+    _rotating = false;
+    if (btn) btn.textContent = '↻';
+  }
 }
 
 function updatePriceByCondition() {
