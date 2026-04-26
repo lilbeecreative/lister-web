@@ -221,7 +221,8 @@ async def rotate_photo(request: Request):
     try:
         img_bytes = supabase.storage.from_("part-photos").download(photo_id)
         img = Image.open(io.BytesIO(img_bytes))
-        img = img.rotate(-90, expand=True)
+        direction = body.get('direction', 'cw')
+        img = img.rotate(90 if direction == 'ccw' else -90, expand=True)
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=90)
         buf.seek(0)
