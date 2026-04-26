@@ -162,7 +162,7 @@ async def export_ebay_csv():
     output.write('#INFO,Version=0.0.2,Template= eBay-draft-listings-template_US,,,,,,,,\n')
     output.write('#INFO Action and Category ID are required fields.,,,,,,,,,,\n')
     output.write('#INFO,,,,,,,,,,\n')
-    output.write('Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition,Description,Format\n')
+    output.write('Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition ID,Description,Format\n')
 
     writer = csv.writer(output, quoting=csv.QUOTE_ALL)
 
