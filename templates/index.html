@@ -457,7 +457,10 @@ select.field-input { background: #fff; color: #0f172a; }
 <!-- PHOTO MODAL -->
 <div class="modal-overlay" id="modal" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <img class="modal-img" id="modal-img" src="" alt=""/>
+    <div style="position:relative;">
+      <img class="modal-img" id="modal-img" src="" alt=""/>
+      <button onclick="rotatePhoto()" title="Rotate 90°" style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">↻</button>
+    </div>
     <div class="modal-body">
       <div class="modal-title" id="modal-title"></div>
       <div class="modal-meta" id="modal-meta"></div>
@@ -1423,6 +1426,25 @@ initTileListeners();
 // Auto-refresh dashboard every 30s when on that tab
 setInterval(() => { if (activeTab === 'dashboard') loadListings(); }, 30000);
 setInterval(() => { if (activeTab === 'auction' && activeSession) loadAuctionItems(activeSession); }, 30000);
+
+async function rotatePhoto() {
+  const img = document.getElementById('modal-img');
+  const src = img.src;
+  if (!src || !modalItemId) return;
+  // Extract photo_id from URL
+  const parts = src.split('/part-photos/');
+  if (parts.length < 2) return;
+  const photoId = parts[1].split('?')[0];
+  try {
+    const r = await api('POST', '/api/photos/rotate', {photo_id: photoId});
+    if (r.ok) {
+      // Force reload with cache bust
+      img.src = src.split('?')[0] + '?t=' + Date.now();
+      // Also refresh thumbnails
+      await loadListings();
+    }
+  } catch(e) { console.warn('Rotate failed', e); }
+}
 
 function updatePriceByCondition() {
   var l = window._modalListing;

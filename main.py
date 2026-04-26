@@ -204,6 +204,30 @@ async def export_ebay_csv():
     )
 
 
+@app.post("/api/photos/rotate")
+async def rotate_photo(request: Request):
+    from PIL import Image
+    import io
+    body = await request.json()
+    photo_id = body.get("photo_id", "")
+    if not photo_id:
+        raise HTTPException(400, "photo_id required")
+    try:
+        img_bytes = supabase.storage.from_("part-photos").download(photo_id)
+        img = Image.open(io.BytesIO(img_bytes))
+        img = img.rotate(-90, expand=True)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=90)
+        buf.seek(0)
+        supabase.storage.from_("part-photos").upload(
+            path=photo_id,
+            file=buf.read(),
+            file_options={"content-type": "image/jpeg", "upsert": "true"}
+        )
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 @app.post("/api/reset-queue")
 async def reset_queue():
     try:
