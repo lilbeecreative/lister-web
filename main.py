@@ -1083,6 +1083,7 @@ async def research_export(request: Request):
             item.get("confidence", "").capitalize(),
             item.get("recommendation", "").capitalize(),
             item.get("rec_reason") or item.get("image_notes", ""),
+            item.get("user_note", ""),
             "View eBay Sold"
         ]
         rec = item.get("recommendation", "").lower()
@@ -1162,6 +1163,7 @@ async def research_export(request: Request):
             item.get("confidence", "").capitalize(),
             item.get("recommendation", "").capitalize(),
             item.get("rec_reason") or item.get("image_notes", ""),
+            item.get("user_note", ""),
             "View eBay Sold"
         ]
         rec = item.get("recommendation", "").lower()
