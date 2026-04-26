@@ -1444,10 +1444,9 @@ async function rotatePhoto() {
   try {
     const r = await api('POST', '/api/photos/rotate', {photo_id: photoId});
     if (r.ok) {
-      // Force reload with cache bust
-      img.src = src.split('?')[0] + '?t=' + Date.now();
-      // Also refresh thumbnails
-      await loadListings();
+      // Force reload with cache bust - strip any existing query params first
+      const baseUrl = src.split('?')[0];
+      img.src = baseUrl + '?t=' + Date.now();
     }
   } catch(e) { console.warn('Rotate failed', e); }
 }
