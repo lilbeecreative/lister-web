@@ -1449,7 +1449,8 @@ async function rotatePhoto() {
     const r = await api('POST', '/api/photos/rotate', {photo_id: photoId});
     console.log('rotate response:', r);
     if (r.ok) {
-      const baseUrl = src.split('?')[0];
+      // Use direct storage URL to bypass CDN cache
+      const baseUrl = src.split('?')[0].replace('/render/image/public/', '/object/public/');
       img.src = baseUrl + '?t=' + Date.now();
     }
   } catch(e) { console.warn('Rotate failed', e); }
