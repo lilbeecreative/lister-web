@@ -806,6 +806,7 @@ async function startAuctionScan() {
 
 // ── MODAL ──────────────────────────────────────────────────────
 function openModal(id) {
+  id = isNaN(id) ? id : Number(id);
   const l = listings.find(x => x.id === id);
   if (!l) return;
   modalItemId = id;
