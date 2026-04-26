@@ -168,7 +168,7 @@ async def export_ebay_csv():
 
     for item in items:
         cond = str(item.get("condition") or "used").strip().lower()
-        cond_id = "New" if cond == "new" else "Used"
+        cond_id = "NEW" if cond == "new" else "USED"
         pid = str(item.get("photo_id") or "")
         # Look up all photos for this listing via group_photos table
         try:
