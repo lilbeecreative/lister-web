@@ -146,7 +146,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <div id="results-view" class="hidden">
       <div class="topbar">
-        <div class="page-title" id="scan-title">Scan results</div>
+        <div class="page-title" id="scan-title" onclick="editScanName()" title="Click to rename" style="cursor:pointer;">Scan results</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn-ghost" onclick="exportExcel()">Download Excel</button>
           <button class="btn-primary" onclick="showUpload()">New scan</button>
@@ -406,6 +406,7 @@ function renderItems() {
       '<div style="min-width:0;overflow:hidden">' +
         '<div class="item-name" onclick="window.open(\'' + ebayUrl + '\',\'_blank\',\'noopener,width=1200,height=800\')">' + esc(item.title||'') + deepBadge + '</div>' +
         (item.notes ? '<div class="item-desc">' + esc(item.notes) + '</div>' : '') +
+        '<input type="text" class="note-input" placeholder="Add note..." value="' + esc(item.user_note||'') + '" onchange="setItemNote(\'' + item._id + '\', this.value)" style="width:100%;margin-top:4px;background:transparent;border:none;border-bottom:1px solid #2d3348;color:#94a3b8;font-size:11px;padding:2px 0;outline:none;" />' +
       '</div>' +
       '<div><span class="' + valCls + '">$' + (item.your_value||0).toLocaleString() + '</span></div>' +
       '<input type="checkbox" class="watch-chk" onchange="toggleWatch(\'' + item._id + '\',this.checked)" ' + (item._watch ? 'checked' : '') + '>' +
@@ -413,6 +414,37 @@ function renderItems() {
       '<button class="ico-btn-gemini" onclick="openGemini(\'' + esc((item.title||'')) + '\', \'' + esc(item._page_img||'') + '\')" >✨</button>' +
       '</div>';
   }).join('');
+}
+
+function editScanName() {
+  var el = document.getElementById('scan-title');
+  var current = el.textContent;
+  var input = document.createElement('input');
+  input.value = current;
+  input.style.cssText = 'background:#1e2535;border:1px solid #2d3348;border-radius:6px;color:#f1f5f9;font-size:inherit;font-weight:inherit;padding:2px 8px;width:300px;';
+  input.onblur = function() {
+    var newName = input.value.trim() || current;
+    scanName = newName;
+    el.textContent = newName;
+    el.style.display = '';
+    input.remove();
+    saveCurrentScan();
+  };
+  input.onkeydown = function(e) {
+    if (e.key === 'Enter') input.blur();
+    if (e.key === 'Escape') { input.value = current; input.blur(); }
+  };
+  el.style.display = 'none';
+  el.parentNode.insertBefore(input, el.nextSibling);
+  input.focus(); input.select();
+}
+
+var _noteTimer2 = null;
+function setItemNote(id, val) {
+  var item = allItems.find(function(i) { return i._id === id; });
+  if (item) item.user_note = val;
+  clearTimeout(_noteTimer2);
+  _noteTimer2 = setTimeout(function() { saveCurrentScan(); }, 1000);
 }
 
 function toggleSelect(id, checked) {
