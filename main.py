@@ -162,13 +162,13 @@ async def export_ebay_csv():
     output.write('#INFO,Version=0.0.2,Template= eBay-draft-listings-template_US,,,,,,,,\n')
     output.write('#INFO Action and Category ID are required fields.,,,,,,,,,,\n')
     output.write('#INFO,,,,,,,,,,\n')
-    output.write('Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition ID,Description,Format\n')
+    output.write('Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition,Description,Format\n')
 
     writer = csv.writer(output, quoting=csv.QUOTE_ALL)
 
     for item in items:
         cond = str(item.get("condition") or "used").strip().lower()
-        cond_id = "1000" if cond == "new" else "3000"
+        cond_id = "New" if cond == "new" else "Used"
         pid = str(item.get("photo_id") or "")
         # Look up all photos for this listing via group_photos table
         try:
