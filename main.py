@@ -802,6 +802,49 @@ weight fields: use null if truly unknown"""
                 data["confidence"] = "low"
                 data["pricing_tier"] = "NO_DATA"
                 data["pricing_flag"] = "No verified data sources available - estimate may not reflect actual market"
+
+        # --- Hybrid Escalation: call gemini-2.5-pro for hard items ---
+        escalate_tiers = {"NO_DATA", "COMPARABLE_ITEMS", "MSRP_ONLY"}
+        if data.get("pricing_tier") in escalate_tiers and gemini_key:
+            print(f"   Escalating lot {lot} to gemini-2.5-pro (tier={data.get('pricing_tier')})")
+            try:
+                import requests as _req
+                pro_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={gemini_key}"
+                pro_payload = {
+                    "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                    "generationConfig": {"temperature": 0.0, "maxOutputTokens": 2000}
+                }
+                pro_resp = _req.post(pro_url, json=pro_payload, timeout=60)
+                pro_data = pro_resp.json()
+                pro_parts = pro_data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                pro_raw = " ".join(p.get("text", "") for p in pro_parts if "text" in p).strip()
+                if pro_raw:
+                    if "```" in pro_raw:
+                        pro_raw = pro_raw.split("```")[1]
+                        if pro_raw.startswith("json"): pro_raw = pro_raw[4:]
+                    pro_raw = pro_raw.strip()
+                    s = pro_raw.find("{"); e = pro_raw.rfind("}") + 1
+                    if s >= 0 and e > s:
+                        pro_raw = pro_raw[s:e]
+                    try:
+                        pro_result = json.loads(pro_raw)
+                    except Exception:
+                        from json_repair import repair_json
+                        pro_result = json.loads(repair_json(pro_raw))
+                    # Sanitize and merge
+                    for key in ["image_notes","rec_reason","notes","confidence","recommendation","pricing_tier","pricing_flag","liquidity_note","weight_note"]:
+                        if key in pro_result:
+                            pro_result[key] = str(pro_result[key]).replace("\n"," ").replace("\r"," ")
+                    pro_result["model_used"] = "gemini-2.5-pro"
+                    pro_result["ai_overview_html"] = ai_overview_html
+                    pro_result["grounding_sources"] = grounding_sources
+                    if _gsummary and not pro_result.get("notes"):
+                        pro_result["notes"] = _gsummary
+                    print(f"   Pro escalation result: tier={pro_result.get('pricing_tier')}, value={pro_result.get('revised_value')}")
+                    return pro_result
+            except Exception as _pe:
+                print(f"   Pro escalation failed: {_pe}")
+
         return data
 
     async def generate():
