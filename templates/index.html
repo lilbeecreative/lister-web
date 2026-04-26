@@ -1435,10 +1435,15 @@ setInterval(() => { if (activeTab === 'auction' && activeSession) loadAuctionIte
 
 async function rotatePhoto(dir) {
   const img = document.getElementById('modal-img');
-  if (!img || !img.src) return;
-  const parts = img.src.split('/part-photos/');
-  if (parts.length < 2) return;
-  const photoId = decodeURIComponent(parts[1].split('?')[0]);
+  if (!img) return;
+  // Use stored photo ID to avoid losing it after blob URL replacement
+  let photoId = img.dataset.photoId;
+  if (!photoId) {
+    const parts = img.src.split('/part-photos/');
+    if (parts.length < 2) return;
+    photoId = decodeURIComponent(parts[1].split('?')[0]);
+    img.dataset.photoId = photoId;
+  }
   try {
     const r = await api('POST', '/api/photos/rotate', {photo_id: photoId, direction: dir || 'cw'});
     if (r && r.ok) {
