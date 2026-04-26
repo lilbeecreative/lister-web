@@ -203,60 +203,66 @@ var currentFilter = 'all';
 var currentScanId = null;
 var scanName = '';
 
-function loadHistory() {
-  var scans = JSON.parse(localStorage.getItem('auction_scans') || '[]');
+async function loadHistory() {
   var el = document.getElementById('scan-history');
-  if (!scans.length) {
-    el.innerHTML = '<div style="font-size:11px;color:#475569;text-align:center;padding:8px;">No scans yet</div>';
-    return;
+  el.innerHTML = '<div style="font-size:11px;color:#475569;text-align:center;padding:8px;">Loading...</div>';
+  try {
+    var r = await fetch('/api/auction/scans');
+    var data = await r.json();
+    var scans = data.scans || [];
+    if (!scans.length) {
+      el.innerHTML = '<div style="font-size:11px;color:#475569;text-align:center;padding:8px;">No scans yet</div>';
+      return;
+    }
+    el.innerHTML = scans.map(function(s) {
+      var hvCount = (s.items || []).filter(function(i) { return (i.your_value||0) >= 500; }).length;
+      return '<div class="scan-item' + (s.id === currentScanId ? ' active' : '') + '" onclick="loadScan(\'' + s.id + '\')">' +
+        '<div class="scan-item-del" onclick="event.stopPropagation();deleteScan(\'' + s.id + '\')">✕</div>' +
+        '<div class="scan-item-title">' + esc(s.name) + '</div>' +
+        '<div class="scan-item-meta">' + (s.items||[]).length + ' lots · ' + hvCount + ' high value</div>' +
+        '</div>';
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:11px;color:#475569;text-align:center;padding:8px;">Error loading</div>';
   }
-  el.innerHTML = scans.map(function(s) {
-    var hvCount = (s.items || []).filter(function(i) { return (i.your_value||0) >= 500; }).length;
-    return '<div class="scan-item' + (s.id === currentScanId ? ' active' : '') + '" onclick="loadScan(\'' + s.id + '\')">' +
-      '<div class="scan-item-del" onclick="event.stopPropagation();deleteScan(\'' + s.id + '\')">✕</div>' +
-      '<div class="scan-item-title">' + esc(s.name) + '</div>' +
-      '<div class="scan-item-meta">' + (s.items||[]).length + ' lots · ' + hvCount + ' high value</div>' +
-      '</div>';
-  }).join('');
 }
 
-function saveCurrentScan() {
+async function saveCurrentScan() {
   if (!currentScanId || !allItems.length) return;
-  var scans = JSON.parse(localStorage.getItem('auction_scans') || '[]');
-  var idx = scans.findIndex(function(s) { return s.id === currentScanId; });
-  var scanObj = {id: currentScanId, name: scanName, items: allItems, ts: Date.now()};
-  if (idx >= 0) scans[idx] = scanObj;
-  else scans.unshift(scanObj);
-  localStorage.setItem('auction_scans', JSON.stringify(scans));
-  loadHistory();
+  try {
+    await fetch('/api/auction/scans', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({id: currentScanId, name: scanName, items: allItems})
+    });
+    loadHistory();
+  } catch(e) { console.warn('Save scan failed', e); }
 }
 
-function loadScan(id) {
-  var scans = JSON.parse(localStorage.getItem('auction_scans') || '[]');
-  var scan = scans.find(function(s) { return s.id === id; });
-  if (!scan) return;
-  currentScanId = id;
-  scanName = scan.name;
-  allItems = scan.items || [];
-  document.getElementById('scan-title').textContent = scan.name;
-  document.getElementById('upload-view').classList.add('hidden');
-  document.getElementById('results-view').classList.remove('hidden');
-  document.getElementById('progress-card').classList.add('hidden');
-  updateStats();
-  renderItems();
-  loadHistory();
+async function loadScan(id) {
+  try {
+    var r = await fetch('/api/auction/scans/' + id);
+    var scan = await r.json();
+    if (!scan || !scan.id) return;
+    currentScanId = scan.id;
+    scanName = scan.name;
+    allItems = scan.items || [];
+    document.getElementById('scan-title').textContent = scan.name;
+    document.getElementById('upload-view').classList.add('hidden');
+    document.getElementById('results-view').classList.remove('hidden');
+    document.getElementById('progress-card').classList.add('hidden');
+    updateStats();
+    renderItems();
+    loadHistory();
+  } catch(e) { console.warn('Load scan failed', e); }
 }
 
-function deleteScan(id) {
-  var scans = JSON.parse(localStorage.getItem('auction_scans') || '[]');
-  scans = scans.filter(function(s) { return s.id !== id; });
-  localStorage.setItem('auction_scans', JSON.stringify(scans));
-  if (currentScanId === id) {
-    currentScanId = null;
-    allItems = [];
-    showUpload();
-  }
-  loadHistory();
+async function deleteScan(id) {
+  try {
+    await fetch('/api/auction/scans/' + id, {method: 'DELETE'});
+    if (currentScanId === id) { currentScanId = null; allItems = []; showUpload(); }
+    loadHistory();
+  } catch(e) { console.warn('Delete scan failed', e); }
 }
 
 function showUpload() {
