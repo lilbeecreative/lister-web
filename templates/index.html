@@ -549,6 +549,11 @@ async function api(method, url, body) {
 }
 
 // ── LISTINGS ───────────────────────────────────────────────────
+// Safety: ensure modal is closed on page load
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('modal').classList.remove('open');
+});
+
 async function loadListings() {
   try {
     listings = await api('GET', '/api/listings');
