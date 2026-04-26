@@ -450,14 +450,26 @@ async function exportResults() {
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+var _noteTimer = null;
 function setUserNote(lot, val) {
   var item = watchItems.find(function(i){ return i.lot == lot; });
   if (item) item.user_note = val;
-  // also update in allItems if present
   if (window.allItemsRef) {
     var ai = window.allItemsRef.find(function(i){ return i.lot == lot; });
     if (ai) ai.user_note = val;
   }
+  // Debounced save to Supabase
+  clearTimeout(_noteTimer);
+  _noteTimer = setTimeout(function() {
+    var scanId = new URLSearchParams(window.location.search).get('scan');
+    if (scanId) {
+      fetch('/api/auction/scans', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id: scanId, name: document.getElementById('research-title-display').textContent, items: watchItems})
+      });
+    }
+  }, 1000);
 }
 
 function editScanTitle() {
