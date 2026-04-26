@@ -1062,8 +1062,8 @@ async def research_export(request: Request):
         right=Side(style="thin", color="2D3348")
     )
 
-    headers = ["Lot", "Title", "Original Value", "Revised Value", "Confidence", "Recommendation", "Notes", "eBay Search"]
-    col_widths = [8, 45, 15, 15, 12, 16, 40, 20]
+    headers = ["Lot", "Title", "Original Value", "Revised Value", "Confidence", "Recommendation", "Notes", "Your Notes", "eBay Search"]
+    col_widths = [8, 45, 15, 15, 12, 16, 40, 30, 20]
 
     for ci, (h, w) in enumerate(zip(headers, col_widths), 1):
         cell = ws.cell(row=1, column=ci, value=h)
