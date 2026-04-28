@@ -66,6 +66,11 @@ async def dashboard_v2(request: Request):
         "Content-Security-Policy": "default-src * blob: data:; script-src * blob: data: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * blob: data:;"
     })
 
+@app.get("/team", response_class=HTMLResponse)
+async def team_portal(request: Request):
+    with open(os.path.join(os.path.dirname(__file__), "templates", "team_portal.html")) as f:
+        return HTMLResponse(f.read())
+
 @app.get("/portal", response_class=HTMLResponse)
 async def portal(request: Request):
     import os
