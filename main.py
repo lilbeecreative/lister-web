@@ -150,7 +150,7 @@ async def export_ebay_csv():
     from datetime import datetime
     try:
         res = supabase.table("listings").select(
-            "title,description,price,price_used,price_new,quantity,condition,photo_id,ebay_category_id"
+            "title,description,price,price_used,price_new,quantity,condition,photo_id,ebay_category_id,description"
         ).neq("status", "archived").execute()
         items = res.data or []
     except Exception as e:
@@ -191,7 +191,7 @@ async def export_ebay_csv():
             str(int(item.get("quantity") or 1)),
             pic,
             cond_id,
-            str(item.get("'Shipped primarily with UPS and sometimes USPS. If you have special packing or shipping needs, please send a message. This item is sold in as-is condition. The seller assumes no liability for the use, operation, or installation of this product. Due to the technical nature of this equipment, the buyer is responsible for having the item professionally inspected and installed by a certified technician prior to use.'ription","") or 'Shipped primarily with UPS and sometimes USPS. If you have special packing or shipping needs, please send a message. This item is sold in as-is condition. The seller assumes no liability for the use, operation, or installation of this product. Due to the technical nature of this equipment, the buyer is responsible for having the item professionally inspected and installed by a certified technician prior to use.'),
+            str(item.get('description','') or EBAY_DESCRIPTION),
             "FixedPrice",
         ])
 
