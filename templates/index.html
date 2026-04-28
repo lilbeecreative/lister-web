@@ -485,6 +485,10 @@ select.field-input { background: #fff; color: #0f172a; }
           </div>
         </div>
       </div>
+      <div>
+        <div class="field-label">eBay Description</div>
+        <textarea class="field-input" id="modal-desc-input" rows="4" oninput="modalDirty=true" style="resize:vertical;font-size:12px;line-height:1.5;"></textarea>
+      </div>
       <button class="modal-close" onclick="saveModal()">💾 Save & Close</button>
     </div>
   </div>
@@ -549,6 +553,7 @@ async function api(method, url, body) {
 }
 
 // ── LISTINGS ───────────────────────────────────────────────────
+window._defaultDesc = 'Shipped primarily with UPS and sometimes USPS. If you have special packing or shipping needs, please send a message. This item is sold in as-is condition. The seller assumes no liability for the use, operation, or installation of this product. Due to the technical nature of this equipment, the buyer is responsible for having the item professionally inspected and installed by a certified technician prior to use.';
 // Safety: ensure modal is closed on page load
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('modal').classList.remove('open');
@@ -827,6 +832,7 @@ function openModal(id) {
   document.getElementById('modal-title-input').value = l.title || '';
   document.getElementById('modal-price-input').value = l.price.toFixed(2);
   document.getElementById('modal-cond-input').value  = l.condition || 'used';
+  document.getElementById('modal-desc-input').value = l.description || window._defaultDesc || '';
   document.getElementById('modal').classList.add('open');
 }
 
@@ -838,6 +844,8 @@ async function saveModal() {
   try {
     if (modalDirty) {
       await api('PATCH', `/api/listings/${modalItemId}`, {field:'title', value:title});
+      const desc = document.getElementById('modal-desc-input').value.trim();
+      await api('PATCH', `/api/listings/${modalItemId}`, {field:'description', value:desc});
       await api('PATCH', `/api/listings/${modalItemId}`, {field:'price', value:price});
       await api('PATCH', `/api/listings/${modalItemId}`, {field:'condition', value:cond});
       // Update local state
