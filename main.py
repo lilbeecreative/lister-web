@@ -19,6 +19,7 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+print(f"Connecting to Supabase: {SUPABASE_URL}")
 supabase     = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI(title="Lister AI")
