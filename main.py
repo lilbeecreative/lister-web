@@ -111,10 +111,15 @@ async def dashboard(request: Request):
 # ── API: LISTINGS ─────────────────────────────────────────────── #
 
 @app.get("/api/listings")
-async def get_listings():
+async def get_listings(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
     try:
         res = supabase.table("listings")\
             .select("*")\
+            .eq("business_id", business_id)\
             .neq("status", "archived")\
             .order("created_at", desc=True)\
             .execute()
