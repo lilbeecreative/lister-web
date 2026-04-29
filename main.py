@@ -100,7 +100,7 @@ async def admin_delete_business(business_id: str):
 @app.get("/api/admin/businesses")
 async def admin_businesses():
     try:
-        biz = supabase.table("businesses").select("id,name,email,created_at").order("created_at", desc=True).execute()
+        biz = supabase.table("businesses").select("id,name,email,created_at,scan_count,scan_limit,is_admin").order("created_at", desc=True).execute()
         businesses = biz.data or []
         for b in businesses:
             lid = supabase.table("listings").select("id", count="exact").eq("business_id", b["id"]).execute()
