@@ -218,8 +218,8 @@ select.field-input { background: #fff; color: #0f172a; }
   <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
   <button class="nav-btn" data-tab="upload">📸 Upload</button>
   <button class="nav-btn" data-tab="fastscan">⚡ Fast Scan</button>
-  <button class="nav-btn" data-tab="auction">🔨 Auctions</button>
-  <button class="nav-btn" data-tab="parts">🔍 Parts Lookup</button>
+  {% if is_admin %}<button class="nav-btn" data-tab="auction">🔨 Auctions</button>{% endif %}
+  {% if is_admin %}<button class="nav-btn" data-tab="parts">🔍 Parts Lookup</button>{% endif %}
   <button class="nav-btn" data-tab="settings">⚙️ Settings</button>
   <div class="nav-spacer"></div>
   <a class="nav-download" href="#" onclick="window.location.href='/api/export/ebay-csv';return false;">⬇️ eBay CSV</a>
