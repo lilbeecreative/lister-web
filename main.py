@@ -550,6 +550,33 @@ class CreateGroup(BaseModel):
     session_id: str
     condition:  str
 
+@app.get("/api/groups/pending")
+async def get_pending_groups(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"groups": []}, status_code=401)
+    try:
+        groups = supabase.table("listing_groups").select("id,status,condition,created_at").eq("business_id", business_id).in_("status", ["waiting", "pending", "processing"]).order("created_at", desc=True).execute()
+        result = []
+        for g in (groups.data or []):
+            photos = supabase.table("group_photos").select("photo_id").eq("group_id", g["id"]).execute()
+            photo_ids = [p["photo_id"] for p in (photos.data or [])]
+            if not photo_ids:
+                continue
+            result.append({
+                "id": g["id"],
+                "status": g["status"],
+                "condition": g["condition"],
+                "created_at": g["created_at"],
+                "photo_id": photo_ids[0],
+                "photo_count": len(photo_ids),
+                "photo_url": f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{photo_ids[0]}"
+            })
+        return {"groups": result}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 @app.post("/api/groups")
 async def create_group(body: CreateGroup, request: Request):
     try:
