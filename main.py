@@ -154,7 +154,7 @@ async def process_checkout(request: Request):
         # Send welcome email
         resend.api_key = os.getenv("RESEND_API_KEY", "re_7V1Ykni2_FjGBPZwsgWr8ytntk3sCoG5b")
         resend.Emails.send({
-            "from": "Lister AI <onboarding@resend.dev>",
+            "from": "Lister AI <hello@reselljunkie.com>",
             "to": biz_data["email"],
             "subject": "Welcome to Lister AI — You're all set!",
             "html": f"""
