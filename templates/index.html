@@ -226,7 +226,7 @@ select.field-input { background: #fff; color: #0f172a; }
     <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Scans Used</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-        <div style="height:100%;border-radius:2px;background:{% if scan_count >= scan_limit %}#ef4444{% elif scan_count >= scan_limit * 0.8 %}#f59e0b{% else %}#22c55e{% endif %};width:{{ [((scan_count / scan_limit) * 100)|round|int, 100]|min }}%;"></div>
+        <div style="height:100%;border-radius:2px;background:{% if scan_count >= scan_limit %}#ef4444{% elif scan_count >= scan_limit * 0.8 %}#f59e0b{% else %}#22c55e{% endif %};width:{{ [[((scan_count / scan_limit) * 100)|round|int, 100]|min, 0]|max }}%;"></div>
       </div>
       <span style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;">{{ scan_count }}/{{ scan_limit }}</span>
     </div>
