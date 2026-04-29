@@ -377,6 +377,15 @@ class CreateGroup(BaseModel):
 async def create_group(body: CreateGroup, request: Request):
     try:
         business_id = require_auth(request)
+        # Check scan limit
+        biz = supabase.table("businesses").select("scan_count,scan_limit").eq("id", business_id).execute()
+        if biz.data:
+            scan_count = biz.data[0].get("scan_count") or 0
+            scan_limit = biz.data[0].get("scan_limit") or 50
+            if scan_count >= scan_limit:
+                raise HTTPException(402, "Scan limit reached. Please contact us to upgrade your plan.")
+            # Increment scan count
+            supabase.table("businesses").update({"scan_count": scan_count + 1}).eq("id", business_id).execute()
         res = supabase.table("listing_groups").insert({
             "session_id": body.session_id,
             "status":     "waiting",
