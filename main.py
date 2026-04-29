@@ -120,13 +120,30 @@ def require_auth(request: Request):
         pass
     return None
 
+def get_business_info(request: Request):
+    """Returns (business_id, is_admin) or (None, False)."""
+    token = request.cookies.get("session_id")
+    if not token:
+        return None, False
+    try:
+        res = supabase.table("sessions").select("business_id").eq("token", token).execute()
+        if not res.data:
+            return None, False
+        bid = res.data[0]["business_id"]
+        biz = supabase.table("businesses").select("is_admin").eq("id", bid).execute()
+        is_admin = bool(biz.data[0]["is_admin"]) if biz.data else False
+        return bid, is_admin
+    except Exception:
+        pass
+    return None, False
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    business_id = require_auth(request)
+    business_id, is_admin = get_business_info(request)
     if not business_id:
         from fastapi.responses import RedirectResponse
         return RedirectResponse("/login", status_code=302)
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request, "is_admin": is_admin})
 
 # ── API: LISTINGS ─────────────────────────────────────────────── #
 
