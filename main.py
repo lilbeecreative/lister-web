@@ -1835,3 +1835,103 @@ async def save_setting(body: SaveSetting):
         return {"ok": True}
     except Exception as e:
         raise HTTPException(500, str(e))
+import hashlib, secrets
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    hashed = hashlib.sha256((salt + password).encode()).hexdigest()
+    return f"{salt}:{hashed}"
+
+def verify_password(password: str, stored: str) -> bool:
+    try:
+        salt, hashed = stored.split(":")
+        return hashlib.sha256((salt + password).encode()).hexdigest() == hashed
+    except Exception:
+        return False
+
+def get_business_id(request: Request):
+    """Get business_id from session cookie."""
+    session = request.cookies.get("session_id")
+    if not session:
+        return None
+    try:
+        res = supabase.table("sessions").select("business_id").eq("token", session).execute()
+        if res.data:
+            return res.data[0]["business_id"]
+    except Exception:
+        pass
+    return None
+
+@app.get("/login")
+async def login_page(request: Request, error: str = ""):
+    return templates.TemplateResponse("login.html", {"request": request, "error": error})
+
+@app.post("/login")
+async def login_submit(request: Request):
+    form = await request.form()
+    email = str(form.get("email", "")).strip().lower()
+    password = str(form.get("password", ""))
+    try:
+        res = supabase.table("businesses").select("id,password_hash").eq("email", email).execute()
+        if not res.data:
+            return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid email or password"})
+        biz = res.data[0]
+        if not verify_password(password, biz["password_hash"]):
+            return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid email or password"})
+        token = secrets.token_hex(32)
+        supabase.table("sessions").insert({"token": token, "business_id": biz["id"]}).execute()
+        from fastapi.responses import RedirectResponse
+        resp = RedirectResponse("/", status_code=302)
+        resp.set_cookie("session_id", token, httponly=True, max_age=60*60*24*30)
+        return resp
+    except Exception as e:
+        return templates.TemplateResponse("login.html", {"request": request, "error": f"Login failed: {e}"})
+
+@app.get("/register")
+async def register_page(request: Request, error: str = ""):
+    return templates.TemplateResponse("register.html", {"request": request, "error": error})
+
+@app.post("/register")
+async def register_submit(request: Request):
+    form = await request.form()
+    business_name = str(form.get("business_name", "")).strip()
+    email = str(form.get("email", "")).strip().lower()
+    password = str(form.get("password", ""))
+    if not business_name or not email or not password:
+        return templates.TemplateResponse("register.html", {"request": request, "error": "All fields required"})
+    if len(password) < 8:
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Password must be at least 8 characters"})
+    try:
+        existing = supabase.table("businesses").select("id").eq("email", email).execute()
+        if existing.data:
+            return templates.TemplateResponse("register.html", {"request": request, "error": "Email already registered"})
+        password_hash = hash_password(password)
+        res = supabase.table("businesses").insert({
+            "name": business_name,
+            "email": email,
+            "password_hash": password_hash
+        }).execute()
+        business_id = res.data[0]["id"]
+        token = secrets.token_hex(32)
+        supabase.table("sessions").insert({"token": token, "business_id": business_id}).execute()
+        from fastapi.responses import RedirectResponse
+        resp = RedirectResponse("/", status_code=302)
+        resp.set_cookie("session_id", token, httponly=True, max_age=60*60*24*30)
+        return resp
+    except Exception as e:
+        return templates.TemplateResponse("register.html", {"request": request, "error": f"Registration failed: {e}"})
+
+@app.get("/logout")
+async def logout(request: Request):
+    from fastapi.responses import RedirectResponse
+    token = request.cookies.get("session_id")
+    if token:
+        try:
+            supabase.table("sessions").delete().eq("token", token).execute()
+        except Exception:
+            pass
+    resp = RedirectResponse("/login", status_code=302)
+    resp.delete_cookie("session_id")
+    return resp
+
+

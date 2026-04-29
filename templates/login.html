@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Lister AI</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0c10; color:#f1f5f9; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+  .card { background:#111318; border:1px solid #1e2330; border-radius:16px; padding:40px; width:100%; max-width:400px; }
+  .logo { text-align:center; margin-bottom:32px; }
+  .logo img { width:56px; height:56px; border-radius:50%; }
+  .logo h1 { font-size:22px; font-weight:800; margin-top:12px; }
+  .logo p { color:#64748b; font-size:13px; margin-top:4px; }
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-size:12px; color:#64748b; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em; }
+  .field input { width:100%; background:#0f1117; border:1px solid #1e2330; border-radius:8px; padding:12px 14px; color:#f1f5f9; font-size:14px; outline:none; transition:border-color 0.2s; }
+  .field input:focus { border-color:#22c55e; }
+  .btn { width:100%; background:#22c55e; border:none; border-radius:8px; padding:13px; color:#000; font-size:15px; font-weight:700; cursor:pointer; margin-top:8px; transition:background 0.2s; }
+  .btn:hover { background:#16a34a; }
+  .error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:12px; color:#ef4444; font-size:13px; margin-bottom:16px; }
+  .link { text-align:center; margin-top:20px; font-size:13px; color:#64748b; }
+  .link a { color:#22c55e; text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <img src="/static/favicon.png" alt="Logo">
+    <h1>Lister AI</h1>
+    <p>Sign in to your account</p>
+  </div>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="POST" action="/login">
+    <div class="field"><label>Email</label><input type="email" name="email" required autofocus></div>
+    <div class="field"><label>Password</label><input type="password" name="password" required></div>
+    <button class="btn" type="submit">Sign In</button>
+  </form>
+  <div class="link">Don't have an account? <a href="/register">Register</a></div>
+</div>
+</body>
+</html>
