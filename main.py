@@ -76,6 +76,27 @@ async def admin_page(request: Request):
     with open(os.path.join(os.path.dirname(__file__), "templates", "admin.html")) as f:
         return HTMLResponse(f.read())
 
+@app.patch("/api/admin/businesses/{business_id}")
+async def admin_update_business(business_id: str, request: Request):
+    try:
+        body = await request.json()
+        allowed = {k: v for k, v in body.items() if k in ("scan_limit", "scan_count", "is_admin")}
+        supabase.table("businesses").update(allowed).eq("id", business_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+@app.delete("/api/admin/businesses/{business_id}")
+async def admin_delete_business(business_id: str):
+    try:
+        supabase.table("sessions").delete().eq("business_id", business_id).execute()
+        supabase.table("listings").delete().eq("business_id", business_id).execute()
+        supabase.table("listing_groups").delete().eq("business_id", business_id).execute()
+        supabase.table("businesses").delete().eq("id", business_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 @app.get("/api/admin/businesses")
 async def admin_businesses():
     try:
