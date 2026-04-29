@@ -112,6 +112,11 @@ async def admin_businesses():
     except Exception as e:
         raise HTTPException(500, str(e))
 
+@app.get("/landing", response_class=HTMLResponse)
+async def landing_page_route(request: Request):
+    with open(os.path.join(os.path.dirname(__file__), "templates", "landing.html")) as f:
+        return HTMLResponse(f.read())
+
 @app.get("/checkout", response_class=HTMLResponse)
 async def checkout_page(request: Request):
     business_id = require_auth(request)
