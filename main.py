@@ -237,7 +237,15 @@ async def dashboard(request: Request):
     if not business_id:
         from fastapi.responses import RedirectResponse
         return RedirectResponse("/login", status_code=302)
-    return templates.TemplateResponse("index.html", {"request": request, "is_admin": is_admin})
+    biz = supabase.table("businesses").select("name,scan_count,scan_limit").eq("id", business_id).execute()
+    biz_data = biz.data[0] if biz.data else {}
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "is_admin": is_admin,
+        "biz_name": biz_data.get("name", ""),
+        "scan_count": biz_data.get("scan_count", 0) or 0,
+        "scan_limit": biz_data.get("scan_limit", 25) or 25,
+    })
 
 # ── API: LISTINGS ─────────────────────────────────────────────── #
 
