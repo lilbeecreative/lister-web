@@ -180,6 +180,76 @@ async def process_checkout(request: Request):
         print(f"Checkout error: {e}")
         return {"ok": True}  # Still redirect even if email fails
 
+# ── EBAY OAUTH & API ────────────────────────────────────────────
+import base64, urllib.parse, requests as _req
+
+EBAY_APP_ID = os.getenv("EBAY_APP_ID", "")
+EBAY_CERT_ID = os.getenv("EBAY_CERT_ID", "")
+EBAY_RUNAME = os.getenv("EBAY_RUNAME", "")
+EBAY_ENV = os.getenv("EBAY_ENV", "sandbox")
+EBAY_API_BASE = "https://api.sandbox.ebay.com" if EBAY_ENV == "sandbox" else "https://api.ebay.com"
+EBAY_AUTH_BASE = "https://auth.sandbox.ebay.com" if EBAY_ENV == "sandbox" else "https://auth.ebay.com"
+EBAY_SCOPES = "https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account"
+
+@app.get("/ebay/connect")
+async def ebay_connect(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse("/login", status_code=302)
+    auth_url = (f"{EBAY_AUTH_BASE}/oauth2/authorize?client_id={EBAY_APP_ID}&response_type=code&redirect_uri={EBAY_RUNAME}&scope={urllib.parse.quote(EBAY_SCOPES)}&state={business_id}")
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(auth_url, status_code=302)
+
+@app.get("/ebay/callback")
+async def ebay_callback(request: Request, code: str = "", state: str = ""):
+    from fastapi.responses import HTMLResponse, RedirectResponse
+    if not code or not state:
+        return HTMLResponse("<h1>eBay Connection Failed</h1><p>Missing code or state. <a href='/'>Go back</a></p>")
+    creds = base64.b64encode(f"{EBAY_APP_ID}:{EBAY_CERT_ID}".encode()).decode()
+    try:
+        r = _req.post(f"{EBAY_API_BASE}/identity/v1/oauth2/token", headers={"Authorization": f"Basic {creds}", "Content-Type": "application/x-www-form-urlencoded"}, data={"grant_type": "authorization_code", "code": code, "redirect_uri": EBAY_RUNAME})
+        data = r.json()
+        if "access_token" not in data:
+            return HTMLResponse(f"<h1>eBay Connection Failed</h1><pre>{data}</pre><a href='/'>Go back</a>")
+        from datetime import datetime, timedelta
+        expires_at = (datetime.utcnow() + timedelta(seconds=data.get("expires_in", 7200))).isoformat()
+        existing = supabase.table("ebay_tokens").select("id").eq("business_id", state).execute()
+        token_row = {"business_id": state, "access_token": data["access_token"], "refresh_token": data.get("refresh_token", ""), "expires_at": expires_at, "environment": EBAY_ENV, "updated_at": datetime.utcnow().isoformat()}
+        if existing.data:
+            supabase.table("ebay_tokens").update(token_row).eq("business_id", state).execute()
+        else:
+            supabase.table("ebay_tokens").insert(token_row).execute()
+        return RedirectResponse("/?ebay_connected=1", status_code=302)
+    except Exception as e:
+        return HTMLResponse(f"<h1>eBay Error</h1><pre>{e}</pre><a href='/'>Go back</a>")
+
+@app.get("/ebay/declined")
+async def ebay_declined():
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse("<h1>eBay Connection Cancelled</h1><a href='/'>Go back to dashboard</a>")
+
+@app.get("/api/ebay/status")
+async def ebay_status(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        return {"connected": False}
+    try:
+        res = supabase.table("ebay_tokens").select("expires_at,environment").eq("business_id", business_id).execute()
+        if res.data:
+            return {"connected": True, "environment": res.data[0]["environment"], "expires_at": res.data[0]["expires_at"]}
+        return {"connected": False}
+    except Exception:
+        return {"connected": False}
+
+@app.post("/api/ebay/disconnect")
+async def ebay_disconnect(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    supabase.table("ebay_tokens").delete().eq("business_id", business_id).execute()
+    return {"ok": True}
+
 @app.get("/paywall", response_class=HTMLResponse)
 async def paywall_page(request: Request):
     with open(os.path.join(os.path.dirname(__file__), "templates", "paywall.html")) as f:
