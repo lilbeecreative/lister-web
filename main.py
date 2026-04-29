@@ -112,6 +112,68 @@ async def admin_businesses():
     except Exception as e:
         raise HTTPException(500, str(e))
 
+@app.get("/checkout", response_class=HTMLResponse)
+async def checkout_page(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse("/login", status_code=302)
+    with open(os.path.join(os.path.dirname(__file__), "templates", "checkout.html")) as f:
+        return HTMLResponse(f.read())
+
+@app.get("/welcome", response_class=HTMLResponse)
+async def welcome_page(request: Request):
+    with open(os.path.join(os.path.dirname(__file__), "templates", "welcome.html")) as f:
+        return HTMLResponse(f.read())
+
+@app.post("/api/checkout")
+async def process_checkout(request: Request):
+    import resend
+    body = await request.json()
+    plan = body.get("plan", "Free Trial")
+    price = body.get("price", "0")
+    scans = body.get("scans", "25 total scans")
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        # Update scan limit based on plan
+        plan_limits = {"Free Trial": 25, "Starter": 100, "Growth": 500, "Pro": 1000}
+        scan_limit = plan_limits.get(plan, 25)
+        biz = supabase.table("businesses").select("name,email").eq("id", business_id).execute()
+        if not biz.data:
+            raise HTTPException(404, "Business not found")
+        biz_data = biz.data[0]
+        supabase.table("businesses").update({"scan_limit": scan_limit}).eq("id", business_id).execute()
+        # Send welcome email
+        resend.api_key = os.getenv("RESEND_API_KEY", "re_7V1Ykni2_FjGBPZwsgWr8ytntk3sCoG5b")
+        resend.Emails.send({
+            "from": "Lister AI <onboarding@resend.dev>",
+            "to": biz_data["email"],
+            "subject": "Welcome to Lister AI — You're all set!",
+            "html": f"""
+<div style="font-family:-apple-system,sans-serif;max-width:560px;margin:0 auto;background:#060608;color:#f0f2f5;padding:40px 32px;border-radius:16px;">
+  <div style="font-size:32px;font-weight:900;letter-spacing:0.05em;margin-bottom:32px;">Lister<span style="color:#e8ff47;">AI</span></div>
+  <h1 style="font-size:28px;font-weight:800;margin-bottom:12px;">Welcome, {biz_data['name']}! 🎉</h1>
+  <p style="color:#8892a4;font-size:15px;line-height:1.7;margin-bottom:24px;">Your account is active. You're on the <strong style="color:#e8ff47;">{plan} plan</strong> with <strong style="color:#e8ff47;">{scans}</strong>.</p>
+  <a href="https://lister-web-dev-production.up.railway.app/" style="display:inline-block;background:#e8ff47;color:#000;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;margin-bottom:32px;">Go to Dashboard →</a>
+  <div style="background:#111418;border:1px solid #1a1f2e;border-radius:12px;padding:24px;margin-bottom:24px;">
+    <h2 style="font-size:16px;font-weight:700;margin-bottom:16px;">Quick Start in 5 Steps</h2>
+    <div style="margin-bottom:12px;"><strong style="color:#e8ff47;">1.</strong> <span style="color:#8892a4;">Open your dashboard and click the Upload tab</span></div>
+    <div style="margin-bottom:12px;"><strong style="color:#e8ff47;">2.</strong> <span style="color:#8892a4;">Select New or Used condition and start a batch</span></div>
+    <div style="margin-bottom:12px;"><strong style="color:#e8ff47;">3.</strong> <span style="color:#8892a4;">Take or upload photos — the AI identifies and prices automatically</span></div>
+    <div style="margin-bottom:12px;"><strong style="color:#e8ff47;">4.</strong> <span style="color:#8892a4;">Review and edit listings in the dashboard</span></div>
+    <div><strong style="color:#e8ff47;">5.</strong> <span style="color:#8892a4;">Export to eBay using the CSV button in the sidebar</span></div>
+  </div>
+  <p style="color:#5a6478;font-size:12px;">Need help? Reply to this email and we'll get back to you.</p>
+</div>
+"""
+        })
+        return {"ok": True}
+    except Exception as e:
+        print(f"Checkout error: {e}")
+        return {"ok": True}  # Still redirect even if email fails
+
 @app.get("/paywall", response_class=HTMLResponse)
 async def paywall_page(request: Request):
     with open(os.path.join(os.path.dirname(__file__), "templates", "paywall.html")) as f:

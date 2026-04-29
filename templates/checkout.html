@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choose Your Plan — Lister AI</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#060608; color:#f0f2f5; font-family:'Instrument Sans',sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; }
+.logo { font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:0.08em; margin-bottom:48px; }
+.logo span { color:#e8ff47; }
+.plans { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; max-width:960px; width:100%; margin-bottom:32px; }
+.plan {
+  background:#111418; border:2px solid #1a1f2e; border-radius:14px; padding:28px 22px;
+  cursor:pointer; transition:all 0.2s; position:relative;
+}
+.plan:hover { border-color:#3a4258; transform:translateY(-2px); }
+.plan.selected { border-color:#e8ff47; background:rgba(232,255,71,0.04); }
+.plan.featured::before {
+  content:'POPULAR'; position:absolute; top:-1px; left:50%; transform:translateX(-50%);
+  background:#e8ff47; color:#000; font-size:9px; font-weight:800; padding:3px 12px;
+  border-radius:0 0 6px 6px; font-family:'DM Mono',monospace; letter-spacing:0.1em; white-space:nowrap;
+}
+.plan-tier { font-family:'DM Mono',monospace; font-size:10px; color:#5a6478; text-transform:uppercase; letter-spacing:0.15em; margin-bottom:12px; }
+.plan-price { font-family:'Bebas Neue',sans-serif; font-size:52px; line-height:1; margin-bottom:4px; }
+.plan-price .mo { font-family:'Instrument Sans',sans-serif; font-size:14px; font-weight:400; color:#8892a4; }
+.plan-scans { font-size:13px; color:#8892a4; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid #1a1f2e; }
+.plan-features { list-style:none; display:flex; flex-direction:column; gap:8px; }
+.plan-features li { font-size:12px; color:#8892a4; display:flex; align-items:center; gap:6px; }
+.plan-features li::before { content:'✓'; color:#e8ff47; font-weight:700; font-size:11px; }
+.plan-radio { position:absolute; top:16px; right:16px; width:20px; height:20px; border-radius:50%; border:2px solid #1a1f2e; background:transparent; transition:all 0.2s; }
+.plan.selected .plan-radio { border-color:#e8ff47; background:#e8ff47; }
+.plan.selected .plan-radio::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:8px; height:8px; border-radius:50%; background:#000; }
+
+/* Payment form */
+.payment-box { background:#111418; border:1px solid #1a1f2e; border-radius:16px; padding:32px; max-width:480px; width:100%; }
+.payment-box h2 { font-size:20px; font-weight:700; margin-bottom:8px; }
+.payment-box .sub { font-size:13px; color:#8892a4; margin-bottom:24px; }
+.selected-plan-info { background:#0d0f14; border:1px solid rgba(232,255,71,0.2); border-radius:8px; padding:14px 16px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:center; }
+.selected-plan-info .name { font-size:14px; font-weight:600; }
+.selected-plan-info .price { font-family:'Bebas Neue',sans-serif; font-size:28px; color:#e8ff47; }
+.field { margin-bottom:16px; }
+.field label { display:block; font-size:11px; color:#5a6478; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; font-family:'DM Mono',monospace; }
+.field input {
+  width:100%; background:#0a0c10; border:1px solid #1a1f2e; border-radius:8px;
+  padding:12px 14px; color:#f0f2f5; font-size:14px; outline:none; transition:border-color 0.2s;
+  font-family:'Instrument Sans',sans-serif;
+}
+.field input:focus { border-color:#e8ff47; }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.card-icons { display:flex; gap:6px; margin-bottom:8px; }
+.card-icon { background:#1a1f2e; border-radius:4px; padding:4px 8px; font-size:10px; color:#8892a4; font-family:'DM Mono',monospace; }
+.submit-btn {
+  width:100%; background:#e8ff47; color:#000; border:none; border-radius:10px;
+  padding:15px; font-size:15px; font-weight:700; cursor:pointer; margin-top:8px;
+  font-family:'Instrument Sans',sans-serif; transition:opacity 0.2s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.submit-btn:hover { opacity:0.9; }
+.submit-btn.loading { opacity:0.7; cursor:not-allowed; }
+.secure-note { text-align:center; font-size:11px; color:#5a6478; margin-top:12px; font-family:'DM Mono',monospace; }
+.free-note { text-align:center; font-size:13px; color:#8892a4; margin-top:24px; }
+.free-note a { color:#e8ff47; text-decoration:none; }
+.error { background:rgba(255,68,68,0.1); border:1px solid rgba(255,68,68,0.3); border-radius:8px; padding:10px 14px; color:#ff6b6b; font-size:13px; margin-bottom:16px; display:none; }
+.step-indicator { display:flex; gap:8px; align-items:center; margin-bottom:40px; }
+.step-dot { width:32px; height:32px; border-radius:50%; border:2px solid #1a1f2e; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#5a6478; font-family:'DM Mono',monospace; }
+.step-dot.active { border-color:#e8ff47; color:#e8ff47; }
+.step-dot.done { background:#e8ff47; border-color:#e8ff47; color:#000; }
+.step-line { flex:1; height:1px; background:#1a1f2e; max-width:60px; }
+</style>
+</head>
+<body>
+
+<div class="logo">Lister<span>AI</span></div>
+
+<div class="step-indicator">
+  <div class="step-dot done">✓</div>
+  <div class="step-line"></div>
+  <div class="step-dot active">2</div>
+  <div class="step-line"></div>
+  <div class="step-dot">3</div>
+</div>
+
+<!-- Plan Selection -->
+<div class="plans" id="plans-section">
+  <div class="plan selected" onclick="selectPlan(this,'Free Trial','0','25 total scans')">
+    <div class="plan-radio"></div>
+    <div class="plan-tier">Free Trial</div>
+    <div class="plan-price">$0 <span class="mo">/mo</span></div>
+    <div class="plan-scans">25 scans to get started</div>
+    <ul class="plan-features">
+      <li>25 total scans</li>
+      <li>AI identification</li>
+      <li>CSV export</li>
+    </ul>
+  </div>
+  <div class="plan" onclick="selectPlan(this,'Starter','50','100 scans / month')">
+    <div class="plan-radio"></div>
+    <div class="plan-tier">Starter</div>
+    <div class="plan-price">$50 <span class="mo">/mo</span></div>
+    <div class="plan-scans">100 scans per month</div>
+    <ul class="plan-features">
+      <li>100 scans / month</li>
+      <li>AI identification</li>
+      <li>Live pricing</li>
+      <li>CSV export</li>
+    </ul>
+  </div>
+  <div class="plan featured" onclick="selectPlan(this,'Growth','150','500 scans / month')">
+    <div class="plan-radio"></div>
+    <div class="plan-tier">Growth</div>
+    <div class="plan-price">$150 <span class="mo">/mo</span></div>
+    <div class="plan-scans">500 scans per month</div>
+    <ul class="plan-features">
+      <li>500 scans / month</li>
+      <li>AI identification</li>
+      <li>Live pricing</li>
+      <li>Priority support</li>
+    </ul>
+  </div>
+  <div class="plan" onclick="selectPlan(this,'Pro','250','1000 scans / month')">
+    <div class="plan-radio"></div>
+    <div class="plan-tier">Pro</div>
+    <div class="plan-price">$250 <span class="mo">/mo</span></div>
+    <div class="plan-scans">1,000 scans per month</div>
+    <ul class="plan-features">
+      <li>1,000 scans / month</li>
+      <li>AI identification</li>
+      <li>Live pricing</li>
+      <li>Dedicated support</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Payment Form -->
+<div class="payment-box" id="payment-box">
+  <h2>Complete Your Setup</h2>
+  <p class="sub">You're almost there. Enter your details below.</p>
+
+  <div class="selected-plan-info">
+    <div>
+      <div class="name" id="selected-plan-name">Free Trial</div>
+      <div style="font-size:12px;color:#5a6478;" id="selected-plan-scans">25 total scans</div>
+    </div>
+    <div class="price" id="selected-plan-price">$0</div>
+  </div>
+
+  <div class="error" id="error-box"></div>
+
+  <div id="payment-fields" style="display:none;">
+    <div class="card-icons">
+      <div class="card-icon">VISA</div>
+      <div class="card-icon">MC</div>
+      <div class="card-icon">AMEX</div>
+    </div>
+    <div class="field">
+      <label>Card Number</label>
+      <input type="text" id="card-number" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCard(this)">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Expiry</label>
+        <input type="text" id="card-expiry" placeholder="MM / YY" maxlength="7" oninput="formatExpiry(this)">
+      </div>
+      <div class="field">
+        <label>CVC</label>
+        <input type="text" id="card-cvc" placeholder="123" maxlength="4">
+      </div>
+    </div>
+    <div class="field">
+      <label>Name on Card</label>
+      <input type="text" id="card-name" placeholder="John Smith">
+    </div>
+  </div>
+
+  <button class="submit-btn" id="submit-btn" onclick="handleSubmit()">
+    <span id="btn-text">🚀 Start Free Trial</span>
+  </button>
+  <div class="secure-note">🔒 Secured by 256-bit SSL encryption</div>
+  <div class="free-note" id="free-note">No credit card required · <a href="/">Back to dashboard</a></div>
+</div>
+
+<script>
+let selectedPlan = { name: 'Free Trial', price: '0', scans: '25 total scans' };
+
+function selectPlan(el, name, price, scans) {
+  document.querySelectorAll('.plan').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedPlan = { name, price, scans };
+  document.getElementById('selected-plan-name').textContent = name;
+  document.getElementById('selected-plan-scans').textContent = scans;
+  document.getElementById('selected-plan-price').textContent = '$' + price;
+  document.getElementById('btn-text').textContent = price === '0' ? '🚀 Start Free Trial' : '💳 Pay $' + price + '/mo';
+  document.getElementById('payment-fields').style.display = price === '0' ? 'none' : 'block';
+  document.getElementById('free-note').style.display = price === '0' ? 'block' : 'none';
+}
+
+function formatCard(input) {
+  let v = input.value.replace(/\D/g, '').substring(0, 16);
+  input.value = v.replace(/(.{4})/g, '$1 ').trim();
+}
+
+function formatExpiry(input) {
+  let v = input.value.replace(/\D/g, '').substring(0, 4);
+  if (v.length >= 2) v = v.substring(0,2) + ' / ' + v.substring(2);
+  input.value = v;
+}
+
+async function handleSubmit() {
+  const btn = document.getElementById('submit-btn');
+  const btnText = document.getElementById('btn-text');
+  const errorBox = document.getElementById('error-box');
+  errorBox.style.display = 'none';
+
+  // Validate card fields for paid plans
+  if (selectedPlan.price !== '0') {
+    const cardNum = document.getElementById('card-number').value.replace(/\s/g,'');
+    const expiry = document.getElementById('card-expiry').value;
+    const cvc = document.getElementById('card-cvc').value;
+    const name = document.getElementById('card-name').value;
+    if (cardNum.length < 16 || !expiry || cvc.length < 3 || !name) {
+      errorBox.textContent = 'Please fill in all card details.';
+      errorBox.style.display = 'block';
+      return;
+    }
+  }
+
+  btn.classList.add('loading');
+  btnText.textContent = 'Processing...';
+
+  try {
+    const r = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ plan: selectedPlan.name, price: selectedPlan.price, scans: selectedPlan.scans })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      window.location.href = '/welcome';
+    } else {
+      throw new Error(data.error || 'Something went wrong');
+    }
+  } catch(e) {
+    errorBox.textContent = e.message;
+    errorBox.style.display = 'block';
+    btn.classList.remove('loading');
+    btnText.textContent = selectedPlan.price === '0' ? '🚀 Start Free Trial' : '💳 Pay $' + selectedPlan.price + '/mo';
+  }
+}
+</script>
+</body>
+</html>
