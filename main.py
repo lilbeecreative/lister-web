@@ -185,6 +185,11 @@ async def paywall_page(request: Request):
     with open(os.path.join(os.path.dirname(__file__), "templates", "paywall.html")) as f:
         return HTMLResponse(f.read())
 
+@app.get("/internal", response_class=HTMLResponse)
+async def internal_page(request: Request):
+    with open(os.path.join(os.path.dirname(__file__), "templates", "internal.html")) as f:
+        return HTMLResponse(f.read())
+
 @app.get("/team", response_class=HTMLResponse)
 async def team_portal(request: Request):
     with open(os.path.join(os.path.dirname(__file__), "templates", "team_portal.html")) as f:
