@@ -83,6 +83,19 @@ async def portal(request: Request):
     })
 
 
+def require_auth(request: Request):
+    """Returns business_id if authenticated, else None."""
+    token = request.cookies.get("session_id")
+    if not token:
+        return None
+    try:
+        res = supabase.table("sessions").select("business_id").eq("token", token).execute()
+        if res.data:
+            return res.data[0]["business_id"]
+    except Exception:
+        pass
+    return None
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
