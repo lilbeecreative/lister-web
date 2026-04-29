@@ -105,9 +105,10 @@ async def admin_businesses():
         for b in businesses:
             lid = supabase.table("listings").select("id", count="exact").eq("business_id", b["id"]).execute()
             b["listing_count"] = lid.count or 0
-            sid = supabase.table("auction_research_sessions").select("id,created_at", count="exact").eq("business_id", b["id"]).order("created_at", desc=True).limit(1).execute()
-            b["scan_count"] = sid.count or 0
-            b["last_active"] = sid.data[0]["created_at"] if sid.data else None
+            # Use last listing created_at as last_active
+            last = supabase.table("listings").select("created_at").eq("business_id", b["id"]).order("created_at", desc=True).limit(1).execute()
+            b["last_active"] = last.data[0]["created_at"] if last.data else None
+            # scan_count already comes from businesses table
         return {"businesses": businesses}
     except Exception as e:
         raise HTTPException(500, str(e))
