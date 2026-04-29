@@ -231,6 +231,7 @@ select.field-input { background: #fff; color: #0f172a; }
       <span style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;">{{ scan_count }}/{{ scan_limit }}</span>
     </div>
   </div>
+  <a class="nav-download" href="#" onclick="connectEbay();return false;" id="ebay-connect-btn" style="background:#0064D2;color:#fff;border-color:#0064D2;">🔗 Connect eBay</a>
   <a class="nav-download" href="#" onclick="window.location.href='/api/export/ebay-csv';return false;">⬇️ eBay CSV</a>
   <a class="nav-download" href="/logout" style="color:#ef4444;border-color:#7f1d1d;">⏻ Logout</a>
 </nav>
@@ -508,6 +509,37 @@ select.field-input { background: #fff; color: #0f172a; }
 <div class="toast" id="toast"></div>
 
 <script>
+async function connectEbay() {
+  try {
+    const r = await fetch('/api/ebay/status');
+    const d = await r.json();
+    if (d.connected) {
+      if (confirm('eBay is already connected. Disconnect?')) {
+        await fetch('/api/ebay/disconnect', {method:'POST'});
+        location.reload();
+      }
+    } else {
+      window.location.href = '/ebay/connect';
+    }
+  } catch(e) {
+    window.location.href = '/ebay/connect';
+  }
+}
+
+// Update button on load
+(async function() {
+  try {
+    const r = await fetch('/api/ebay/status');
+    const d = await r.json();
+    const btn = document.getElementById('ebay-connect-btn');
+    if (btn && d.connected) {
+      btn.innerHTML = '✓ eBay Connected';
+      btn.style.background = '#22c55e';
+      btn.style.borderColor = '#22c55e';
+    }
+  } catch(e) {}
+})();
+
 // ── STATE ──────────────────────────────────────────────────────
 let listings      = [];
 let selected      = new Set();
