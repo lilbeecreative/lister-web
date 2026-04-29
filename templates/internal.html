@@ -277,6 +277,40 @@ async function loadData() {
     document.getElementById('s-active').textContent = activeCount;
     document.getElementById('biz-count').textContent = businesses.length + ' registered';
 
+    // Render business table
+    const tbody = document.getElementById('biz-tbody');
+    if (!businesses.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-row">No businesses yet</td></tr>';
+    } else {
+      tbody.innerHTML = businesses.map(b => {
+        const scanCount = b.scan_count || 0;
+        const scanLimit = b.scan_limit || 25;
+        const pct = Math.min(100, Math.round(scanCount / scanLimit * 100));
+        const fillColor = pct >= 100 ? '#ef4444' : pct >= 80 ? '#f59e0b' : '#22c55e';
+        const joined = b.created_at ? new Date(b.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+        const isActive = b.last_active && new Date(b.last_active).getTime() > oneWeekAgo;
+        const statusPill = pct >= 100
+          ? '<span class="pill limited">Limit Reached</span>'
+          : isActive ? '<span class="pill active">Active</span>' : '<span class="pill inactive">Inactive</span>';
+        return `<tr>
+          <td>
+            <div style="font-weight:600;font-size:13px;">${esc(b.name)}</div>
+            <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">${esc(b.email)}</div>
+            ${b.is_admin ? '<span class="pill admin" style="margin-top:2px;display:inline-block;">Admin</span>' : ''}
+          </td>
+          <td>
+            <div class="scan-bar">
+              <div class="scan-track"><div class="scan-fill" style="width:${pct}%;background:${fillColor};"></div></div>
+              <span style="font-size:11px;font-family:'DM Mono',monospace;white-space:nowrap;">${scanCount}/${scanLimit}</span>
+            </div>
+          </td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px;">${b.listing_count || 0}</td>
+          <td style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">${joined}</td>
+          <td>${statusPill}</td>
+        </tr>`;
+      }).join('');
+    }
+
     // Log limit-reached businesses
     businesses.filter(b => (b.scan_count||0) >= (b.scan_limit||25) && !b.is_admin)
       .forEach(b => addLog('warn', `Scan limit reached: ${b.name}`));
