@@ -334,13 +334,15 @@ class CreateGroup(BaseModel):
     condition:  str
 
 @app.post("/api/groups")
-async def create_group(body: CreateGroup):
+async def create_group(body: CreateGroup, request: Request):
     try:
+        business_id = require_auth(request)
         res = supabase.table("listing_groups").insert({
             "session_id": body.session_id,
             "status":     "waiting",
             "quantity":   1,
             "condition":  body.condition,
+            "business_id": business_id,
         }).execute()
         import traceback
         print(f"Group insert result: {res}")
