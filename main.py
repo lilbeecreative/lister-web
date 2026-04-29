@@ -50,6 +50,10 @@ async def auction_research_page(request: Request):
 
 @app.get("/auction", response_class=HTMLResponse)
 async def auction_page(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse("/login", status_code=302)
     import os
     with open(os.path.join(os.path.dirname(__file__), "templates", "auction.html")) as f:
         html = f.read()
@@ -98,6 +102,10 @@ def require_auth(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse("/login", status_code=302)
     return templates.TemplateResponse("index.html", {"request": request})
 
 # ── API: LISTINGS ─────────────────────────────────────────────── #
