@@ -234,6 +234,11 @@ select.field-input { background: #fff; color: #0f172a; }
   <a class="nav-download" href="#" onclick="connectEbay();return false;" id="ebay-connect-btn" style="background:#0064D2;color:#fff;border-color:#0064D2;">🔗 Connect eBay</a>
   <a class="nav-download" href="#" onclick="window.location.href='/api/export/ebay-csv';return false;">⬇️ eBay CSV</a>
   <a class="nav-download" href="/logout" style="color:#ef4444;border-color:#7f1d1d;">⏻ Logout</a>
+  <div id="saved-batches-panel" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+    <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;padding:0 4px;">📁 Saved Batches</div>
+    <div id="saved-batches-list" style="display:flex;flex-direction:column;gap:4px;"></div>
+    <div id="saved-batches-empty" style="color:var(--muted);font-size:11px;padding:6px 4px;font-style:italic;">No saved batches yet</div>
+  </div>
 </nav>
 
 <div class="main">
@@ -262,6 +267,7 @@ select.field-input { background: #fff; color: #0f172a; }
       <button class="btn" onclick="deselectAll()">☐ Deselect</button>
       <button class="btn btn-primary" id="submit-ebay-btn" style="display:none" onclick="submitSelected()">🏷️ Submit to eBay</button>
       <div class="spacer"></div>
+      <button class="btn" onclick="openSaveBatchModal()" style="background:#1a3a1a;border-color:#2d5a2d;color:#86efac;">💾 Save Batch</button>
       <button class="btn btn-danger" onclick="confirmClearBatch()">🗑️ Clear Batch</button>
     </div>
     <div class="tile-grid" id="tile-grid"></div>
@@ -1518,5 +1524,157 @@ function updatePriceByCondition() {
   }
 }
 </script>
+
+<!-- Save Batch modal -->
+<div id="save-batch-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;min-width:360px;max-width:90vw;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--text);">💾 Save Current Batch</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Folder name</div>
+    <input id="save-batch-name" type="text" placeholder="e.g. Roller Auction 4-28" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;margin-bottom:16px;" />
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn" onclick="closeSaveBatchModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSaveBatch()" id="save-batch-confirm-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.saved-batch-row { display:flex; align-items:center; gap:6px; padding:6px 8px; background:var(--card); border:1px solid var(--border); border-radius:6px; font-size:12px; cursor:pointer; transition:background 0.15s; }
+.saved-batch-row:hover { background:var(--border); }
+.saved-batch-row .sb-name { flex:1; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.saved-batch-row .sb-count { color:var(--muted); font-size:10px; }
+.saved-batch-row .sb-del { color:#ef4444; opacity:0.6; padding:2px 6px; border-radius:4px; cursor:pointer; }
+.saved-batch-row .sb-del:hover { opacity:1; background:rgba(239,68,68,0.15); }
+.saved-batch-expanded { margin-top:6px; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:6px; max-height:300px; overflow-y:auto; }
+.sb-item { display:flex; gap:8px; padding:6px; border-bottom:1px solid var(--border); align-items:center; }
+.sb-item:last-child { border-bottom:none; }
+.sb-item img { width:36px; height:36px; object-fit:cover; border-radius:4px; flex-shrink:0; }
+.sb-item .sb-item-title { flex:1; font-size:11px; color:var(--text); line-height:1.3; }
+.sb-item .sb-item-price { font-size:11px; color:#86efac; font-weight:600; white-space:nowrap; }
+</style>
+
+<script>
+function openSaveBatchModal() {
+  document.getElementById('save-batch-name').value = '';
+  document.getElementById('save-batch-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('save-batch-name').focus(), 50);
+}
+function closeSaveBatchModal() {
+  document.getElementById('save-batch-modal').style.display = 'none';
+}
+async function confirmSaveBatch() {
+  const name = document.getElementById('save-batch-name').value.trim();
+  if (!name) { toast('Please enter a folder name', 'error'); return; }
+  const btn = document.getElementById('save-batch-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    const r = await fetch('/api/saved-batches', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name})
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    closeSaveBatchModal();
+    toast(`Saved "${data.name}" (${data.count} items)`, 'success');
+    loadSavedBatches();
+  } catch(e) {
+    toast('Failed to save batch', 'error');
+    console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+}
+
+async function loadSavedBatches() {
+  try {
+    const r = await fetch('/api/saved-batches');
+    if (!r.ok) return;
+    const folders = await r.json();
+    const list = document.getElementById('saved-batches-list');
+    const empty = document.getElementById('saved-batches-empty');
+    list.innerHTML = '';
+    if (!folders.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    folders.forEach(f => {
+      const row = document.createElement('div');
+      row.className = 'saved-batch-row';
+      row.innerHTML = `
+        <span style="font-size:11px;">📁</span>
+        <span class="sb-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+        <span class="sb-count">${f.count}</span>
+        <span class="sb-del" onclick="event.stopPropagation();deleteSavedBatch('${f.id}','${escapeHtml(f.name).replace(/'/g,"\\'")}')">✕</span>
+      `;
+      row.onclick = () => toggleSavedBatch(f.id, row);
+      list.appendChild(row);
+    });
+  } catch(e) { console.error('loadSavedBatches failed', e); }
+}
+
+async function toggleSavedBatch(batchId, rowEl) {
+  const next = rowEl.nextElementSibling;
+  if (next && next.classList.contains('saved-batch-expanded')) {
+    next.remove();
+    return;
+  }
+  // Close any other open ones
+  document.querySelectorAll('.saved-batch-expanded').forEach(el => el.remove());
+  try {
+    const r = await fetch(`/api/saved-batches/${batchId}`);
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    const wrap = document.createElement('div');
+    wrap.className = 'saved-batch-expanded';
+    if (!data.items.length) {
+      wrap.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:4px;">Empty folder</div>';
+    } else {
+      wrap.innerHTML = data.items.map(it => `
+        <div class="sb-item">
+          ${it.thumb_url ? `<img src="${it.thumb_url}" />` : '<div style="width:36px;height:36px;background:var(--border);border-radius:4px;flex-shrink:0;"></div>'}
+          <div class="sb-item-title">${escapeHtml(it.title || '(untitled)')}</div>
+          <div class="sb-item-price">$${(it.price || 0).toFixed(2)}</div>
+        </div>
+      `).join('');
+    }
+    rowEl.insertAdjacentElement('afterend', wrap);
+  } catch(e) {
+    toast('Failed to load folder', 'error');
+    console.error(e);
+  }
+}
+
+async function deleteSavedBatch(batchId, name) {
+  if (!confirm(`Delete saved batch "${name}"? This cannot be undone.`)) return;
+  try {
+    const r = await fetch(`/api/saved-batches/${batchId}`, {method: 'DELETE'});
+    if (!r.ok) throw new Error(await r.text());
+    toast('Folder deleted', 'success');
+    loadSavedBatches();
+  } catch(e) {
+    toast('Failed to delete folder', 'error');
+    console.error(e);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Load on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadSavedBatches);
+} else {
+  loadSavedBatches();
+}
+
+// Close modal on Escape / click outside
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeSaveBatchModal();
+});
+document.getElementById('save-batch-modal').addEventListener('click', e => {
+  if (e.target.id === 'save-batch-modal') closeSaveBatchModal();
+});
+</script>
+
 </body>
 </html>

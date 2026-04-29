@@ -550,6 +550,198 @@ class CreateGroup(BaseModel):
     session_id: str
     condition:  str
 
+
+# ── API: SAVED BATCHES ────────────────────────────────────────── #
+
+class SaveBatchBody(BaseModel):
+    name: str
+
+@app.post("/api/saved-batches")
+async def create_saved_batch(request: Request, body: SaveBatchBody):
+    """Snapshot all current (non-archived) listings into a new named folder."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    name = (body.name or "").strip()
+    if not name:
+        raise HTTPException(400, "Folder name required")
+    try:
+        res = supabase.table("listings")\
+            .select("*")\
+            .eq("business_id", business_id)\
+            .neq("status", "archived")\
+            .order("created_at", desc=True)\
+            .execute()
+        listings = res.data or []
+
+        primary_pids = [str(l.get("photo_id") or "") for l in listings if l.get("photo_id")]
+        group_photo_map = {}
+        if primary_pids:
+            try:
+                gp_res = supabase.table("group_photos").select("group_id, photo_id").in_("photo_id", primary_pids[:100]).execute()
+                pid_to_gid = {row["photo_id"]: row["group_id"] for row in (gp_res.data or [])}
+                group_ids = list(set(pid_to_gid.values()))
+                if group_ids:
+                    all_gp = supabase.table("group_photos").select("group_id, photo_id").in_("group_id", group_ids).execute()
+                    gid_to_photos = {}
+                    for row in (all_gp.data or []):
+                        gid_to_photos.setdefault(row["group_id"], []).append(row["photo_id"])
+                    for pid, gid in pid_to_gid.items():
+                        group_photo_map[pid] = gid_to_photos.get(gid, [pid])
+            except Exception as gp_err:
+                print(f"   saved-batch photo group lookup failed: {gp_err}")
+
+        folder_res = supabase.table("saved_batches").insert({
+            "business_id": business_id,
+            "name": name,
+        }).execute()
+        if not folder_res.data:
+            raise HTTPException(500, "Failed to create folder")
+        folder_id = folder_res.data[0]["id"]
+
+        snapshot_rows = []
+        for l in listings:
+            pid = str(l.get("photo_id") or "")
+            all_photos = group_photo_map.get(pid, [pid] if pid else [])
+            snapshot_rows.append({
+                "saved_batch_id":      folder_id,
+                "business_id":         business_id,
+                "original_listing_id": l.get("id"),
+                "title":               l.get("title"),
+                "description":         l.get("description"),
+                "price":               l.get("price"),
+                "price_used":          l.get("price_used"),
+                "price_new":           l.get("price_new"),
+                "quantity":            l.get("quantity"),
+                "condition":           l.get("condition"),
+                "listing_type":        l.get("listing_type"),
+                "ebay_category_id":    l.get("ebay_category_id"),
+                "status":              l.get("status"),
+                "photo_id":            pid or None,
+                "photo_ids":           all_photos,
+                "raw":                 l,
+            })
+
+        if snapshot_rows:
+            for i in range(0, len(snapshot_rows), 100):
+                supabase.table("saved_batch_listings").insert(snapshot_rows[i:i+100]).execute()
+
+        return JSONResponse({
+            "id": folder_id,
+            "name": name,
+            "count": len(snapshot_rows),
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/saved-batches")
+async def list_saved_batches(request: Request):
+    """Return all saved folders for the current business with item counts."""
+    business_id = require_auth(request)
+    if not business_id:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    try:
+        folders_res = supabase.table("saved_batches")\
+            .select("id, name, created_at")\
+            .eq("business_id", business_id)\
+            .order("created_at", desc=True)\
+            .execute()
+        folders = folders_res.data or []
+
+        folder_ids = [f["id"] for f in folders]
+        counts = {}
+        if folder_ids:
+            cnt_res = supabase.table("saved_batch_listings")\
+                .select("saved_batch_id")\
+                .in_("saved_batch_id", folder_ids)\
+                .execute()
+            for row in (cnt_res.data or []):
+                bid = row["saved_batch_id"]
+                counts[bid] = counts.get(bid, 0) + 1
+
+        for f in folders:
+            f["count"] = counts.get(f["id"], 0)
+
+        return JSONResponse(folders)
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/saved-batches/{batch_id}")
+async def get_saved_batch(batch_id: str, request: Request):
+    """Return all snapshot listings for a folder, scoped to current business."""
+    business_id = require_auth(request)
+    if not business_id:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    try:
+        folder_res = supabase.table("saved_batches")\
+            .select("id, name, created_at")\
+            .eq("id", batch_id)\
+            .eq("business_id", business_id)\
+            .limit(1)\
+            .execute()
+        if not folder_res.data:
+            raise HTTPException(404, "Folder not found")
+        folder = folder_res.data[0]
+
+        items_res = supabase.table("saved_batch_listings")\
+            .select("*")\
+            .eq("saved_batch_id", batch_id)\
+            .eq("business_id", business_id)\
+            .order("id", desc=False)\
+            .execute()
+        items = items_res.data or []
+
+        for it in items:
+            pid = str(it.get("photo_id") or "")
+            all_pids = it.get("photo_ids") or ([pid] if pid else [])
+            it["thumb_url"]  = photo_url(pid, thumb=True)
+            it["full_url"]   = photo_url(pid)
+            it["all_photos"] = [{"thumb": photo_url(p, thumb=True), "full": photo_url(p)} for p in all_pids if p]
+            it["price"]      = float(it.get("price") or 0)
+            it["price_used"] = float(it.get("price_used") or 0)
+            it["price_new"]  = float(it.get("price_new") or 0)
+            it["quantity"]   = int(it.get("quantity") or 1)
+
+        return JSONResponse({
+            "id":         folder["id"],
+            "name":       folder["name"],
+            "created_at": folder["created_at"],
+            "items":      items,
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.delete("/api/saved-batches/{batch_id}")
+async def delete_saved_batch(batch_id: str, request: Request):
+    """Delete a folder and all its snapshot rows (cascade handles the rows)."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        chk = supabase.table("saved_batches")\
+            .select("id")\
+            .eq("id", batch_id)\
+            .eq("business_id", business_id)\
+            .limit(1)\
+            .execute()
+        if not chk.data:
+            raise HTTPException(404, "Folder not found")
+
+        supabase.table("saved_batches").delete().eq("id", batch_id).eq("business_id", business_id).execute()
+        return JSONResponse({"ok": True})
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
 @app.get("/api/groups/pending")
 async def get_pending_groups(request: Request):
     business_id = require_auth(request)
