@@ -317,13 +317,16 @@ async def reset_queue():
         raise HTTPException(500, str(e))
 
 @app.get("/api/stats")
-async def get_stats():
+async def get_stats(request: Request):
     try:
-        res = supabase.table("listings").select("price, status").neq("status", "archived").execute()
+        business_id = require_auth(request)
+        if not business_id:
+            return {"total": 0, "processing": 0, "value": 0}
+        res = supabase.table("listings").select("price, status").eq("business_id", business_id).neq("status", "archived").execute()
         items = res.data or []
         total = len(items)
         value = sum(float(i.get("price") or 0) for i in items)
-        pending = supabase.table("listing_groups").select("id").in_("status", ["pending", "processing"]).execute()
+        pending = supabase.table("listing_groups").select("id").eq("business_id", business_id).in_("status", ["pending", "processing"]).execute()
         processing = len(pending.data or [])
         return {"total": total, "processing": processing, "value": round(value, 2)}
     except Exception as e:
