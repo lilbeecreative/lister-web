@@ -225,7 +225,7 @@ def get_business_info(request: Request):
             return None, False
         bid = res.data[0]["business_id"]
         biz = supabase.table("businesses").select("is_admin").eq("id", bid).execute()
-        is_admin = bool(biz.data[0]["is_admin"]) if biz.data else False
+        is_admin = bool(biz.data[0].get("is_admin") or False) if biz.data else False
         return bid, is_admin
     except Exception:
         pass
