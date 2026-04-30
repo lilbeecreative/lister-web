@@ -1614,8 +1614,6 @@ async function loadSavedBatches() {
       row.onclick = () => toggleSavedBatch(f.id, row);
       list.appendChild(row);
     });
-  } catch(e) { console.error('loadSavedBatches failed', e); }
-*/
 }
 
 function toggleSavedBatchesDropdown(e) {
@@ -1646,8 +1644,7 @@ async function toggleSavedBatch(batchId, rowEl) {
     window._currentSavedBatch = data;
     renderSavedBatchInDashboard(data);
     return;
-    /* OLD CODE BELOW - unreachable
-
+    
     const wrap = document.createElement('div');
     wrap.className = 'saved-batch-expanded';
     if (!data.items.length) {
