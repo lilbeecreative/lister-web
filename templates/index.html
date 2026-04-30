@@ -1706,7 +1706,7 @@ document.getElementById('save-batch-modal').addEventListener('click', e => {
 });
 
 function renderSavedBatchInDashboard(data) {
-  const grid = document.querySelector('.tile-grid') || document.getElementById('listing-grid') || document.querySelector('.listings-grid');
+  const grid = document.getElementById('tile-grid') || document.querySelector('.tile-grid');
   if (!grid) { console.warn('No grid found'); return; }
   let banner = document.getElementById('saved-batch-banner');
   if (banner) banner.remove();
