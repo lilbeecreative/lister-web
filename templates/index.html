@@ -232,6 +232,7 @@ select.field-input { background: #fff; color: #0f172a; }
     </div>
   </div>
   <a class="nav-download" href="#" onclick="connectEbay();return false;" id="ebay-connect-btn" style="background:#0064D2;color:#fff;border-color:#0064D2;">🔗 Connect eBay</a>
+  <a class="nav-download" href="#" onclick="connectShopify();return false;" id="shopify-connect-btn" style="background:#5a8e3b;color:#fff;border-color:#5a8e3b;">🛍️ Connect Shopify</a>
   <a class="nav-download" href="#" onclick="window.location.href='/api/export/ebay-csv';return false;">⬇️ eBay CSV</a>
   <div style="position:relative;">
     <a class="nav-download" href="#" onclick="toggleSavedBatchesDropdown(event)" id="saved-batches-trigger">📁 <span id="saved-batches-trigger-label">Saved</span> <span id="saved-batches-trigger-count" style="color:var(--muted);font-size:10px;margin-left:2px;"></span></a>
@@ -1742,6 +1743,36 @@ function exitSavedBatch() {
   else if (typeof refresh === 'function') refresh();
   else location.reload();
 }
+
+
+async function connectShopify() {
+  try {
+    const r = await fetch('/api/shopify/status');
+    const d = await r.json();
+    if (d.connected) {
+      if (confirm('Shopify is connected to ' + d.shop_domain + '. Disconnect?')) {
+        await fetch('/api/shopify/disconnect', {method:'POST'});
+        location.reload();
+      }
+    } else {
+      window.location.href = '/shopify/connect';
+    }
+  } catch(e) {
+    window.location.href = '/shopify/connect';
+  }
+}
+(async function() {
+  try {
+    const r = await fetch('/api/shopify/status');
+    const d = await r.json();
+    const btn = document.getElementById('shopify-connect-btn');
+    if (btn && d.connected) {
+      btn.innerHTML = '✓ Shopify Connected';
+      btn.style.background = '#22c55e';
+      btn.style.borderColor = '#22c55e';
+    }
+  } catch(e) {}
+})();
 
 </script>
 
