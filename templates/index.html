@@ -703,6 +703,7 @@ function renderTiles() {
           <button class="qty-btn plus" onclick="changeQty('${l.id}',1)">+</button>
         </div>
         <button class="tile-rescan" onclick="rescanItem('${l.id}')">🔄</button>
+        <button class="tile-rescan" style="color:#f59e0b;border-color:#92400e;" onclick="reportBadScan('${l.id}')" title="Report bad scan">⚠️</button>
         <button class="tile-rescan" style="color:var(--red);border-color:#991b1b;" onclick="deleteItem('${l.id}')">✕</button>
       </div>
     </div>`;
@@ -1824,6 +1825,27 @@ async function submitToShopify() {
   btn.disabled = false;
   btn.textContent = orig;
   toast(`Pushed ${success}/${total} to Shopify` + (failed ? ` (${failed} failed)` : ''), failed ? 'error' : 'success');
+}
+
+
+async function reportBadScan(id) {
+  const reason = prompt('What was wrong with this scan? (optional but helpful)');
+  if (reason === null) return;
+  try {
+    const r = await fetch('/api/listings/' + id + '/report-bad-scan', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({reason: reason || ''})
+    });
+    if (r.ok) {
+      toast('Report sent — thank you!', 'success');
+    } else {
+      const d = await r.json().catch(()=>({}));
+      throw new Error(d.detail || 'Failed');
+    }
+  } catch(e) {
+    toast('Report failed: ' + e.message, 'error');
+  }
 }
 
 </script>
