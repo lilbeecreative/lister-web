@@ -1614,6 +1614,7 @@ async function loadSavedBatches() {
       list.appendChild(row);
     });
   } catch(e) { console.error('loadSavedBatches failed', e); }
+*/
 }
 
 function toggleSavedBatchesDropdown(e) {
@@ -1635,17 +1636,17 @@ document.addEventListener('click', (e) => {
 });
 
 async function toggleSavedBatch(batchId, rowEl) {
-  const next = rowEl.nextElementSibling;
-  if (next && next.classList.contains('saved-batch-expanded')) {
-    next.remove();
-    return;
-  }
-  // Close any other open ones
-  document.querySelectorAll('.saved-batch-expanded').forEach(el => el.remove());
   try {
     const r = await fetch(`/api/saved-batches/${batchId}`);
     if (!r.ok) throw new Error(await r.text());
     const data = await r.json();
+    const dd = document.getElementById('saved-batches-dropdown');
+    if (dd) dd.style.display = 'none';
+    window._currentSavedBatch = data;
+    renderSavedBatchInDashboard(data);
+    return;
+    /* OLD CODE BELOW - unreachable
+
     const wrap = document.createElement('div');
     wrap.className = 'saved-batch-expanded';
     if (!data.items.length) {
