@@ -374,6 +374,7 @@ async def report_bad_scan(listing_id: int, request: Request):
         # Send email via Resend
         import resend
         resend.api_key = os.getenv("RESEND_API_KEY", "")
+        print(f"📸 Bad scan photos: {photo_urls}")
         photo_html = "".join([f'<img src="{u}" style="max-width:200px;border-radius:8px;margin:4px;border:1px solid #ddd;"/>' for u in photo_urls[:5]])
         email_html = f"""
 <div style="font-family:-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#0a0c10;color:#f0f2f5;">
