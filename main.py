@@ -250,6 +250,86 @@ async def ebay_disconnect(request: Request):
     supabase.table("ebay_tokens").delete().eq("business_id", business_id).execute()
     return {"ok": True}
 
+# ── SHOPIFY OAUTH ────────────────────────────────────────────
+SHOPIFY_API_KEY = os.getenv("SHOPIFY_API_KEY", "")
+SHOPIFY_API_SECRET = os.getenv("SHOPIFY_API_SECRET", "")
+SHOPIFY_SCOPES = os.getenv("SHOPIFY_SCOPES", "write_products,read_products")
+
+@app.get("/shopify/connect")
+async def shopify_connect(request: Request, shop: str = ""):
+    business_id = require_auth(request)
+    if not business_id:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse("/login", status_code=302)
+    if not shop:
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse("""
+<html><body style="background:#060608;color:#f0f2f5;font-family:sans-serif;padding:60px 20px;text-align:center;">
+<h2>Connect Your Shopify Store</h2>
+<form method="GET" action="/shopify/connect" style="max-width:400px;margin:30px auto;">
+  <input name="shop" placeholder="your-store.myshopify.com" required style="width:100%;padding:12px;background:#0f1117;border:1px solid #1e2330;border-radius:8px;color:#fff;font-size:14px;margin-bottom:12px;">
+  <button type="submit" style="width:100%;background:#22c55e;color:#000;padding:12px;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Connect</button>
+</form>
+<a href="/" style="color:#5a6478;font-size:13px;">← Back</a>
+</body></html>""")
+    if not shop.endswith(".myshopify.com"):
+        shop = shop.replace("https://","").replace("http://","").rstrip("/")
+        if not shop.endswith(".myshopify.com"):
+            shop = shop + ".myshopify.com"
+    auth_url = f"https://{shop}/admin/oauth/authorize?client_id={SHOPIFY_API_KEY}&scope={SHOPIFY_SCOPES}&redirect_uri=https://lister-web-dev-production.up.railway.app/shopify/callback&state={business_id}__{shop}"
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(auth_url, status_code=302)
+
+@app.get("/shopify/callback")
+async def shopify_callback(request: Request, code: str = "", state: str = "", shop: str = ""):
+    from fastapi.responses import HTMLResponse, RedirectResponse
+    if not code or not state:
+        return HTMLResponse("<h1>Shopify Connection Failed</h1><a href='/'>Go back</a>")
+    parts = state.split("__")
+    if len(parts) != 2:
+        return HTMLResponse("<h1>Invalid state</h1><a href='/'>Go back</a>")
+    business_id, shop_domain = parts
+    try:
+        r = _req.post(f"https://{shop_domain}/admin/oauth/access_token", json={
+            "client_id": SHOPIFY_API_KEY,
+            "client_secret": SHOPIFY_API_SECRET,
+            "code": code
+        })
+        data = r.json()
+        if "access_token" not in data:
+            return HTMLResponse(f"<h1>Failed</h1><pre>{data}</pre><a href='/'>Go back</a>")
+        from datetime import datetime
+        existing = supabase.table("shopify_tokens").select("id").eq("business_id", business_id).execute()
+        token_row = {"business_id": business_id, "shop_domain": shop_domain, "access_token": data["access_token"], "scopes": data.get("scope", ""), "updated_at": datetime.utcnow().isoformat()}
+        if existing.data:
+            supabase.table("shopify_tokens").update(token_row).eq("business_id", business_id).execute()
+        else:
+            supabase.table("shopify_tokens").insert(token_row).execute()
+        return RedirectResponse("/?shopify_connected=1", status_code=302)
+    except Exception as e:
+        return HTMLResponse(f"<h1>Error</h1><pre>{e}</pre><a href='/'>Go back</a>")
+
+@app.get("/api/shopify/status")
+async def shopify_status(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        return {"connected": False}
+    try:
+        res = supabase.table("shopify_tokens").select("shop_domain").eq("business_id", business_id).execute()
+        if res.data:
+            return {"connected": True, "shop_domain": res.data[0]["shop_domain"]}
+        return {"connected": False}
+    except Exception:
+        return {"connected": False}
+
+@app.post("/api/shopify/disconnect")
+async def shopify_disconnect(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    supabase.table("shopify_tokens").delete().eq("business_id", business_id).execute()
+    return {"ok": True}
+
 @app.get("/paywall", response_class=HTMLResponse)
 async def paywall_page(request: Request):
     with open(os.path.join(os.path.dirname(__file__), "templates", "paywall.html")) as f:
