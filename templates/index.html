@@ -270,6 +270,7 @@ select.field-input { background: #fff; color: #0f172a; }
       <button class="btn" onclick="selectAll()">☑ Select All</button>
       <button class="btn" onclick="deselectAll()">☐ Deselect</button>
       <button class="btn btn-primary" id="submit-ebay-btn" style="display:none" onclick="submitSelected()">🏷️ Submit to eBay</button>
+      <button class="btn" id="submit-shopify-btn" style="display:none;background:#5a8e3b;color:#fff;border-color:#5a8e3b;" onclick="submitToShopify()">🛍️ Push to Shopify</button>
       <div class="spacer"></div>
       <button class="btn" onclick="openSaveBatchModal()" style="background:#1a3a1a;border-color:#2d5a2d;color:#86efac;">💾 Save Batch</button>
       <button class="btn btn-danger" onclick="confirmClearBatch()">🗑️ Clear Batch</button>
@@ -791,6 +792,11 @@ function updateSubmitBtn() {
   const btn = document.getElementById('submit-ebay-btn');
   btn.style.display = selected.size > 0 ? 'inline-block' : 'none';
   btn.textContent = `🏷️ Submit ${selected.size} to eBay`;
+  const sbtn = document.getElementById('submit-shopify-btn');
+  if (sbtn) {
+    sbtn.style.display = selected.size > 0 ? 'inline-block' : 'none';
+    sbtn.textContent = `🛍️ Push ${selected.size} to Shopify`;
+  }
 }
 
 async function changeQty(id, delta) {
@@ -1796,6 +1802,28 @@ async function pushToShopify() {
     btn.innerHTML = orig;
     btn.disabled = false;
   }
+}
+
+
+async function submitToShopify() {
+  if (!selected.size) return;
+  const btn = document.getElementById('submit-shopify-btn');
+  const orig = btn.textContent;
+  btn.disabled = true;
+  let success = 0, failed = 0;
+  const total = selected.size;
+  const ids = Array.from(selected);
+  for (let i = 0; i < ids.length; i++) {
+    btn.textContent = `⏳ ${i+1}/${total}...`;
+    try {
+      const r = await fetch('/api/shopify/push/' + ids[i], {method: 'POST'});
+      if (r.ok) success++;
+      else failed++;
+    } catch(e) { failed++; }
+  }
+  btn.disabled = false;
+  btn.textContent = orig;
+  toast(`Pushed ${success}/${total} to Shopify` + (failed ? ` (${failed} failed)` : ''), failed ? 'error' : 'success');
 }
 
 </script>
