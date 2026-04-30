@@ -332,6 +332,7 @@ async def shopify_disconnect(request: Request):
 
 @app.post("/api/listings/{listing_id}/report-bad-scan")
 async def report_bad_scan(listing_id: int, request: Request):
+    from datetime import datetime
     business_id = require_auth(request)
     if not business_id:
         raise HTTPException(401, "Not authenticated")
@@ -346,17 +347,30 @@ async def report_bad_scan(listing_id: int, request: Request):
         # Get business info
         biz = supabase.table("businesses").select("name,email").eq("id", business_id).execute()
         biz_data = biz.data[0] if biz.data else {}
-        # Get all photos
-        photo_urls = []
+        # Get all photos and create signed URLs (work even if bucket is private)
+        photo_ids = []
         if listing.get("photo_id"):
             gp = supabase.table("group_photos").select("group_id").eq("photo_id", listing["photo_id"]).execute()
             if gp.data:
                 gid = gp.data[0]["group_id"]
                 all_gp = supabase.table("group_photos").select("photo_id").eq("group_id", gid).execute()
                 for row in (all_gp.data or []):
-                    photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{row['photo_id']}")
-            if not photo_urls:
-                photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{listing['photo_id']}")
+                    photo_ids.append(row['photo_id'])
+            if not photo_ids:
+                photo_ids.append(listing['photo_id'])
+        # Generate signed URLs (1 day expiry)
+        photo_urls = []
+        for pid in photo_ids:
+            try:
+                signed = supabase.storage.from_("part-photos").create_signed_url(pid, 86400)
+                if signed and "signedURL" in signed:
+                    photo_urls.append(signed["signedURL"])
+                elif signed and "signedUrl" in signed:
+                    photo_urls.append(signed["signedUrl"])
+                else:
+                    photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{pid}")
+            except Exception:
+                photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{pid}")
         # Send email via Resend
         import resend
         resend.api_key = os.getenv("RESEND_API_KEY", "")
@@ -370,7 +384,11 @@ async def report_bad_scan(listing_id: int, request: Request):
     <h2 style="font-size:14px;color:#e8ff47;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">User Info</h2>
     <p style="margin:4px 0;"><strong>Business:</strong> {biz_data.get('name','Unknown')}</p>
     <p style="margin:4px 0;"><strong>Email:</strong> {biz_data.get('email','Unknown')}</p>
+    <p style="margin:4px 0;"><strong>Business ID:</strong> {business_id}</p>
     <p style="margin:4px 0;"><strong>Listing ID:</strong> {listing_id}</p>
+    <p style="margin:4px 0;"><strong>Photo ID(s):</strong> {", ".join(photo_ids) if photo_ids else "(none)"}</p>
+    <p style="margin:4px 0;"><strong>Listing Created:</strong> {listing.get('created_at','Unknown')}</p>
+    <p style="margin:4px 0;"><strong>Reported At:</strong> {datetime.utcnow().isoformat()}Z</p>
   </div>
   
   <div style="background:#111418;border:1px solid #1a1f2e;border-radius:10px;padding:20px;margin-bottom:16px;">
