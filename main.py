@@ -330,6 +330,68 @@ async def shopify_disconnect(request: Request):
     supabase.table("shopify_tokens").delete().eq("business_id", business_id).execute()
     return {"ok": True}
 
+@app.post("/api/shopify/push/{listing_id}")
+async def push_to_shopify(listing_id: int, request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        # Get token
+        tok = supabase.table("shopify_tokens").select("*").eq("business_id", business_id).execute()
+        if not tok.data:
+            raise HTTPException(400, "Shopify not connected")
+        shop = tok.data[0]["shop_domain"]
+        token = tok.data[0]["access_token"]
+        # Get listing
+        l = supabase.table("listings").select("*").eq("id", listing_id).eq("business_id", business_id).execute()
+        if not l.data:
+            raise HTTPException(404, "Listing not found")
+        listing = l.data[0]
+        # Get all photos via group
+        photo_urls = []
+        if listing.get("photo_id"):
+            gp = supabase.table("group_photos").select("group_id").eq("photo_id", listing["photo_id"]).execute()
+            if gp.data:
+                gid = gp.data[0]["group_id"]
+                all_gp = supabase.table("group_photos").select("photo_id").eq("group_id", gid).execute()
+                for row in (all_gp.data or []):
+                    photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{row['photo_id']}")
+            if not photo_urls:
+                photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{listing['photo_id']}")
+        # Create product on Shopify
+        product_data = {
+            "product": {
+                "title": listing.get("title", "Untitled"),
+                "body_html": listing.get("description", ""),
+                "vendor": "Lister AI",
+                "product_type": listing.get("ebay_category", ""),
+                "status": "draft",
+                "variants": [{
+                    "price": str(listing.get("price", 0)),
+                    "inventory_quantity": listing.get("quantity", 1),
+                    "inventory_management": "shopify",
+                }],
+                "images": [{"src": url} for url in photo_urls[:10]],
+            }
+        }
+        r = _req.post(
+            f"https://{shop}/admin/api/2024-01/products.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json=product_data,
+            timeout=30
+        )
+        if r.status_code not in (200, 201):
+            raise HTTPException(500, f"Shopify error: {r.text}")
+        result = r.json()
+        product_id = result.get("product", {}).get("id")
+        # Update listing with shopify_product_id
+        supabase.table("listings").update({"shopify_product_id": str(product_id)}).eq("id", listing_id).execute()
+        return {"ok": True, "product_id": product_id, "shop": shop}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 @app.get("/paywall", response_class=HTMLResponse)
 async def paywall_page(request: Request):
     with open(os.path.join(os.path.dirname(__file__), "templates", "paywall.html")) as f:
