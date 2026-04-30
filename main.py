@@ -398,7 +398,7 @@ async def report_bad_scan(listing_id: int, request: Request):
         try:
             resend.Emails.send({
                 "from": "Lister AI Reports <reports@reselljunkie.com>",
-                "to": "shpphoto@yahoo.com",
+                "to": "sebastian@lilbeecreative.com",
                 "subject": f"Bad Scan Report — {biz_data.get('name','Unknown')} — Listing #{listing_id}",
                 "html": email_html
             })
@@ -406,7 +406,7 @@ async def report_bad_scan(listing_id: int, request: Request):
             # Try fallback sender
             resend.Emails.send({
                 "from": "Lister AI <onboarding@resend.dev>",
-                "to": "shpphoto@yahoo.com",
+                "to": "sebastian@lilbeecreative.com",
                 "subject": f"Bad Scan Report — Listing #{listing_id}",
                 "html": email_html
             })
