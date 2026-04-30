@@ -330,6 +330,92 @@ async def shopify_disconnect(request: Request):
     supabase.table("shopify_tokens").delete().eq("business_id", business_id).execute()
     return {"ok": True}
 
+@app.post("/api/listings/{listing_id}/report-bad-scan")
+async def report_bad_scan(listing_id: int, request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        reason = body.get("reason", "")
+        # Get listing
+        l = supabase.table("listings").select("*").eq("id", listing_id).eq("business_id", business_id).execute()
+        if not l.data:
+            raise HTTPException(404, "Listing not found")
+        listing = l.data[0]
+        # Get business info
+        biz = supabase.table("businesses").select("name,email").eq("id", business_id).execute()
+        biz_data = biz.data[0] if biz.data else {}
+        # Get all photos
+        photo_urls = []
+        if listing.get("photo_id"):
+            gp = supabase.table("group_photos").select("group_id").eq("photo_id", listing["photo_id"]).execute()
+            if gp.data:
+                gid = gp.data[0]["group_id"]
+                all_gp = supabase.table("group_photos").select("photo_id").eq("group_id", gid).execute()
+                for row in (all_gp.data or []):
+                    photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{row['photo_id']}")
+            if not photo_urls:
+                photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{listing['photo_id']}")
+        # Send email via Resend
+        import resend
+        resend.api_key = os.getenv("RESEND_API_KEY", "")
+        photo_html = "".join([f'<img src="{u}" style="max-width:200px;border-radius:8px;margin:4px;border:1px solid #ddd;"/>' for u in photo_urls[:5]])
+        email_html = f"""
+<div style="font-family:-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#0a0c10;color:#f0f2f5;">
+  <h1 style="color:#ef4444;margin-bottom:8px;font-size:22px;">⚠️ Bad Scan Reported</h1>
+  <p style="color:#8892a4;font-size:13px;margin-bottom:24px;">A user flagged this listing as a bad scan and needs review.</p>
+  
+  <div style="background:#111418;border:1px solid #1a1f2e;border-radius:10px;padding:20px;margin-bottom:16px;">
+    <h2 style="font-size:14px;color:#e8ff47;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">User Info</h2>
+    <p style="margin:4px 0;"><strong>Business:</strong> {biz_data.get('name','Unknown')}</p>
+    <p style="margin:4px 0;"><strong>Email:</strong> {biz_data.get('email','Unknown')}</p>
+    <p style="margin:4px 0;"><strong>Listing ID:</strong> {listing_id}</p>
+  </div>
+  
+  <div style="background:#111418;border:1px solid #1a1f2e;border-radius:10px;padding:20px;margin-bottom:16px;">
+    <h2 style="font-size:14px;color:#e8ff47;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">User Reason</h2>
+    <p style="font-style:italic;color:#8892a4;">{reason or '(no reason given)'}</p>
+  </div>
+  
+  <div style="background:#111418;border:1px solid #1a1f2e;border-radius:10px;padding:20px;margin-bottom:16px;">
+    <h2 style="font-size:14px;color:#e8ff47;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">AI Generated Data</h2>
+    <p style="margin:4px 0;"><strong>Title:</strong> {listing.get('title','')}</p>
+    <p style="margin:4px 0;"><strong>Description:</strong> {listing.get('description','')[:200]}</p>
+    <p style="margin:4px 0;"><strong>Price (Used):</strong> ${listing.get('price_used',0)}</p>
+    <p style="margin:4px 0;"><strong>Price (New):</strong> ${listing.get('price_new',0)}</p>
+    <p style="margin:4px 0;"><strong>Condition:</strong> {listing.get('condition','')}</p>
+    <p style="margin:4px 0;"><strong>Quantity:</strong> {listing.get('quantity',1)}</p>
+    <p style="margin:4px 0;"><strong>eBay Category:</strong> {listing.get('ebay_category','')} (ID: {listing.get('ebay_category_id','')})</p>
+  </div>
+  
+  <div style="background:#111418;border:1px solid #1a1f2e;border-radius:10px;padding:20px;">
+    <h2 style="font-size:14px;color:#e8ff47;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">Photos ({len(photo_urls)})</h2>
+    <div>{photo_html}</div>
+  </div>
+</div>
+"""
+        try:
+            resend.Emails.send({
+                "from": "Lister AI Reports <reports@reselljunkie.com>",
+                "to": "shpphoto@yahoo.com",
+                "subject": f"Bad Scan Report — {biz_data.get('name','Unknown')} — Listing #{listing_id}",
+                "html": email_html
+            })
+        except Exception as email_err:
+            # Try fallback sender
+            resend.Emails.send({
+                "from": "Lister AI <onboarding@resend.dev>",
+                "to": "shpphoto@yahoo.com",
+                "subject": f"Bad Scan Report — Listing #{listing_id}",
+                "html": email_html
+            })
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
 @app.post("/api/shopify/push/{listing_id}")
 async def push_to_shopify(listing_id: int, request: Request):
     business_id = require_auth(request)
