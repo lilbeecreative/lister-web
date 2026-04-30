@@ -236,7 +236,7 @@ select.field-input { background: #fff; color: #0f172a; }
   <a class="nav-download" href="#" onclick="window.location.href='/api/export/ebay-csv';return false;">⬇️ eBay CSV</a>
   <div style="position:relative;">
     <a class="nav-download" href="#" onclick="toggleSavedBatchesDropdown(event)" id="saved-batches-trigger">📁 <span id="saved-batches-trigger-label">Saved</span> <span id="saved-batches-trigger-count" style="color:var(--muted);font-size:10px;margin-left:2px;"></span></a>
-    <div id="saved-batches-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:280px;max-width:340px;max-height:60vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:200;padding:8px;">
+    <div id="saved-batches-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:260px;max-width:320px;max-height:400px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:1000;padding:10px;">
       <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;padding:4px 6px 8px 6px;border-bottom:1px solid var(--border);margin-bottom:6px;">📁 Saved Batches</div>
       <div id="saved-batches-list" style="display:flex;flex-direction:column;gap:3px;"></div>
       <div id="saved-batches-empty" style="color:var(--muted);font-size:11px;padding:8px 6px;font-style:italic;">No saved batches yet</div>
