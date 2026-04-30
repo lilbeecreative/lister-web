@@ -414,6 +414,9 @@ async def report_bad_scan(listing_id: int, request: Request):
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"❌ Bad scan report error: {e}")
         raise HTTPException(500, str(e))
 
 @app.post("/api/shopify/push/{listing_id}")
