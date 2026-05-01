@@ -3354,7 +3354,7 @@ async def update_inventory(inv_id: str, request: Request):
     try:
         body = await request.json()
         allowed = ("title", "price", "cost", "condition", "quantity", "general_category",
-                   "storage_location", "barcode_id", "status")
+                   "storage_location", "barcode_id", "status", "sold_price", "sold_date", "sold_location")
         updates = {k: v for k, v in body.items() if k in allowed}
         if not updates:
             raise HTTPException(400, "No valid fields")

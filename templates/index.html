@@ -2177,7 +2177,7 @@ function renderInventoryCard(it) {
     +   '</div>'
     +   '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;">'
     +     '<span>' + (it.general_category || 'Other') + '</span>'
-    +     '<span>' + (it.storage_location ? '📍 ' + escapeText(it.storage_location) : 'No location') + '</span>'
+    +     '<span class="inv-loc-quick" data-id="' + it.id + '" onclick="event.stopPropagation();editLocationInline(this);" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;">' + (it.storage_location ? '📍 ' + escapeText(it.storage_location) : '+ Add location') + '</span>'
     +   '</div>'
     + '</div>'
     + '</div>';
@@ -2191,7 +2191,7 @@ function renderInventoryRow(it) {
     + (it.photo_url ? '<img src="' + it.photo_url + '" loading="lazy" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;" onclick="event.stopPropagation();window.open(this.src);"/>' : '<div style="width:48px;height:48px;background:#161925;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#3d4663;">📷</div>')
     + '<div style="flex:1;min-width:0;">'
     +   '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeText(it.title || '(untitled)') + '</div>'
-    +   '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' + (it.general_category || 'Other') + ' - ' + (it.storage_location ? escapeText(it.storage_location) : 'No location') + (it.barcode_id ? ' - ' + it.barcode_id : '') + '</div>'
+    +   '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' + (it.general_category || 'Other') + ' - ' + '<span class="inv-loc-quick" data-id="' + it.id + '" onclick="event.stopPropagation();editLocationInline(this);" style="cursor:pointer;text-decoration:underline dotted;">' + (it.storage_location ? escapeText(it.storage_location) : '+ Add location') + '</span>' + (it.barcode_id ? ' - ' + it.barcode_id : '') + '</div>'
     + '</div>'
     + '<div style="text-align:right;flex-shrink:0;">'
     +   '<div style="font-size:14px;font-weight:700;">$' + (it.price||0).toFixed(2) + '</div>'
@@ -2285,6 +2285,10 @@ function openInvEditModal(id) {
   document.getElementById('inv-edit-location').value = it.storage_location || '';
   document.getElementById('inv-edit-category').value = it.general_category || 'Other';
   document.getElementById('inv-edit-barcode').value = it.barcode_id || '(no barcode yet)';
+  document.getElementById('inv-edit-sold-price').value = it.sold_price ? Number(it.sold_price).toFixed(2) : '';
+  document.getElementById('inv-edit-sold-date').value = it.sold_date || '';
+  document.getElementById('inv-edit-sold-location').value = it.sold_location || '';
+  toggleSoldFields();
   // Refresh datalist for autocomplete
   fetch('/api/inventory/locations').then(r => r.json()).then(d => {
     const dl = document.getElementById('inv-locations-list');
@@ -2300,15 +2304,26 @@ function closeInvEditModal() {
 
 async function saveInvItem() {
   if (!currentInvItem) return;
+  const status = document.getElementById('inv-edit-status').value;
   const updates = {
     title: document.getElementById('inv-edit-title').value.trim(),
     price: parseFloat(document.getElementById('inv-edit-price').value) || 0,
     cost: parseFloat(document.getElementById('inv-edit-cost').value) || 0,
-    status: document.getElementById('inv-edit-status').value,
+    status: status,
     quantity: parseInt(document.getElementById('inv-edit-qty').value) || 1,
     storage_location: document.getElementById('inv-edit-location').value.trim(),
     general_category: document.getElementById('inv-edit-category').value,
   };
+  if (status === 'sold') {
+    const sp = parseFloat(document.getElementById('inv-edit-sold-price').value);
+    updates.sold_price = isNaN(sp) ? null : sp;
+    updates.sold_date = document.getElementById('inv-edit-sold-date').value || null;
+    updates.sold_location = document.getElementById('inv-edit-sold-location').value.trim() || null;
+  } else {
+    updates.sold_price = null;
+    updates.sold_date = null;
+    updates.sold_location = null;
+  }
   try {
     const r = await fetch('/api/inventory/' + currentInvItem.id, {
       method:'PATCH', headers:{'Content-Type':'application/json'},
@@ -2492,6 +2507,52 @@ window.addEventListener('keydown', function(e) {
   closeBulkLocationModal();
   closeBarcodeModal();
 });
+
+
+function editLocationInline(el) {
+  const id = el.dataset.id;
+  const item = invItems.find(x => x.id === id);
+  if (!item) return;
+  const cur = item.storage_location || '';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = cur;
+  input.setAttribute('list', 'inv-locations-list');
+  input.style.cssText = 'background:var(--bg);border:1px solid var(--accent);border-radius:4px;padding:2px 6px;color:var(--text);font-size:10px;font-family:inherit;width:120px;outline:none;';
+  input.onclick = e => e.stopPropagation();
+  el.replaceWith(input);
+  input.focus(); input.select();
+  fetch('/api/inventory/locations').then(r => r.json()).then(d => {
+    const dl = document.getElementById('inv-locations-list');
+    if (dl) dl.innerHTML = (d.locations||[]).map(n => '<option value="' + escapeText(n) + '"></option>').join('');
+  });
+  let done = false;
+  const save = async function() {
+    if (done) return;
+    done = true;
+    const newLoc = input.value.trim();
+    if (newLoc === cur) { loadInventory(); return; }
+    try {
+      await fetch('/api/inventory/' + id, {
+        method:'PATCH', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({storage_location: newLoc})
+      });
+      toast('Location saved');
+      loadInventory();
+    } catch(e) { toast('Failed', 'error'); loadInventory(); }
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { done = true; loadInventory(); }
+  });
+}
+
+function toggleSoldFields() {
+  const status = document.getElementById('inv-edit-status').value;
+  const block = document.getElementById('inv-edit-sold-fields');
+  if (block) block.style.display = status === 'sold' ? 'block' : 'none';
+}
 
 // ── DETAILED ANALYTICS ─────────────────────────────────────
 let detailedPeriod = 'month';
@@ -3221,7 +3282,7 @@ setInterval(refreshUserMailboxBadge, 30000);
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
         <div>
           <div class="acct-field-label">Status</div>
-          <select id="inv-edit-status" class="acct-input">
+          <select id="inv-edit-status" class="acct-input" onchange="toggleSoldFields()">
             <option value="in_stock">In Stock</option>
             <option value="listed">Listed</option>
             <option value="sold">Sold</option>
@@ -3231,6 +3292,23 @@ setInterval(refreshUserMailboxBadge, 30000);
         <div>
           <div class="acct-field-label">Quantity</div>
           <input id="inv-edit-qty" class="acct-input" type="number" min="0"/>
+        </div>
+      </div>
+      <div id="inv-edit-sold-fields" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:11px;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Sold Details</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div>
+            <div class="acct-field-label">Sold For</div>
+            <input id="inv-edit-sold-price" class="acct-input" type="number" step="0.01"/>
+          </div>
+          <div>
+            <div class="acct-field-label">Sold Date</div>
+            <input id="inv-edit-sold-date" class="acct-input" type="date"/>
+          </div>
+        </div>
+        <div>
+          <div class="acct-field-label">Sold Where</div>
+          <input id="inv-edit-sold-location" class="acct-input" placeholder="e.g. eBay, Mercari, in-person"/>
         </div>
       </div>
       <div style="margin-bottom:12px;">
