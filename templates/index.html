@@ -561,6 +561,24 @@ select.field-input { background: #fff; color: #0f172a; }
         </div>
       </div>
 
+      <!-- Cost tracking toggle -->
+      <div class="acct-card" style="margin-bottom:14px;">
+        <div class="acct-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center;font-size:14px;">💰</div>
+            <div>
+              <div class="acct-card-title">Cost Tracking</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:1px;">Track item costs to see profit margins</div>
+            </div>
+          </div>
+          <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+            <input type="checkbox" id="cost-tracking-toggle" onchange="toggleCostTracking()" style="opacity:0;width:0;height:0;"/>
+            <span id="cost-tracking-slider" style="position:absolute;cursor:pointer;inset:0;background:#1e2535;border:1px solid var(--border);border-radius:24px;transition:0.2s;"></span>
+            <span id="cost-tracking-knob" style="position:absolute;height:18px;width:18px;left:3px;top:2px;background:#fff;border-radius:50%;transition:0.2s;"></span>
+          </label>
+        </div>
+      </div>
+
       <!-- Shopify -->
       <div class="acct-card" style="margin-bottom:14px;">
         <div class="acct-card-header">
@@ -738,7 +756,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     activeTab = tab;
     if (tab === 'dashboard') { loadListings(); loadDashboardSummary(); }
     if (tab === 'auction')   loadAuctionSessions();
-    if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); }
+    if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); loadCostTrackingState(); }
     if (tab === 'messages')  { loadUserThread(); }
   });
 });
@@ -846,6 +864,56 @@ const PLAN_TIERS = [
   {name:'Growth', price:150, scans:500, sub:'500 scans / month', featured:true, features:['500 scans / month','AI identification','Live pricing','Priority support']},
   {name:'Pro', price:250, scans:1000, sub:'1,000 scans / month', features:['1,000 scans / month','AI identification','Live pricing','Dedicated support']}
 ];
+
+
+async function loadCostTrackingState() {
+  try {
+    const r = await fetch('/api/dashboard/summary?period=month');
+    const d = await r.json();
+    const toggle = document.getElementById('cost-tracking-toggle');
+    if (!toggle) return;
+    toggle.checked = d.cost_tracking_enabled !== false;
+    updateCostTrackingVisuals(toggle.checked);
+  } catch(e) {}
+}
+
+function updateCostTrackingVisuals(on) {
+  const slider = document.getElementById('cost-tracking-slider');
+  const knob = document.getElementById('cost-tracking-knob');
+  if (!slider || !knob) return;
+  if (on) {
+    slider.style.background = '#22c55e';
+    slider.style.borderColor = '#22c55e';
+    knob.style.left = '23px';
+  } else {
+    slider.style.background = '#1e2535';
+    slider.style.borderColor = 'var(--border)';
+    knob.style.left = '3px';
+  }
+}
+
+async function toggleCostTracking() {
+  const toggle = document.getElementById('cost-tracking-toggle');
+  const enabled = toggle.checked;
+  updateCostTrackingVisuals(enabled);
+  try {
+    await fetch('/api/account/cost-tracking', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({enabled})
+    });
+    toast('Cost tracking ' + (enabled ? 'enabled' : 'disabled'));
+    window._costTrackingEnabled = enabled;
+    // Refresh dashboard if user goes back
+    if (typeof loadDashboardSummary === 'function') loadDashboardSummary();
+    if (typeof renderTiles === 'function' && typeof listings !== 'undefined') renderTiles();
+  } catch(e) {
+    // Rollback toggle visually if fetch fails
+    toggle.checked = !enabled;
+    updateCostTrackingVisuals(!enabled);
+    toast('Failed to update', 'error');
+  }
+}
 
 async function loadAccountInfo() {
   try {
