@@ -411,7 +411,7 @@ async def report_bad_scan(listing_id: int, request: Request):
   <div style="background:#111418;border:1px solid #1a1f2e;border-radius:10px;padding:20px;margin-bottom:16px;">
     <h2 style="font-size:14px;color:#e8ff47;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">AI Generated Data</h2>
     <p style="margin:4px 0;"><strong>Title:</strong> {listing.get('title','')}</p>
-    <p style="margin:4px 0;"><strong>Description:</strong> {listing.get('description','')[:200]}</p>
+    <p style="margin:4px 0;"><strong>Description:</strong> {(listing.get('description') or '')[:200]}</p>
     <p style="margin:4px 0;"><strong>Price (Used):</strong> ${listing.get('price_used',0)}</p>
     <p style="margin:4px 0;"><strong>Price (New):</strong> ${listing.get('price_new',0)}</p>
     <p style="margin:4px 0;"><strong>Condition:</strong> {listing.get('condition','')}</p>
