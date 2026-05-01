@@ -8,91 +8,352 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#060608; color:#f0f2f5; font-family:'Instrument Sans',sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 20px; }
-.container { max-width:680px; width:100%; }
-.logo { font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:0.08em; text-align:center; margin-bottom:40px; }
-.logo span { color:#e8ff47; }
-.hero-card { background:#111418; border:1px solid #1a1f2e; border-radius:20px; padding:48px 40px; text-align:center; margin-bottom:24px; position:relative; overflow:hidden; }
-.hero-card::before { content:''; position:absolute; top:-80px; left:50%; transform:translateX(-50%); width:300px; height:300px; background:radial-gradient(circle, rgba(232,255,71,0.08) 0%, transparent 70%); pointer-events:none; }
-.checkmark { width:72px; height:72px; background:rgba(232,255,71,0.1); border:2px solid rgba(232,255,71,0.3); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:32px; margin:0 auto 24px; animation:pop 0.5s ease; }
-@keyframes pop { 0%{transform:scale(0)} 80%{transform:scale(1.1)} 100%{transform:scale(1)} }
-.hero-card h1 { font-family:'Bebas Neue',sans-serif; font-size:52px; letter-spacing:0.02em; margin-bottom:12px; }
-.hero-card h1 span { color:#e8ff47; }
-.hero-card p { font-size:16px; color:#8892a4; line-height:1.65; max-width:440px; margin:0 auto 32px; }
-.check-email { background:rgba(232,255,71,0.06); border:1px solid rgba(232,255,71,0.2); border-radius:10px; padding:16px 20px; font-size:13px; color:#e8ff47; display:flex; align-items:center; gap:10px; margin-bottom:32px; font-family:'DM Mono',monospace; }
-.btn-dashboard { display:inline-block; background:#e8ff47; color:#000; padding:15px 40px; border-radius:10px; font-size:15px; font-weight:700; text-decoration:none; transition:opacity 0.2s; }
-.btn-dashboard:hover { opacity:0.9; }
+body { background:#060608; color:#f0f2f5; font-family:'Instrument Sans',sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 16px; }
+.shell { max-width:640px; width:100%; }
 
-.guide { background:#111418; border:1px solid #1a1f2e; border-radius:16px; overflow:hidden; }
-.guide-header { background:#0d0f14; padding:20px 28px; border-bottom:1px solid #1a1f2e; }
-.guide-header h2 { font-size:17px; font-weight:700; }
-.guide-header p { font-size:13px; color:#8892a4; margin-top:4px; }
-.guide-step { padding:20px 28px; border-bottom:1px solid #1a1f2e; display:flex; gap:20px; align-items:flex-start; }
-.guide-step:last-child { border-bottom:none; }
-.guide-num { width:36px; height:36px; border-radius:50%; background:rgba(232,255,71,0.1); border:1px solid rgba(232,255,71,0.2); display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:20px; color:#e8ff47; flex-shrink:0; }
-.guide-content h3 { font-size:15px; font-weight:700; margin-bottom:4px; }
-.guide-content p { font-size:13px; color:#8892a4; line-height:1.6; }
-.guide-content .tip { display:inline-block; margin-top:8px; background:#0d0f14; border:1px solid #1a1f2e; border-radius:6px; padding:6px 12px; font-size:12px; font-family:'DM Mono',monospace; color:#5a6478; }
+.topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+.logo { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:0.08em; }
+.logo span { color:#e8ff47; }
+.skip { background:transparent; border:1px solid #1a1f2e; color:#8892a4; padding:7px 14px; border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit; transition:0.15s; }
+.skip:hover { color:#e8ff47; border-color:#e8ff47; }
+
+.dots { display:flex; justify-content:center; gap:6px; margin-bottom:18px; }
+.dot { width:30px; height:4px; border-radius:2px; background:#1a1f2e; transition:background 0.3s; }
+.dot.active { background:#e8ff47; }
+.dot.done { background:rgba(232,255,71,0.4); }
+
+.card { background:#111418; border:1px solid #1a1f2e; border-radius:18px; padding:36px 32px; position:relative; overflow:hidden; min-height:480px; display:flex; flex-direction:column; }
+.card::before { content:''; position:absolute; top:-80px; left:50%; transform:translateX(-50%); width:300px; height:300px; background:radial-gradient(circle, rgba(232,255,71,0.06) 0%, transparent 70%); pointer-events:none; }
+.slide { display:none; flex-direction:column; flex:1; animation:fadeIn 0.35s ease; }
+.slide.active { display:flex; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.illus { display:flex; justify-content:center; align-items:center; margin-bottom:22px; min-height:180px; }
+.illus svg { max-width:100%; height:auto; }
+
+h1 { font-family:'Bebas Neue',sans-serif; font-size:42px; letter-spacing:0.02em; line-height:1; margin-bottom:14px; text-align:center; }
+h1 .yel { color:#e8ff47; }
+.lede { font-size:15px; color:#8892a4; line-height:1.6; text-align:center; margin-bottom:24px; max-width:480px; margin-left:auto; margin-right:auto; }
+
+.points { list-style:none; display:flex; flex-direction:column; gap:12px; max-width:440px; margin:0 auto 24px; }
+.point { display:flex; align-items:flex-start; gap:14px; }
+.point-icon { width:28px; height:28px; border-radius:7px; background:rgba(232,255,71,0.1); border:1px solid rgba(232,255,71,0.3); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.point-text { flex:1; padding-top:3px; }
+.point-text strong { font-size:14px; font-weight:700; display:block; margin-bottom:2px; }
+.point-text span { font-size:12px; color:#8892a4; line-height:1.5; }
+
+.nav { margin-top:auto; display:flex; gap:10px; padding-top:18px; border-top:1px solid #1a1f2e; }
+.btn { flex:1; padding:13px 22px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; transition:0.15s; font-family:inherit; border:1px solid #1a1f2e; background:transparent; color:#8892a4; }
+.btn:hover:not(:disabled) { border-color:#3a4258; color:#f0f2f5; }
+.btn:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-next { background:#e8ff47; color:#000; border-color:#e8ff47; flex:2; }
+.btn-next:hover { opacity:0.92; color:#000; }
+
+.tip { background:#0d0f14; border:1px solid #1a1f2e; border-radius:8px; padding:10px 14px; font-size:11px; font-family:'DM Mono',monospace; color:#5a6478; max-width:440px; margin:0 auto 0; text-align:center; }
+.badge { display:inline-block; background:rgba(232,255,71,0.1); border:1px solid rgba(232,255,71,0.3); color:#e8ff47; font-size:10px; font-weight:700; padding:3px 9px; border-radius:10px; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:12px; align-self:center; }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="logo">Lister<span>AI</span></div>
-
-  <div class="hero-card">
-    <div class="checkmark">✓</div>
-    <h1>YOU'RE ALL<br><span>SET!</span></h1>
-    <p>Your account is active and ready to go. We've sent a confirmation and setup guide to your email.</p>
-    <div class="check-email">📬 &nbsp; Check your inbox for your welcome email + quick start guide</div>
-    <a href="/" class="btn-dashboard">Go to Dashboard →</a>
+<div class="shell">
+  <div class="topbar">
+    <div class="logo">Lister<span>AI</span></div>
+    <button class="skip" onclick="skipOnboarding()">Skip →</button>
   </div>
 
-  <div class="guide">
-    <div class="guide-header">
-      <h2>Quick Start Guide</h2>
-      <p>Get your first listings up in under 10 minutes</p>
-    </div>
-    <div class="guide-step">
-      <div class="guide-num">1</div>
-      <div class="guide-content">
-        <h3>Open the Dashboard</h3>
-        <p>After clicking "Go to Dashboard" you'll land on your main workspace. This is where all your scanned items live.</p>
-        <div class="tip">app.reselljunkie.com</div>
+  <div class="dots" id="dots"></div>
+
+  <div class="card">
+
+    <!-- SLIDE 1: Welcome -->
+    <div class="slide active" data-slide="1">
+      <div class="illus">
+        <svg width="160" height="160" viewBox="0 0 160 160" fill="none">
+          <circle cx="80" cy="80" r="70" fill="rgba(232,255,71,0.06)" stroke="rgba(232,255,71,0.3)" stroke-width="2"/>
+          <circle cx="80" cy="80" r="50" fill="rgba(232,255,71,0.1)"/>
+          <path d="M55 80L72 97L107 62" stroke="#e8ff47" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
+      <span class="badge">Welcome aboard</span>
+      <h1>YOU'RE <span class="yel">IN.</span></h1>
+      <p class="lede">Lister AI turns photos into ready-to-publish listings in seconds. Here's a 60-second tour of how it works.</p>
+      <div class="tip">📬 We sent a confirmation email — check your inbox</div>
     </div>
-    <div class="guide-step">
-      <div class="guide-num">2</div>
-      <div class="guide-content">
-        <h3>Upload Your First Item</h3>
-        <p>Click the <strong>Upload tab</strong> in the left sidebar. Select New or Used condition, then tap <strong>Start Batch</strong>. Take or upload photos of your item — multiple angles work best.</p>
-        <div class="tip">Tip: More photos = better AI identification</div>
+
+    <!-- SLIDE 2: Fast Scan -->
+    <div class="slide" data-slide="2">
+      <div class="illus">
+        <svg width="240" height="180" viewBox="0 0 240 180" fill="none">
+          <!-- Phone frame -->
+          <rect x="80" y="20" width="80" height="140" rx="12" fill="#1a1f2e" stroke="#2d3348" stroke-width="2"/>
+          <rect x="86" y="32" width="68" height="100" rx="4" fill="#0d0f14"/>
+          <!-- Camera lens -->
+          <circle cx="120" cy="148" r="6" fill="#2d3348"/>
+          <!-- Item silhouette in viewfinder -->
+          <rect x="98" y="50" width="44" height="60" rx="3" fill="#2d3348"/>
+          <rect x="104" y="60" width="32" height="3" rx="1" fill="#e8ff47" opacity="0.6"/>
+          <rect x="104" y="68" width="22" height="3" rx="1" fill="#e8ff47" opacity="0.4"/>
+          <!-- Scan beam -->
+          <rect x="86" y="76" width="68" height="2" fill="#e8ff47" opacity="0.7">
+            <animate attributeName="y" from="36" to="116" dur="2s" repeatCount="indefinite"/>
+          </rect>
+          <!-- AI sparkle -->
+          <g transform="translate(180, 50)">
+            <circle r="14" fill="rgba(232,255,71,0.15)" stroke="#e8ff47" stroke-width="1.5"/>
+            <text y="5" text-anchor="middle" fill="#e8ff47" font-size="14" font-weight="700">AI</text>
+          </g>
+          <!-- Arrow -->
+          <path d="M165 90 L195 90 M188 84 L195 90 L188 96" stroke="#e8ff47" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Result tag -->
+          <rect x="195" y="82" width="38" height="16" rx="3" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1"/>
+          <text x="214" y="93" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="700">$45</text>
+        </svg>
       </div>
+      <h1>FAST <span class="yel">SCAN.</span></h1>
+      <p class="lede">Snap a photo. Our AI identifies the item, finds market prices, and drafts a listing — all in about 30 seconds.</p>
+      <ul class="points">
+        <li class="point">
+          <div class="point-icon">📷</div>
+          <div class="point-text"><strong>One photo per item</strong><span>Each photo becomes its own listing automatically</span></div>
+        </li>
+        <li class="point">
+          <div class="point-icon">⚡</div>
+          <div class="point-text"><strong>Multi-item mode</strong><span>Growth+ plans can scan up to 20 items in a single photo</span></div>
+        </li>
+        <li class="point">
+          <div class="point-icon">🎯</div>
+          <div class="point-text"><strong>Used or new pricing</strong><span>Toggle between conditions to see both market values</span></div>
+        </li>
+      </ul>
     </div>
-    <div class="guide-step">
-      <div class="guide-num">3</div>
-      <div class="guide-content">
-        <h3>Wait for AI Processing</h3>
-        <p>Our AI will identify the item and look up current market pricing automatically. This takes 30–60 seconds. You'll see it appear in your dashboard when ready.</p>
-        <div class="tip">Watch the processing queue at the top of the screen</div>
+
+    <!-- SLIDE 3: Inventory + Barcodes -->
+    <div class="slide" data-slide="3">
+      <div class="illus">
+        <svg width="240" height="180" viewBox="0 0 240 180" fill="none">
+          <!-- Inventory grid -->
+          <g transform="translate(20, 20)">
+            <rect x="0" y="0" width="56" height="64" rx="6" fill="#1a1f2e" stroke="#2d3348" stroke-width="1.5"/>
+            <rect x="6" y="6" width="44" height="34" rx="3" fill="#2d3348"/>
+            <rect x="6" y="46" width="32" height="3" rx="1" fill="#e8ff47" opacity="0.7"/>
+            <rect x="6" y="53" width="22" height="3" rx="1" fill="#8892a4" opacity="0.5"/>
+
+            <rect x="64" y="0" width="56" height="64" rx="6" fill="#1a1f2e" stroke="#2d3348" stroke-width="1.5"/>
+            <rect x="70" y="6" width="44" height="34" rx="3" fill="#2d3348"/>
+            <rect x="70" y="46" width="32" height="3" rx="1" fill="#e8ff47" opacity="0.7"/>
+            <rect x="70" y="53" width="22" height="3" rx="1" fill="#8892a4" opacity="0.5"/>
+
+            <rect x="0" y="72" width="56" height="64" rx="6" fill="#1a1f2e" stroke="#2d3348" stroke-width="1.5"/>
+            <rect x="6" y="78" width="44" height="34" rx="3" fill="#2d3348"/>
+            <rect x="6" y="118" width="32" height="3" rx="1" fill="#e8ff47" opacity="0.7"/>
+            <rect x="6" y="125" width="22" height="3" rx="1" fill="#8892a4" opacity="0.5"/>
+
+            <rect x="64" y="72" width="56" height="64" rx="6" fill="#1a1f2e" stroke="#2d3348" stroke-width="1.5"/>
+            <rect x="70" y="78" width="44" height="34" rx="3" fill="#2d3348"/>
+            <rect x="70" y="118" width="32" height="3" rx="1" fill="#e8ff47" opacity="0.7"/>
+            <rect x="70" y="125" width="22" height="3" rx="1" fill="#8892a4" opacity="0.5"/>
+          </g>
+          <!-- QR code -->
+          <g transform="translate(155, 50)">
+            <rect width="60" height="60" rx="6" fill="#fff"/>
+            <g fill="#000">
+              <rect x="6" y="6" width="14" height="14"/>
+              <rect x="40" y="6" width="14" height="14"/>
+              <rect x="6" y="40" width="14" height="14"/>
+              <rect x="9" y="9" width="8" height="8" fill="#fff"/>
+              <rect x="43" y="9" width="8" height="8" fill="#fff"/>
+              <rect x="9" y="43" width="8" height="8" fill="#fff"/>
+              <rect x="11" y="11" width="4" height="4"/>
+              <rect x="45" y="11" width="4" height="4"/>
+              <rect x="11" y="45" width="4" height="4"/>
+              <rect x="24" y="6" width="4" height="4"/>
+              <rect x="32" y="10" width="4" height="4"/>
+              <rect x="24" y="16" width="4" height="4"/>
+              <rect x="22" y="22" width="6" height="4"/>
+              <rect x="32" y="24" width="4" height="4"/>
+              <rect x="40" y="26" width="4" height="4"/>
+              <rect x="22" y="32" width="4" height="4"/>
+              <rect x="28" y="32" width="6" height="4"/>
+              <rect x="36" y="36" width="4" height="4"/>
+              <rect x="44" y="36" width="6" height="4"/>
+              <rect x="22" y="40" width="4" height="4"/>
+              <rect x="30" y="44" width="4" height="4"/>
+              <rect x="40" y="46" width="4" height="4"/>
+              <rect x="48" y="44" width="6" height="6"/>
+              <rect x="22" y="50" width="6" height="4"/>
+            </g>
+            <text x="30" y="75" text-anchor="middle" fill="#e8ff47" font-size="9" font-weight="700" font-family="monospace">LSTR-001</text>
+          </g>
+        </svg>
       </div>
+      <h1>SMART <span class="yel">INVENTORY.</span></h1>
+      <p class="lede">Every scan goes into your inventory automatically. Search, sort, and track items from shelf to sold.</p>
+      <ul class="points">
+        <li class="point">
+          <div class="point-icon">📍</div>
+          <div class="point-text"><strong>Storage locations</strong><span>Tag where each item lives — never lose anything again</span></div>
+        </li>
+        <li class="point">
+          <div class="point-icon">🏷️</div>
+          <div class="point-text"><strong>QR labels</strong><span>Generate printable barcodes for any item or batch</span></div>
+        </li>
+        <li class="point">
+          <div class="point-icon">📷</div>
+          <div class="point-text"><strong>Scan to find</strong><span>Point your phone at a label to instantly pull up the item</span></div>
+        </li>
+      </ul>
     </div>
-    <div class="guide-step">
-      <div class="guide-num">4</div>
-      <div class="guide-content">
-        <h3>Review & Edit Listings</h3>
-        <p>Click any listing card to open it. You can edit the title, price, condition, and description before exporting. The AI gives you a starting point — you're always in control.</p>
-        <div class="tip">Use the ↺ ↻ buttons to rotate photos if needed</div>
+
+    <!-- SLIDE 4: Dashboard + Profit -->
+    <div class="slide" data-slide="4">
+      <div class="illus">
+        <svg width="240" height="180" viewBox="0 0 240 180" fill="none">
+          <!-- Profit card -->
+          <rect x="20" y="30" width="100" height="60" rx="8" fill="#1a1f2e" stroke="#2d3348" stroke-width="1.5"/>
+          <text x="32" y="48" fill="#5a6478" font-size="9" font-weight="700" letter-spacing="0.08em">PROFIT</text>
+          <text x="32" y="74" fill="#22c55e" font-size="22" font-weight="800">+$2,847</text>
+          <text x="32" y="86" fill="#8892a4" font-size="9">$1,243 cost · $4,090 listed</text>
+          <!-- Items card -->
+          <rect x="124" y="30" width="100" height="60" rx="8" fill="#1a1f2e" stroke="#2d3348" stroke-width="1.5"/>
+          <text x="136" y="48" fill="#5a6478" font-size="9" font-weight="700" letter-spacing="0.08em">ITEMS</text>
+          <text x="136" y="74" fill="#f0f2f5" font-size="22" font-weight="800">47</text>
+          <text x="136" y="86" fill="#8892a4" font-size="9">63 total units</text>
+          <!-- Tiny chart -->
+          <g transform="translate(20, 110)">
+            <rect width="204" height="50" rx="6" fill="#0d0f14" stroke="#1a1f2e" stroke-width="1"/>
+            <g transform="translate(8, 8)">
+              <rect x="0" y="20" width="14" height="14" fill="#22c55e" opacity="0.7" rx="1"/>
+              <rect x="20" y="14" width="14" height="20" fill="#22c55e" opacity="0.8" rx="1"/>
+              <rect x="40" y="8" width="14" height="26" fill="#22c55e" opacity="0.85" rx="1"/>
+              <rect x="60" y="2" width="14" height="32" fill="#22c55e" rx="1"/>
+              <rect x="80" y="10" width="14" height="24" fill="#22c55e" opacity="0.85" rx="1"/>
+              <rect x="100" y="6" width="14" height="28" fill="#22c55e" opacity="0.9" rx="1"/>
+              <rect x="120" y="18" width="14" height="16" fill="#22c55e" opacity="0.7" rx="1"/>
+              <rect x="140" y="0" width="14" height="34" fill="#22c55e" rx="1"/>
+              <rect x="160" y="12" width="14" height="22" fill="#22c55e" opacity="0.85" rx="1"/>
+              <rect x="180" y="4" width="14" height="30" fill="#22c55e" opacity="0.95" rx="1"/>
+            </g>
+          </g>
+        </svg>
       </div>
+      <h1>KNOW YOUR <span class="yel">PROFIT.</span></h1>
+      <p class="lede">Track cost vs. listed value across every item. Know exactly what you're making per scan, per day, per month.</p>
+      <ul class="points">
+        <li class="point">
+          <div class="point-icon">💰</div>
+          <div class="point-text"><strong>Cost tracking</strong><span>Add cost per item or split a lot price across many — see profit instantly</span></div>
+        </li>
+        <li class="point">
+          <div class="point-icon">📊</div>
+          <div class="point-text"><strong>Detailed analytics</strong><span>Day, week, month, year — see what's actually working</span></div>
+        </li>
+      </ul>
     </div>
-    <div class="guide-step">
-      <div class="guide-num">5</div>
-      <div class="guide-content">
-        <h3>Export to eBay</h3>
-        <p>When you're ready, click <strong>⬇ eBay CSV</strong> at the bottom of the sidebar. Upload the downloaded file directly to eBay's bulk listing tool to publish everything at once.</p>
-        <div class="tip">eBay → Seller Hub → Listings → Add listings with file</div>
+
+    <!-- SLIDE 5: Connect & Sell -->
+    <div class="slide" data-slide="5">
+      <div class="illus">
+        <svg width="240" height="180" viewBox="0 0 240 180" fill="none">
+          <!-- Center hub -->
+          <circle cx="120" cy="90" r="34" fill="rgba(232,255,71,0.1)" stroke="#e8ff47" stroke-width="2"/>
+          <text x="120" y="86" text-anchor="middle" fill="#e8ff47" font-family="'Bebas Neue', sans-serif" font-size="14" letter-spacing="0.05em">LISTER</text>
+          <text x="120" y="100" text-anchor="middle" fill="#e8ff47" font-family="'Bebas Neue', sans-serif" font-size="14" letter-spacing="0.05em">AI</text>
+          <!-- eBay node -->
+          <g>
+            <line x1="86" y1="90" x2="48" y2="90" stroke="#e8ff47" stroke-width="2" stroke-dasharray="3,3" opacity="0.6"/>
+            <circle cx="32" cy="90" r="22" fill="#1a1f2e" stroke="#2d3348" stroke-width="2"/>
+            <text x="32" y="94" text-anchor="middle" fill="#f0f2f5" font-size="9" font-weight="700">eBay</text>
+          </g>
+          <!-- Shopify node -->
+          <g>
+            <line x1="154" y1="90" x2="192" y2="90" stroke="#e8ff47" stroke-width="2" stroke-dasharray="3,3" opacity="0.6"/>
+            <circle cx="208" cy="90" r="22" fill="#1a1f2e" stroke="#2d3348" stroke-width="2"/>
+            <text x="208" y="94" text-anchor="middle" fill="#5a8e3b" font-size="9" font-weight="700">Shopify</text>
+          </g>
+          <!-- Bottom node: CSV -->
+          <g>
+            <line x1="120" y1="124" x2="120" y2="148" stroke="#e8ff47" stroke-width="2" stroke-dasharray="3,3" opacity="0.6"/>
+            <rect x="100" y="148" width="40" height="22" rx="4" fill="#1a1f2e" stroke="#2d3348" stroke-width="2"/>
+            <text x="120" y="163" text-anchor="middle" fill="#8892a4" font-size="9" font-weight="700">CSV</text>
+          </g>
+        </svg>
       </div>
+      <h1>SELL <span class="yel">EVERYWHERE.</span></h1>
+      <p class="lede">Push listings live with one click. eBay, Shopify, or download CSV for any platform.</p>
+      <ul class="points">
+        <li class="point">
+          <div class="point-icon">🔌</div>
+          <div class="point-text"><strong>Direct integrations</strong><span>Connect eBay and Shopify in your account settings</span></div>
+        </li>
+        <li class="point">
+          <div class="point-icon">📤</div>
+          <div class="point-text"><strong>Bulk submit</strong><span>Select items and send them all to your platform of choice</span></div>
+        </li>
+        <li class="point">
+          <div class="point-icon">📥</div>
+          <div class="point-text"><strong>CSV export</strong><span>Works with any platform that supports bulk uploads</span></div>
+        </li>
+      </ul>
     </div>
+
+  </div>
+
+  <div class="nav">
+    <button class="btn" id="back-btn" onclick="prevSlide()" disabled>← Back</button>
+    <button class="btn btn-next" id="next-btn" onclick="nextSlide()">Next →</button>
   </div>
 </div>
+
+<script>
+var TOTAL = 5;
+var current = 1;
+
+function renderDots() {
+  var dots = document.getElementById('dots');
+  dots.innerHTML = '';
+  for (var i = 1; i <= TOTAL; i++) {
+    var d = document.createElement('div');
+    d.className = 'dot' + (i === current ? ' active' : (i < current ? ' done' : ''));
+    dots.appendChild(d);
+  }
+}
+
+function showSlide(n) {
+  document.querySelectorAll('.slide').forEach(function(s) { s.classList.remove('active'); });
+  var target = document.querySelector('.slide[data-slide="' + n + '"]');
+  if (target) target.classList.add('active');
+  current = n;
+  renderDots();
+  document.getElementById('back-btn').disabled = (n === 1);
+  document.getElementById('next-btn').textContent = (n === TOTAL) ? 'Get Started →' : 'Next →';
+}
+
+function nextSlide() {
+  if (current < TOTAL) {
+    showSlide(current + 1);
+  } else {
+    finishOnboarding();
+  }
+}
+
+function prevSlide() {
+  if (current > 1) showSlide(current - 1);
+}
+
+function skipOnboarding() {
+  finishOnboarding();
+}
+
+function finishOnboarding() {
+  window.location.href = '/checkout';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight') nextSlide();
+  if (e.key === 'ArrowLeft') prevSlide();
+  if (e.key === 'Escape') skipOnboarding();
+});
+
+renderDots();
+</script>
 </body>
 </html>

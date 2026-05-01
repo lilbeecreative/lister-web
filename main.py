@@ -2655,7 +2655,7 @@ async def register_submit(request: Request):
         token = secrets.token_hex(32)
         supabase.table("sessions").insert({"token": token, "business_id": business_id}).execute()
         from fastapi.responses import RedirectResponse
-        resp = RedirectResponse("/checkout", status_code=302)
+        resp = RedirectResponse("/welcome", status_code=302)
         resp.set_cookie("session_id", token, httponly=True, max_age=60*60*24*30)
         return resp
     except Exception as e:
