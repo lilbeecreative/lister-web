@@ -119,6 +119,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .confirm-actions{display:flex;gap:8px;flex-shrink:0;}
 .items-grid{display:flex;flex-direction:column;gap:10px;}
 .item-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.report-btn{background:#fff5f0 !important;border-color:#f5b896 !important;color:#a63d00 !important;}
+.report-btn:hover{background:#ffe8d9 !important;}
+.report-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:1000;}
+.report-modal-bg.active{display:flex;}
+.report-modal{background:#fff;border-radius:14px;padding:24px;max-width:440px;width:90%;}
+.report-modal h3{margin:0 0 12px;font-size:18px;font-weight:600;}
+.report-modal p{margin:0 0 16px;font-size:14px;color:#666;}
+.report-modal textarea{width:100%;min-height:90px;padding:10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;resize:vertical;}
+.report-modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.report-modal-btns button{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:14px;}
+.report-modal-btns .submit-btn{background:#a63d00;color:#fff;border-color:#a63d00;}
+
 .item-photo{height:160px;background:var(--surface);position:relative;overflow:hidden;}
 .item-photo img{width:100%;height:100%;object-fit:cover;display:block;}
 .no-photo{width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:.2;}
@@ -570,6 +582,7 @@ function renderItems(items){
       '<div class="search-btns">'+
       '<button class="search-btn" data-url="'+gUrl+'" data-target="_blank">Search Google</button>'+
       '<button class="search-btn" data-url="'+eUrl+'" data-target="_blank">eBay sold</button>'+
+      '<button class="search-btn report-btn" data-id="'+item.id+'">⚠ Report</button>'+
       '</div>'+
       '<div class="field-row">'+
       '<div class="price-wrap"><div class="field-lbl">Price</div><input class="price-input" type="number" step="0.01" value="'+price+'" data-id="'+item.id+'" data-field="price"></div>'+
@@ -588,6 +601,16 @@ function renderItems(items){
       var card=document.getElementById('ic-'+id);if(card)card.remove();
       fetch('/api/listings/'+id,{method:'DELETE'}).catch(function(){});
       loadDashboard();
+    });
+  });
+
+  
+  grid.querySelectorAll('.report-btn').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      window._reportingItemId=this.getAttribute('data-id');
+      document.getElementById('reportNote').value='';
+      document.getElementById('reportModalBg').classList.add('active');
     });
   });
 
@@ -629,6 +652,59 @@ async function saveField(id,field,value){
 setBatchCond('new');
 loadDashboard();
 
+
+function closeReportModal(){document.getElementById('reportModalBg').classList.remove('active');}
+async function submitReport(){
+  var id=window._reportingItemId;
+  if(!id){closeReportModal();return;}
+  var note=document.getElementById('reportNote').value;
+  // Find the item data from current listings
+  var card=document.getElementById('ic-'+id);
+  var titleInput=card?card.querySelector('.title-input'):null;
+  var priceInput=card?card.querySelector('.price-input'):null;
+  var img=card?card.querySelector('.item-photo img'):null;
+  var photoUrl=img?img.getAttribute('src'):'';
+  var photoId=photoUrl?photoUrl.split('/').pop():'';
+  var itemCard={
+    id:id,
+    title:titleInput?titleInput.value:'',
+    price:priceInput?parseFloat(priceInput.value):0,
+    photo_url:photoUrl
+  };
+  try{
+    var res=await fetch('/api/scans/report-bad',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        reporter_email:window._userEmail||'',
+        group_id:id,
+        photo_ids:photoId?[photoId]:[],
+        item_card:itemCard,
+        user_note:note
+      })
+    });
+    if(res.ok){
+      closeReportModal();
+      alert('Report submitted. Thank you!');
+    }else{
+      alert('Failed to submit report. Please try again.');
+    }
+  }catch(err){
+    alert('Error: '+err.message);
+  }
+}
 </script>
+
+<div class="report-modal-bg" id="reportModalBg">
+  <div class="report-modal">
+    <h3>Report bad scan</h3>
+    <p>What was wrong with this scan? (optional)</p>
+    <textarea id="reportNote" placeholder="e.g. wrong category, title is gibberish, price way off..."></textarea>
+    <div class="report-modal-btns">
+      <button onclick="closeReportModal()">Cancel</button>
+      <button class="submit-btn" onclick="submitReport()">Submit report</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
