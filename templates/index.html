@@ -2941,13 +2941,18 @@ async function handleScannedCode(code) {
   try {
     var r = await fetch('/api/inventory?search=' + encodeURIComponent(code));
     var d = await r.json();
-    var match = (d.items || []).find(function(it) { return it.barcode_id === code; });
+    var codeLower = code.toLowerCase();
+    var match = (d.items || []).find(function(it) {
+      return (it.barcode_id || '').toLowerCase() === codeLower
+          || (it.photo_id || '').toLowerCase() === codeLower
+          || (it.barcode_id || '').toLowerCase().indexOf(codeLower) !== -1;
+    });
     if (match) {
       closeScanBarcodeModal();
       invItems = d.items || [];
       openInvEditModal(match.id);
     } else {
-      document.getElementById('scan-status').innerHTML = 'No item found for code: <b>' + code + '</b>';
+      document.getElementById('scan-status').innerHTML = 'No item found for: <b>' + code + '</b>';
       document.getElementById('scan-status').style.color = '#f59e0b';
       setTimeout(function() { startCamera(); }, 1500);
     }
