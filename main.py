@@ -128,8 +128,33 @@ async def checkout_page(request: Request):
 
 @app.get("/welcome", response_class=HTMLResponse)
 async def welcome_page(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse("/login", status_code=302)
+    # Skip onboarding if already done
+    try:
+        biz = supabase.table("businesses").select("onboarded").eq("id", business_id).limit(1).execute()
+        if biz.data and biz.data[0].get("onboarded"):
+            from fastapi.responses import RedirectResponse
+            return RedirectResponse("/", status_code=302)
+    except Exception:
+        pass
     with open(os.path.join(os.path.dirname(__file__), "templates", "welcome.html")) as f:
         return HTMLResponse(f.read())
+
+
+@app.post("/api/welcome/complete")
+async def mark_onboarded(request: Request):
+    """Called by the onboarding flow to mark user as onboarded so they don't loop back."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        supabase.table("businesses").update({"onboarded": True}).eq("id", business_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 @app.post("/api/checkout")
 async def process_checkout(request: Request):
@@ -149,7 +174,7 @@ async def process_checkout(request: Request):
         if not biz.data:
             raise HTTPException(404, "Business not found")
         biz_data = biz.data[0]
-        supabase.table("businesses").update({"scan_limit": scan_limit}).eq("id", business_id).execute()
+        supabase.table("businesses").update({"scan_limit": scan_limit, "onboarded": True}).eq("id", business_id).execute()
         # Send welcome email
         resend.api_key = os.getenv("RESEND_API_KEY", "re_7V1Ykni2_FjGBPZwsgWr8ytntk3sCoG5b")
         resend.Emails.send({

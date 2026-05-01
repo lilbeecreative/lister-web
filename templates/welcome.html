@@ -343,7 +343,10 @@ function skipOnboarding() {
   finishOnboarding();
 }
 
-function finishOnboarding() {
+async function finishOnboarding() {
+  try {
+    await fetch('/api/welcome/complete', {method:'POST'});
+  } catch(e) {}
   window.location.href = '/checkout';
 }
 
