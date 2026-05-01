@@ -899,6 +899,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     activeTab = tab;
     if (tab === 'dashboard') { loadListings(); loadDashboardSummary(); }
     if (tab === 'detailed') { loadDetailedAnalytics(); }
+    if (tab === 'inventory') { loadInventory(); }
     if (tab === 'auction')   loadAuctionSessions();
     if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); loadCostTrackingState(); }
     if (tab === 'messages')  { loadUserThread(); }
@@ -2088,6 +2089,195 @@ async function compressForUpload(file) {
 }
 
 
+
+
+// ── INVENTORY ─────────────────────────────────────────────────
+let invItems = [];
+let invSelected = new Set();
+let invView = 'grid';
+let invFilters = {search: '', status: '', location: '', category: ''};
+let currentInvItem = null;
+
+async function loadInventory() {
+  try {
+    const params = new URLSearchParams();
+    if (invFilters.search) params.set('search', invFilters.search);
+    if (invFilters.status) params.set('status', invFilters.status);
+    if (invFilters.location) params.set('location', invFilters.location);
+    if (invFilters.category) params.set('category', invFilters.category);
+    const r = await fetch('/api/inventory?' + params.toString());
+    const d = await r.json();
+    invItems = d.items || [];
+    const stats = d.stats || {};
+    document.getElementById('inv-stats').textContent =
+      stats.total + ' items - ' + stats.in_stock + ' in stock - ' + stats.listed + ' listed - ' + stats.sold + ' sold - $' + (stats.total_value||0).toFixed(0) + ' value - $' + (stats.total_cost||0).toFixed(0) + ' cost';
+    renderInventory();
+    loadLocations();
+  } catch(e) {
+    console.error('inventory load failed', e);
+    document.getElementById('inv-stats').textContent = 'Failed to load';
+  }
+}
+
+function renderInventory() {
+  const grid = document.getElementById('inv-grid');
+  const empty = document.getElementById('inv-empty');
+  if (!invItems.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  if (invView === 'list') {
+    grid.style.gridTemplateColumns = '1fr';
+    grid.innerHTML = invItems.map(renderInventoryRow).join('');
+  } else {
+    grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(200px,1fr))';
+    grid.innerHTML = invItems.map(renderInventoryCard).join('');
+  }
+}
+
+function statusBadge(s) {
+  const map = {
+    in_stock: ['#22c55e', 'In Stock'],
+    listed:   ['#3b82f6', 'Listed'],
+    sold:     ['#f59e0b', 'Sold'],
+    archived: ['#64748b', 'Archived']
+  };
+  const item = map[s] || ['#64748b', s || ''];
+  return '<span style="background:' + item[0] + '22;color:' + item[0] + ';font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;">' + item[1] + '</span>';
+}
+
+function escapeText(s) {
+  var div = document.createElement('div');
+  div.textContent = String(s||'');
+  return div.innerHTML;
+}
+
+function renderInventoryCard(it) {
+  const isSel = invSelected.has(it.id);
+  const showCost = window._costTrackingEnabled !== false;
+  const photoHtml = it.photo_url
+    ? '<img src="' + it.photo_url + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="event.stopPropagation();window.open(this.src);"/>'
+    : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#3d4663;font-size:32px;">📷</div>';
+  const checkmark = isSel
+    ? '<div onclick="event.stopPropagation();toggleInvSelect(\'' + it.id + '\');" style="position:absolute;top:8px;right:8px;width:22px;height:22px;background:#7c3aed;border-radius:5px;display:flex;align-items:center;justify-content:center;z-index:5;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.4);"><span style="color:#fff;font-size:13px;font-weight:700;">✓</span></div>'
+    : '<div onclick="event.stopPropagation();toggleInvSelect(\'' + it.id + '\');" style="position:absolute;top:8px;right:8px;width:22px;height:22px;background:rgba(15,17,23,0.7);border:1.5px solid #4b5563;border-radius:5px;z-index:5;cursor:pointer;"></div>';
+  return '<div onclick="openInvEditModal(\'' + it.id + '\')" style="background:var(--card);border:' + (isSel ? '2.5px solid #7c3aed' : '1px solid var(--border)') + ';border-radius:10px;overflow:hidden;cursor:pointer;position:relative;' + (isSel ? 'box-shadow:0 0 0 2px rgba(124,58,237,0.2);' : '') + '">'
+    + checkmark
+    + '<div style="aspect-ratio:1;background:#161925;position:relative;">'
+    +   photoHtml
+    +   '<div style="position:absolute;top:6px;left:6px;">' + statusBadge(it.status) + '</div>'
+    + '</div>'
+    + '<div style="padding:9px 10px;">'
+    +   '<div style="font-size:12px;font-weight:600;line-height:1.3;height:32px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + escapeText(it.title || '(untitled)') + '</div>'
+    +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">'
+    +     '<span style="font-size:14px;font-weight:700;color:#fff;">$' + (it.price||0).toFixed(2) + '</span>'
+    +     (showCost ? '<span style="font-size:11px;color:#94a3b8;">Cost: $' + (it.cost||0).toFixed(2) + '</span>' : '')
+    +   '</div>'
+    +   '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;">'
+    +     '<span>' + (it.general_category || 'Other') + '</span>'
+    +     '<span>' + (it.storage_location ? '📍 ' + escapeText(it.storage_location) : 'No location') + '</span>'
+    +   '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderInventoryRow(it) {
+  const isSel = invSelected.has(it.id);
+  const showCost = window._costTrackingEnabled !== false;
+  return '<div style="background:var(--card);border:' + (isSel ? '2px solid #7c3aed' : '1px solid var(--border)') + ';border-radius:8px;padding:10px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="openInvEditModal(\'' + it.id + '\')">'
+    + '<div onclick="event.stopPropagation();toggleInvSelect(\'' + it.id + '\');" style="width:20px;height:20px;background:' + (isSel ? '#7c3aed' : 'rgba(15,17,23,0.7)') + ';border:1.5px solid ' + (isSel ? '#7c3aed' : '#4b5563') + ';border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">' + (isSel ? '<span style="color:#fff;font-size:12px;font-weight:700;">✓</span>' : '') + '</div>'
+    + (it.photo_url ? '<img src="' + it.photo_url + '" loading="lazy" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;" onclick="event.stopPropagation();window.open(this.src);"/>' : '<div style="width:48px;height:48px;background:#161925;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#3d4663;">📷</div>')
+    + '<div style="flex:1;min-width:0;">'
+    +   '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeText(it.title || '(untitled)') + '</div>'
+    +   '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' + (it.general_category || 'Other') + ' - ' + (it.storage_location ? escapeText(it.storage_location) : 'No location') + (it.barcode_id ? ' - ' + it.barcode_id : '') + '</div>'
+    + '</div>'
+    + '<div style="text-align:right;flex-shrink:0;">'
+    +   '<div style="font-size:14px;font-weight:700;">$' + (it.price||0).toFixed(2) + '</div>'
+    +   (showCost ? '<div style="font-size:10px;color:var(--muted);">Cost $' + (it.cost||0).toFixed(2) + '</div>' : '')
+    + '</div>'
+    + '<div style="flex-shrink:0;">' + statusBadge(it.status) + '</div>'
+    + '</div>';
+}
+
+function toggleInvSelect(id) {
+  if (invSelected.has(id)) invSelected.delete(id); else invSelected.add(id);
+  renderInventory();
+  updateInvBulkButtons();
+}
+
+function invSelectAll() { invItems.forEach(it => invSelected.add(it.id)); renderInventory(); updateInvBulkButtons(); }
+function invDeselectAll() { invSelected.clear(); renderInventory(); updateInvBulkButtons(); }
+
+function updateInvBulkButtons() {
+  const has = invSelected.size > 0;
+  ['inv-bulk-loc-btn','inv-barcode-btn','inv-bulk-del-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !has;
+  });
+}
+
+async function loadLocations() {
+  try {
+    const r = await fetch('/api/inventory/locations');
+    const d = await r.json();
+    const filter = document.getElementById('inv-filter-location');
+    if (filter) {
+      const cur = filter.value;
+      filter.innerHTML = '<option value="">All locations</option>' + (d.locations || []).map(n => '<option value="' + escapeText(n) + '"' + (n === cur ? ' selected' : '') + '>' + escapeText(n) + '</option>').join('');
+    }
+  } catch(e) {}
+}
+
+function openInvEditModal(id) {
+  const it = invItems.find(x => x.id === id);
+  if (!it) return;
+  currentInvItem = it;
+  // Just alert for now — modal comes in step 4
+  toast('Edit modal coming in next step. Item: ' + (it.title||'').substring(0,40));
+}
+
+function openBulkLocationModal() { toast('Coming in next step'); }
+function openBarcodeModal() { toast('Coming in next step'); }
+async function bulkDeleteInventory() {
+  if (!invSelected.size) return;
+  if (!confirm('Delete ' + invSelected.size + ' items permanently from inventory?')) return;
+  try {
+    for (const id of invSelected) {
+      await fetch('/api/inventory/' + id, {method:'DELETE'});
+    }
+    toast('Deleted ' + invSelected.size + ' items');
+    invSelected.clear();
+    loadInventory();
+  } catch(e) { toast('Failed', 'error'); }
+}
+
+// Filter listeners — attached on DOMContentLoaded so elements exist
+window.addEventListener('DOMContentLoaded', () => {
+  const search = document.getElementById('inv-search');
+  if (search) {
+    let t;
+    search.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => { invFilters.search = search.value.trim(); loadInventory(); }, 250);
+    });
+  }
+  ['status','location','category'].forEach(f => {
+    const el = document.getElementById('inv-filter-' + f);
+    if (el) el.addEventListener('change', () => { invFilters[f] = el.value; loadInventory(); });
+  });
+  document.querySelectorAll('.inv-view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.inv-view-btn').forEach(b => {
+        b.style.background = 'transparent'; b.style.color = 'var(--muted)'; b.classList.remove('active');
+      });
+      btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.classList.add('active');
+      invView = btn.dataset.view;
+      renderInventory();
+    });
+  });
+});
 
 // ── DETAILED ANALYTICS ─────────────────────────────────────
 let detailedPeriod = 'month';
