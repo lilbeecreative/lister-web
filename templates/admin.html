@@ -304,8 +304,17 @@ function resolveReport(id, email) {
     '[your message here]\n\n' +
     'Best,\nLister AI Team'
   );
-  window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
-  setReportStatus(id, 'resolved');
+  const mailtoUrl = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
+  // Use anchor click for reliable mailto handling across browsers
+  const a = document.createElement('a');
+  a.href = mailtoUrl;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Mark resolved after small delay so mailto fires first
+  setTimeout(() => setReportStatus(id, 'resolved'), 300);
 }
 
 async function setReportStatus(id, status) {
