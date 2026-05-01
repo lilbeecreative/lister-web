@@ -1487,6 +1487,8 @@ async function confirmClearBatch() {
   try {
     const r = await api('POST', '/api/listings/archive-batch');
     toast(`✅ ${r.count} items archived`);
+    selected.clear();
+    if (typeof updateSubmitBtn === 'function') updateSubmitBtn();
     loadListings();
   } catch(e) { toast('Failed to clear batch', 'error'); }
 }
