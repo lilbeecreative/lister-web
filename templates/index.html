@@ -100,7 +100,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 
 .tile { background: var(--card); border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform 0.12s, border-color 0.12s; }
 .tile:hover { transform: translateY(-1px); }
-.tile.selected { border-color: var(--accent); }
+.tile.selected { border: 2.5px solid var(--accent) !important; box-shadow: 0 0 0 2px rgba(37,99,235,0.2); }
 .tile.ebay-draft { border-left: 3px solid var(--accent); }
 
 .tile-photo { position: relative; width: 100%; padding-top: 100%; background: #161925; overflow: hidden; }
@@ -1212,7 +1212,7 @@ function renderTiles() {
       </div>
     ` : '';
 
-    return `<div class="tile${isSel?' selected':''}${ebayDraft?' ebay-draft':''}" id="tile-${l.id}" data-photos='${JSON.stringify(photos)}' data-photo-idx="0" style="${isSel?'border:2px solid var(--accent);':''}position:relative;">
+    return `<div class="tile${isSel?' selected':''}${ebayDraft?' ebay-draft':''}" id="tile-${l.id}" data-photos='${JSON.stringify(photos)}' data-photo-idx="0" style="position:relative;">
       ${checkmark}
       <div class="tile-photo" onclick="openModal('${l.id}')">
         ${photoHtml}
