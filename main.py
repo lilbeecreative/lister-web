@@ -2771,3 +2771,134 @@ async def delete_bad_report(report_id: str):
     except Exception as e:
         import traceback; traceback.print_exc()
         raise HTTPException(500, str(e))
+
+
+# ─── Account Management ───────────────────────────────────────
+
+@app.get("/api/account/info")
+async def get_account_info(request: Request):
+    """Return current user's account: name, email, plan, scan usage."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        biz = supabase.table("businesses").select("*").eq("id", business_id).execute()
+        if not biz.data:
+            raise HTTPException(404, "Not found")
+        b = biz.data[0]
+        # Infer plan from scan_limit
+        limit = b.get("scan_limit", 25)
+        plan_map = {25: "Free Trial", 100: "Starter", 500: "Growth", 1000: "Pro"}
+        plan = plan_map.get(limit, "Custom")
+        return {
+            "name": b.get("name", ""),
+            "email": b.get("email", ""),
+            "plan": plan,
+            "scan_limit": limit,
+            "scan_count": b.get("scan_count", 0),
+            "created_at": b.get("created_at", ""),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.patch("/api/account/info")
+async def update_account_info(request: Request):
+    """Update business name and/or email."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        updates = {}
+        if "name" in body:
+            updates["name"] = str(body["name"]).strip()
+        if "email" in body:
+            new_email = str(body["email"]).strip().lower()
+            # Check no other business has this email
+            existing = supabase.table("businesses").select("id").eq("email", new_email).execute()
+            if existing.data and existing.data[0]["id"] != business_id:
+                raise HTTPException(400, "Email already in use")
+            updates["email"] = new_email
+        if not updates:
+            raise HTTPException(400, "No fields to update")
+        supabase.table("businesses").update(updates).eq("id", business_id).execute()
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/account/change-plan")
+async def change_account_plan(request: Request):
+    """Change plan tier (no payment processing — internal/dev only)."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        plan = body.get("plan", "")
+        plan_limits = {"Free Trial": 25, "Starter": 100, "Growth": 500, "Pro": 1000}
+        if plan not in plan_limits:
+            raise HTTPException(400, "Invalid plan")
+        supabase.table("businesses").update({"scan_limit": plan_limits[plan]}).eq("id", business_id).execute()
+        return {"ok": True, "plan": plan, "scan_limit": plan_limits[plan]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/account/contact-support")
+async def contact_support(request: Request):
+    """User submits a support message — sent via Resend to admin."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        message = str(body.get("message", "")).strip()
+        topic = str(body.get("topic", "General")).strip()
+        if not message:
+            raise HTTPException(400, "Message required")
+        biz = supabase.table("businesses").select("name,email").eq("id", business_id).execute()
+        biz_data = biz.data[0] if biz.data else {}
+
+        import resend
+        resend.api_key = os.getenv("RESEND_API_KEY", "")
+        html = f"""
+<div style="font-family:-apple-system,sans-serif;max-width:560px;padding:24px;background:#0a0c10;color:#f0f2f5;">
+  <h1 style="color:#3b82f6;font-size:20px;margin-bottom:16px;">📩 Support Request</h1>
+  <p style="margin:6px 0;"><strong>From:</strong> {biz_data.get('name','Unknown')} ({biz_data.get('email','')})</p>
+  <p style="margin:6px 0;"><strong>Topic:</strong> {topic}</p>
+  <p style="margin:6px 0;"><strong>Business ID:</strong> {business_id}</p>
+  <div style="background:#111418;border:1px solid #1a1f2e;border-radius:10px;padding:18px;margin-top:16px;">
+    <div style="white-space:pre-wrap;font-size:14px;line-height:1.6;">{message}</div>
+  </div>
+</div>
+"""
+        try:
+            resend.Emails.send({
+                "from": "Lister AI Support <support@reselljunkie.com>",
+                "reply_to": biz_data.get("email", ""),
+                "to": "sebastian@lilbeecreative.com",
+                "subject": f"Support: {topic} — {biz_data.get('name','Unknown')}",
+                "html": html
+            })
+        except Exception:
+            resend.Emails.send({
+                "from": "Lister AI <onboarding@resend.dev>",
+                "to": "sebastian@lilbeecreative.com",
+                "subject": f"Support: {topic}",
+                "html": html
+            })
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+

@@ -220,7 +220,7 @@ select.field-input { background: #fff; color: #0f172a; }
   <button class="nav-btn" data-tab="fastscan">⚡ Fast Scan</button>
   {% if is_admin %}<button class="nav-btn" data-tab="auction">🔨 Auctions</button>{% endif %}
   {% if is_admin %}<button class="nav-btn" data-tab="parts">🔍 Parts Lookup</button>{% endif %}
-  <button class="nav-btn" data-tab="settings">⚙️ Settings</button>
+  <button class="nav-btn" data-tab="settings">👤 Account</button>
   <div class="nav-spacer"></div>
   <div style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:12px;margin-bottom:4px;">
     <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Scans Used</div>
@@ -456,6 +456,50 @@ select.field-input { background: #fff; color: #0f172a; }
 
     <!-- SETTINGS TAB -->
   <div class="tab-content" id="tab-settings">
+
+    <!-- Account info -->
+    <div class="settings-section" style="border-left:4px solid #3b82f6;">
+      <div class="settings-title">👤 Business Info</div>
+      <div class="settings-sub">Your business name and login email.</div>
+      <div class="field-label">Business Name</div>
+      <input type="text" class="field-input" id="acct-name" style="margin-bottom:10px;"/>
+      <div class="field-label">Email Address</div>
+      <input type="email" class="field-input" id="acct-email" style="margin-bottom:12px;"/>
+      <button class="btn btn-primary" style="width:100%;" onclick="saveAccountInfo()">Save Changes</button>
+    </div>
+
+    <!-- Plan / usage -->
+    <div class="settings-section" style="border-left:4px solid #22c55e;">
+      <div class="settings-title">💎 Plan & Usage</div>
+      <div class="settings-sub" id="acct-plan-summary">Loading...</div>
+      <div id="plan-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px;"></div>
+    </div>
+
+    <!-- Shopify -->
+    <div class="settings-section" style="border-left:4px solid #5a8e3b;">
+      <div class="settings-title">🛍️ Shopify Store</div>
+      <div class="settings-sub" id="shopify-status">Checking connection...</div>
+      <div id="shopify-actions" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Contact support -->
+    <div class="settings-section" style="border-left:4px solid #f59e0b;">
+      <div class="settings-title">📩 Contact Support</div>
+      <div class="settings-sub">Need help? Send us a message and we'll reply by email.</div>
+      <div class="field-label">Topic</div>
+      <select class="field-input" id="support-topic" style="margin-bottom:10px;">
+        <option>General Question</option>
+        <option>Billing</option>
+        <option>Bug Report</option>
+        <option>Feature Request</option>
+        <option>Other</option>
+      </select>
+      <div class="field-label">Message</div>
+      <textarea class="field-input" id="support-message" rows="5" style="resize:vertical;margin-bottom:10px;font-size:13px;line-height:1.5;" placeholder="How can we help?"></textarea>
+      <button class="btn btn-primary" style="width:100%;" onclick="sendSupportMessage()">Send Message</button>
+    </div>
+
+    <!-- API keys (kept from before, collapsed visually below) -->
     <div class="settings-section" style="border-left:4px solid var(--accent);">
       <div class="settings-title">🤖 Google Gemini API</div>
       <div class="settings-sub">Used for AI scanning and value research.</div>
@@ -585,7 +629,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     activeTab = tab;
     if (tab === 'dashboard') loadListings();
     if (tab === 'auction')   loadAuctionSessions();
-    if (tab === 'settings')  loadSettings();
+    if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); }
   });
 });
 
