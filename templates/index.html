@@ -658,6 +658,147 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('modal').classList.remove('open');
 });
 
+// ── ACCOUNT PAGE ────────────────────────────────────────────────
+const PLAN_TIERS = [
+  {name:'Free Trial', price:0, scans:25, sub:'25 total scans', features:['25 total scans','AI identification','CSV export']},
+  {name:'Starter', price:50, scans:100, sub:'100 scans / month', features:['100 scans / month','AI identification','Live pricing','CSV export']},
+  {name:'Growth', price:150, scans:500, sub:'500 scans / month', featured:true, features:['500 scans / month','AI identification','Live pricing','Priority support']},
+  {name:'Pro', price:250, scans:1000, sub:'1,000 scans / month', features:['1,000 scans / month','AI identification','Live pricing','Dedicated support']}
+];
+
+async function loadAccountInfo() {
+  try {
+    const r = await fetch('/api/account/info');
+    const a = await r.json();
+    document.getElementById('acct-name').value = a.name || '';
+    document.getElementById('acct-email').value = a.email || '';
+    const used = a.scan_count || 0;
+    const limit = a.scan_limit || 0;
+    const remaining = Math.max(0, limit - used);
+    document.getElementById('acct-plan-summary').textContent =
+      'Current plan: ' + (a.plan || 'Free Trial') + ' • ' + used + ' / ' + limit + ' scans used (' + remaining + ' remaining)';
+    renderPlanCards(a.plan);
+  } catch(e) {
+    document.getElementById('acct-plan-summary').textContent = 'Failed to load account info';
+  }
+}
+
+function renderPlanCards(currentPlan) {
+  const grid = document.getElementById('plan-cards');
+  if (!grid) return;
+  grid.innerHTML = PLAN_TIERS.map(p => {
+    const isCurrent = p.name === currentPlan;
+    const featured = p.featured ? 'box-shadow:0 0 0 2px var(--accent);' : '';
+    const badge = isCurrent
+      ? '<div style="background:#22c55e;color:#000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:6px;">CURRENT</div>'
+      : (p.featured ? '<div style="background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:6px;">POPULAR</div>' : '');
+    const btn = isCurrent
+      ? '<button class="btn" disabled style="width:100%;background:#1e2535;color:#64748b;border-color:#1e2535;cursor:default;">Current Plan</button>'
+      : '<button class="btn btn-primary" style="width:100%;" onclick="changePlan(\'' + p.name + '\')">Switch to ' + p.name + '</button>';
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;' + featured + '">'
+      + badge
+      + '<div style="font-size:14px;font-weight:700;margin-bottom:4px;">' + p.name + '</div>'
+      + '<div style="font-size:22px;font-weight:800;margin-bottom:2px;">$' + p.price + '<span style="font-size:11px;color:var(--muted);font-weight:500;">/mo</span></div>'
+      + '<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">' + p.sub + '</div>'
+      + '<ul style="list-style:none;padding:0;margin:0 0 12px 0;font-size:11px;color:var(--text);">'
+      +   p.features.map(f => '<li style="padding:2px 0;">✓ ' + f + '</li>').join('')
+      + '</ul>'
+      + btn
+      + '</div>';
+  }).join('');
+}
+
+async function saveAccountInfo() {
+  const name = document.getElementById('acct-name').value.trim();
+  const email = document.getElementById('acct-email').value.trim();
+  if (!name || !email) { toast('Name and email required', 'error'); return; }
+  try {
+    const r = await fetch('/api/account/info', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, email})
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(()=>({}));
+      throw new Error(d.detail || 'Failed');
+    }
+    toast('Account updated');
+    loadAccountInfo();
+  } catch(e) {
+    toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function changePlan(plan) {
+  if (!confirm('Switch to ' + plan + ' plan?')) return;
+  try {
+    const r = await fetch('/api/account/change-plan', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({plan})
+    });
+    if (!r.ok) throw new Error('Failed');
+    toast('Plan updated to ' + plan);
+    loadAccountInfo();
+  } catch(e) {
+    toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function loadShopifyStatus() {
+  try {
+    const r = await fetch('/api/shopify/status');
+    const d = await r.json();
+    const statusEl = document.getElementById('shopify-status');
+    const actionsEl = document.getElementById('shopify-actions');
+    if (!statusEl || !actionsEl) return;
+    if (d.connected) {
+      statusEl.innerHTML = '<span style="color:#22c55e;">Connected</span> — ' + (d.shop_domain || 'shop');
+      actionsEl.innerHTML = '<button class="btn" style="background:#dc2626;color:#fff;border-color:#dc2626;width:100%;" onclick="disconnectShopify()">Disconnect Shopify</button>';
+    } else {
+      statusEl.innerHTML = '<span style="color:#64748b;">Not connected</span> — Connect your Shopify store to push listings directly.';
+      actionsEl.innerHTML = '<button class="btn btn-primary" style="width:100%;" onclick="connectShopify()">Connect Shopify</button>';
+    }
+  } catch(e) {
+    const el = document.getElementById('shopify-status');
+    if (el) el.textContent = 'Status unavailable';
+  }
+}
+
+async function connectShopify() {
+  const shop = prompt('Enter your Shopify store domain (e.g. mystore.myshopify.com):');
+  if (!shop) return;
+  window.location.href = '/shopify/connect?shop=' + encodeURIComponent(shop.trim());
+}
+
+async function disconnectShopify() {
+  if (!confirm('Disconnect Shopify? You can reconnect anytime.')) return;
+  try {
+    await fetch('/api/shopify/disconnect', {method:'POST'});
+    toast('Shopify disconnected');
+    loadShopifyStatus();
+  } catch(e) { toast('Failed', 'error'); }
+}
+
+async function sendSupportMessage() {
+  const topic = document.getElementById('support-topic').value;
+  const message = document.getElementById('support-message').value.trim();
+  if (!message) { toast('Please enter a message', 'error'); return; }
+  try {
+    const r = await fetch('/api/account/contact-support', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({topic, message})
+    });
+    if (!r.ok) throw new Error('Failed');
+    toast('Message sent');
+    document.getElementById('support-message').value = '';
+  } catch(e) {
+    toast('Failed: ' + e.message, 'error');
+  }
+}
+
+
 async function loadListings() {
   try {
     listings = await api('GET', '/api/listings');
