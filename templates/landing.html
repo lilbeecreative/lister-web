@@ -170,6 +170,26 @@ h1 .dim { color: var(--muted); }
   transition: all 0.2s;
 }
 .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+
+.hero-btn-primary {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 14px 32px;
+  border-radius: 10px;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(245, 158, 11, 0.45); }
+
 .hero-stats {
   display: flex;
   gap: 48px;
@@ -541,6 +561,7 @@ footer p { font-size: 13px; color: var(--muted); font-family: 'DM Mono', monospa
   </h1>
   <p class="hero-sub">Stop spending hours manually creating eBay listings. Photograph a part, get a complete, priced listing in seconds — ready to publish.</p>
   <div class="hero-btns">
+    <button class="hero-btn-primary" data-demo-trigger onclick="openDemoModal()">📷 Try It Free</button>
     <a href="/register" class="btn-primary">Get Started for Free</a>
     <a href="#how" class="btn-secondary">See How It Works</a>
   </div>
@@ -822,6 +843,196 @@ const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.1 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+<!-- Demo Scan Modal -->
+<div id="demo-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;padding:16px;overflow-y:auto;font-family:'Inter',sans-serif;">
+  <div style="background:#0f1117;border:1px solid #2d3348;border-radius:16px;padding:28px;max-width:520px;width:100%;color:#f1f5f9;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+      <div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;">Try Lister AI Free</div>
+        <div style="font-size:13px;color:#94a3b8;margin-top:4px;" id="demo-quota-text">Loading...</div>
+      </div>
+      <button onclick="closeDemoModal()" style="background:transparent;border:1px solid #2d3348;color:#94a3b8;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:18px;line-height:1;">&times;</button>
+    </div>
+
+    <div id="demo-step-upload">
+      <label for="demo-file-input" style="display:block;border:2px dashed #2d3348;border-radius:12px;padding:36px 20px;text-align:center;cursor:pointer;background:#161925;transition:border-color 0.15s,background 0.15s;" onmouseover="this.style.borderColor='#f59e0b';this.style.background='rgba(245,158,11,0.05)';" onmouseout="this.style.borderColor='#2d3348';this.style.background='#161925';">
+        <div style="font-size:40px;margin-bottom:8px;">📷</div>
+        <div style="font-size:15px;font-weight:600;">Upload a photo of any item</div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:4px;">JPG/PNG/HEIC, up to 10MB</div>
+      </label>
+      <input type="file" id="demo-file-input" accept="image/*,image/heic" style="display:none;" onchange="runDemoScan(this)"/>
+      <div style="font-size:11px;color:#64748b;margin-top:14px;text-align:center;">Tip: a clear photo of a single item works best</div>
+    </div>
+
+    <div id="demo-step-scanning" style="display:none;text-align:center;padding:30px 16px;">
+      <div style="display:inline-block;width:42px;height:42px;border:3px solid #2d3348;border-top-color:#f59e0b;border-radius:50%;animation:demospin 0.9s linear infinite;"></div>
+      <div style="font-size:14px;color:#94a3b8;margin-top:14px;">Identifying item and estimating value...</div>
+      <div style="font-size:11px;color:#64748b;margin-top:4px;">Usually takes 5-10 seconds</div>
+    </div>
+
+    <div id="demo-step-result" style="display:none;">
+      <div style="background:#161925;border:1px solid #2d3348;border-radius:12px;padding:18px;margin-bottom:14px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <img id="demo-result-img" src="" style="width:90px;height:90px;border-radius:8px;object-fit:cover;background:#0f1117;flex-shrink:0;"/>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;" id="demo-result-category">CATEGORY</div>
+            <div style="font-size:15px;font-weight:700;line-height:1.3;margin-top:3px;" id="demo-result-title">Title</div>
+            <div style="display:flex;gap:14px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+              <div>
+                <div style="font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Used</div>
+                <div style="font-size:18px;font-weight:800;color:#22c55e;line-height:1;" id="demo-result-used">$0</div>
+              </div>
+              <div>
+                <div style="font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">New</div>
+                <div style="font-size:18px;font-weight:800;line-height:1;" id="demo-result-new">$0</div>
+              </div>
+              <div style="margin-left:auto;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-size:10px;font-weight:700;padding:4px 9px;border-radius:14px;text-transform:uppercase;letter-spacing:0.05em;" id="demo-result-confidence">Medium</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#94a3b8;margin-top:12px;line-height:1.5;font-style:italic;" id="demo-result-notes"></div>
+      </div>
+
+      <div style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.05));border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:18px;text-align:center;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Like what you see?</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Sign up free and scan up to 25 items - no credit card needed.</div>
+        <a href="/register" style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;text-decoration:none;padding:12px 26px;border-radius:9px;font-weight:700;font-size:14px;">Start Free Trial</a>
+      </div>
+
+      <div style="margin-top:14px;text-align:center;">
+        <button onclick="resetDemoModal()" id="demo-try-another-btn" style="background:transparent;border:1px solid #2d3348;color:#94a3b8;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit;">Try another photo</button>
+      </div>
+    </div>
+
+    <div id="demo-step-quota" style="display:none;text-align:center;padding:24px 12px;">
+      <div style="font-size:46px;margin-bottom:10px;">🎉</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px;">You've used all 3 free scans!</div>
+      <div style="font-size:13px;color:#94a3b8;margin-bottom:20px;line-height:1.5;">Sign up for a free account and scan up to 25 items - no credit card needed.</div>
+      <a href="/register" style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;text-decoration:none;padding:13px 30px;border-radius:9px;font-weight:700;font-size:15px;">Get Started Free</a>
+    </div>
+
+    <div id="demo-step-error" style="display:none;text-align:center;padding:20px 12px;">
+      <div style="font-size:36px;margin-bottom:8px;">😕</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;" id="demo-error-title">Scan failed</div>
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;" id="demo-error-message">Please try again with a different photo.</div>
+      <button onclick="resetDemoModal()" style="background:#f59e0b;border:none;color:#000;padding:9px 20px;border-radius:8px;cursor:pointer;font-weight:700;font-family:inherit;">Try Again</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes demospin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+
+<script>
+function showDemoStep(name) {
+  ['upload','scanning','result','quota','error'].forEach(function(s) {
+    var el = document.getElementById('demo-step-' + s);
+    if (el) el.style.display = (s === name) ? 'block' : 'none';
+  });
+}
+
+async function openDemoModal() {
+  document.getElementById('demo-modal').style.display = 'flex';
+  showDemoStep('upload');
+  // Check quota
+  try {
+    var r = await fetch('/api/demo-scan/quota');
+    var d = await r.json();
+    var qt = document.getElementById('demo-quota-text');
+    if (d.remaining <= 0) {
+      qt.textContent = 'No free scans remaining';
+      showDemoStep('quota');
+    } else {
+      qt.textContent = d.remaining + ' of ' + d.limit + ' free scans remaining';
+    }
+  } catch(e) {
+    document.getElementById('demo-quota-text').textContent = '3 free scans available';
+  }
+}
+
+function closeDemoModal() {
+  document.getElementById('demo-modal').style.display = 'none';
+}
+
+function resetDemoModal() {
+  document.getElementById('demo-file-input').value = '';
+  showDemoStep('upload');
+  // Refresh quota
+  fetch('/api/demo-scan/quota').then(function(r) { return r.json(); }).then(function(d) {
+    var qt = document.getElementById('demo-quota-text');
+    if (d.remaining <= 0) {
+      showDemoStep('quota');
+      qt.textContent = 'No free scans remaining';
+    } else {
+      qt.textContent = d.remaining + ' of ' + d.limit + ' free scans remaining';
+    }
+  }).catch(function(){});
+}
+
+async function runDemoScan(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    showDemoError('File too large', 'Please use a photo under 10MB.');
+    return;
+  }
+  // Pre-load preview
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('demo-result-img').src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  showDemoStep('scanning');
+
+  var fd = new FormData();
+  fd.append('file', file);
+  try {
+    var r = await fetch('/api/demo-scan', {method:'POST', body: fd});
+    if (r.status === 429) {
+      showDemoStep('quota');
+      return;
+    }
+    if (!r.ok) {
+      var txt = await r.text();
+      showDemoError('Scan failed', txt || 'Please try a different photo.');
+      return;
+    }
+    var d = await r.json();
+    document.getElementById('demo-result-title').textContent = d.title || 'Unknown Item';
+    document.getElementById('demo-result-category').textContent = d.category || 'Other';
+    document.getElementById('demo-result-used').textContent = '$' + (d.estimated_price_used || 0);
+    document.getElementById('demo-result-new').textContent = '$' + (d.estimated_price_new || 0);
+    document.getElementById('demo-result-confidence').textContent = (d.confidence || 'medium').toUpperCase();
+    document.getElementById('demo-result-notes').textContent = d.notes || '';
+    // Update quota text
+    if (typeof d.remaining === 'number') {
+      document.getElementById('demo-quota-text').textContent = d.remaining + ' of 3 free scans remaining';
+    }
+    showDemoStep('result');
+  } catch(e) {
+    showDemoError('Scan failed', e.message || 'Network error - please try again.');
+  }
+}
+
+function showDemoError(title, msg) {
+  document.getElementById('demo-error-title').textContent = title;
+  document.getElementById('demo-error-message').textContent = msg;
+  showDemoStep('error');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var m = document.getElementById('demo-modal');
+    if (m && m.style.display === 'flex') closeDemoModal();
+  }
+});
+document.addEventListener('click', function(e) {
+  if (e.target.id === 'demo-modal') closeDemoModal();
+});
 </script>
 </body>
 </html>
