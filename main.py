@@ -3151,7 +3151,17 @@ async def dashboard_summary(request: Request, period: str = "month"):
             since = now - timedelta(days=1)
         elif period == "week":
             since = now - timedelta(days=7)
-        else:  # month
+        elif period == "month":
+            since = now - timedelta(days=30)
+        elif period == "3month":
+            since = now - timedelta(days=90)
+        elif period == "6month":
+            since = now - timedelta(days=180)
+        elif period == "year":
+            since = now - timedelta(days=365)
+        elif period == "lifetime":
+            since = now - timedelta(days=365*20)
+        else:
             since = now - timedelta(days=30)
 
         # Get all active listings in window

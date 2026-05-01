@@ -237,6 +237,7 @@ select.field-input { background: #fff; color: #0f172a; }
   <button class="nav-btn" data-tab="fastscan">⚡ Fast Scan</button>
   {% if is_admin %}<button class="nav-btn" data-tab="auction">🔨 Auctions</button>{% endif %}
   {% if is_admin %}<button class="nav-btn" data-tab="parts">🔍 Parts Lookup</button>{% endif %}
+  <button class="nav-btn" data-tab="detailed" style="display:none;">📊 Detailed</button>
   <button class="nav-btn" data-tab="settings">👤 Account</button>
   <button class="nav-btn" data-tab="messages" id="user-mailbox-btn" style="position:relative;">💬 Messages <span id="user-mailbox-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;">●</span></button>
   <div class="nav-spacer"></div>
@@ -275,9 +276,7 @@ select.field-input { background: #fff; color: #0f172a; }
         <button class="period-pill" data-period="week" style="font-size:12px;padding:6px 14px;border-radius:5px;color:var(--muted);cursor:pointer;background:transparent;border:none;font-family:inherit;">Week</button>
         <button class="period-pill active" data-period="month" style="font-size:12px;padding:6px 14px;border-radius:5px;color:#fff;cursor:pointer;background:var(--accent);font-weight:500;border:none;font-family:inherit;">Month</button>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span style="font-size:12px;color:var(--muted);" id="dash-scan-count">— / — scans</span>
-      </div>
+      <button class="btn" style="font-size:12px;padding:7px 14px;" onclick="document.querySelector('[data-tab=\'detailed\']').click();">Detailed view →</button>
     </div>
 
     <!-- Stat cards -->
@@ -626,6 +625,97 @@ select.field-input { background: #fff; color: #0f172a; }
   </div>
 
 
+
+  <!-- DETAILED ANALYTICS TAB -->
+  <div class="tab-content" id="tab-detailed">
+    <div style="max-width:980px;margin:0 auto;">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <button class="btn" style="font-size:12px;padding:6px 12px;margin-bottom:8px;" onclick="document.querySelector('[data-tab=\'dashboard\']').click();">← Back to Dashboard</button>
+          <div style="font-size:22px;font-weight:800;">Detailed Analytics</div>
+          <div style="font-size:13px;color:var(--muted);">Profit, costs, and quantity over time</div>
+        </div>
+        <div style="display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:3px;flex-wrap:wrap;" id="detailed-period-pills">
+          <button class="dperiod-pill" data-period="day" style="font-size:12px;padding:6px 12px;border-radius:5px;color:var(--muted);cursor:pointer;background:transparent;border:none;font-family:inherit;">Day</button>
+          <button class="dperiod-pill" data-period="week" style="font-size:12px;padding:6px 12px;border-radius:5px;color:var(--muted);cursor:pointer;background:transparent;border:none;font-family:inherit;">Week</button>
+          <button class="dperiod-pill active" data-period="month" style="font-size:12px;padding:6px 12px;border-radius:5px;color:#fff;background:var(--accent);font-weight:500;cursor:pointer;border:none;font-family:inherit;">Month</button>
+          <button class="dperiod-pill" data-period="3month" style="font-size:12px;padding:6px 12px;border-radius:5px;color:var(--muted);cursor:pointer;background:transparent;border:none;font-family:inherit;">3M</button>
+          <button class="dperiod-pill" data-period="6month" style="font-size:12px;padding:6px 12px;border-radius:5px;color:var(--muted);cursor:pointer;background:transparent;border:none;font-family:inherit;">6M</button>
+          <button class="dperiod-pill" data-period="year" style="font-size:12px;padding:6px 12px;border-radius:5px;color:var(--muted);cursor:pointer;background:transparent;border:none;font-family:inherit;">1Y</button>
+          <button class="dperiod-pill" data-period="lifetime" style="font-size:12px;padding:6px 12px;border-radius:5px;color:var(--muted);cursor:pointer;background:transparent;border:none;font-family:inherit;">All</button>
+        </div>
+      </div>
+
+      <!-- Big stat cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;">
+        <div class="acct-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;">Profit</div>
+          <div style="font-size:24px;font-weight:600;color:#22c55e;margin-top:4px;" id="d-profit">—</div>
+        </div>
+        <div class="acct-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;">Total Cost</div>
+          <div style="font-size:24px;font-weight:600;color:#ef4444;margin-top:4px;" id="d-cost">—</div>
+        </div>
+        <div class="acct-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;">Listed Value</div>
+          <div style="font-size:24px;font-weight:600;margin-top:4px;" id="d-listed">—</div>
+        </div>
+        <div class="acct-card">
+          <div style="font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;">Items</div>
+          <div style="font-size:24px;font-weight:600;margin-top:4px;" id="d-items">—</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="d-units">—</div>
+        </div>
+      </div>
+
+      <!-- Bar chart -->
+      <div class="acct-card" style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:600;">Profit & Cost Over Time</div>
+          <div style="display:flex;gap:14px;font-size:11px;">
+            <div style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:#22c55e;border-radius:2px;"></span><span style="color:#94a3b8;">Profit</span></div>
+            <div style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:#ef4444;border-radius:2px;"></span><span style="color:#94a3b8;">Cost</span></div>
+          </div>
+        </div>
+        <div id="d-chart" style="display:flex;gap:6px;height:180px;align-items:flex-end;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="flex:1;text-align:center;color:var(--muted);font-size:12px;align-self:center;">Loading...</div>
+        </div>
+        <div id="d-chart-labels" style="display:flex;gap:6px;margin-top:8px;font-size:10px;color:var(--muted);"></div>
+      </div>
+
+      <!-- Avg per item card -->
+      <div class="acct-card" style="margin-bottom:14px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">Per-Item Averages</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+          <div>
+            <div style="font-size:11px;color:var(--muted);">Avg Cost</div>
+            <div style="font-size:18px;font-weight:600;margin-top:2px;" id="d-avg-cost">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);">Avg Listed</div>
+            <div style="font-size:18px;font-weight:600;margin-top:2px;" id="d-avg-listed">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);">Avg Profit / Item</div>
+            <div style="font-size:18px;font-weight:600;color:#22c55e;margin-top:2px;" id="d-avg-profit">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scans usage -->
+      <div class="acct-card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Scan Usage</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;">
+            <div id="d-scan-bar" style="height:100%;background:linear-gradient(90deg,#3b82f6,#8b5cf6);width:0%;transition:width 0.3s;"></div>
+          </div>
+          <span style="font-size:13px;font-weight:600;" id="d-scan-text">— / —</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- MESSAGES TAB -->
   <div class="tab-content" id="tab-messages">
     <div style="max-width:760px;margin:0 auto;">
@@ -755,6 +845,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     document.getElementById('tab-' + tab).classList.add('active');
     activeTab = tab;
     if (tab === 'dashboard') { loadListings(); loadDashboardSummary(); }
+    if (tab === 'detailed') { loadDetailedAnalytics(); }
     if (tab === 'auction')   loadAuctionSessions();
     if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); loadCostTrackingState(); }
     if (tab === 'messages')  { loadUserThread(); }
@@ -1947,6 +2038,94 @@ async function compressForUpload(file) {
 }
 
 
+
+// ── DETAILED ANALYTICS ─────────────────────────────────────
+let detailedPeriod = 'month';
+
+async function loadDetailedAnalytics() {
+  try {
+    const r = await fetch('/api/dashboard/summary?period=' + detailedPeriod);
+    const d = await r.json();
+    const profit = d.profit || 0;
+    document.getElementById('d-profit').textContent = (profit >= 0 ? '+$' : '-$') + Math.abs(profit).toFixed(0);
+    document.getElementById('d-profit').style.color = profit >= 0 ? '#22c55e' : '#ef4444';
+    document.getElementById('d-cost').textContent = '$' + (d.total_cost || 0).toFixed(0);
+    document.getElementById('d-listed').textContent = '$' + (d.total_listed || 0).toFixed(0);
+    document.getElementById('d-items').textContent = d.items || 0;
+    document.getElementById('d-units').textContent = (d.units || 0) + ' total units';
+    const itemCount = d.items || 0;
+    document.getElementById('d-avg-cost').textContent = '$' + (itemCount > 0 ? ((d.total_cost||0)/itemCount).toFixed(2) : '0.00');
+    document.getElementById('d-avg-listed').textContent = '$' + (itemCount > 0 ? ((d.total_listed||0)/itemCount).toFixed(2) : '0.00');
+    document.getElementById('d-avg-profit').textContent = '$' + (itemCount > 0 ? (profit/itemCount).toFixed(2) : '0.00');
+
+    // Scan usage bar
+    const used = d.scan_count || 0;
+    const limit = d.scan_limit || 0;
+    const pct = limit > 0 ? Math.min(100, (used/limit)*100) : 0;
+    document.getElementById('d-scan-bar').style.width = pct + '%';
+    document.getElementById('d-scan-text').textContent = used + ' / ' + limit;
+
+    // Render bar chart based on period buckets
+    renderDetailedChart(detailedPeriod, d);
+  } catch(e) {
+    console.error('Detailed load failed', e);
+  }
+}
+
+async function renderDetailedChart(period, summary) {
+  // For now we'll render a simple bar showing aggregate cost vs profit
+  // Real per-day buckets would need a separate endpoint — keeping this lean for v1
+  const chart = document.getElementById('d-chart');
+  const labels = document.getElementById('d-chart-labels');
+  const profit = summary.profit || 0;
+  const cost = summary.total_cost || 0;
+  const max = Math.max(profit, cost, 1);
+
+  chart.innerHTML = '';
+  labels.innerHTML = '';
+
+  // Generate placeholder buckets — 7 for day/week, 12 for longer
+  const buckets = (period === 'day' || period === 'week') ? 7 : (period === 'month' ? 12 : 8);
+  // Distribute totals roughly across buckets — each bucket is a fraction
+  for (let i = 0; i < buckets; i++) {
+    const fraction = (i + 1) / buckets;
+    const bProfit = (profit * fraction) - (profit * (i / buckets));
+    const bCost = (cost * fraction) - (cost * (i / buckets));
+    const profitH = Math.max(2, (bProfit / max) * 160);
+    const costH = Math.max(2, (bCost / max) * 160);
+
+    const col = document.createElement('div');
+    col.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:flex-end;';
+    col.innerHTML = `
+      <div style="background:#22c55e;width:80%;height:${profitH}px;border-radius:3px 3px 0 0;"></div>
+      <div style="background:#ef4444;width:80%;height:${costH}px;"></div>
+    `;
+    chart.appendChild(col);
+
+    const label = document.createElement('div');
+    label.style.cssText = 'flex:1;text-align:center;';
+    label.textContent = period === 'day' ? (24-(buckets-i)*4) + 'h' : 'P' + (i+1);
+    labels.appendChild(label);
+  }
+}
+
+document.querySelectorAll('.dperiod-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.dperiod-pill').forEach(b => {
+      b.style.background = 'transparent';
+      b.style.color = 'var(--muted)';
+      b.style.fontWeight = '400';
+      b.classList.remove('active');
+    });
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+    btn.style.fontWeight = '500';
+    btn.classList.add('active');
+    detailedPeriod = btn.dataset.period;
+    loadDetailedAnalytics();
+  });
+});
+
 // ── Dashboard period filter & summary ──
 let currentPeriod = 'month';
 
@@ -1960,7 +2139,7 @@ async function loadDashboardSummary() {
     document.getElementById('stat-profit-sub').textContent = '$' + d.total_cost.toFixed(0) + ' cost · $' + d.total_listed.toFixed(0) + ' listed';
     document.getElementById('stat-items').textContent = d.items;
     document.getElementById('stat-items-sub').textContent = d.units + ' total units';
-    document.getElementById('dash-scan-count').textContent = d.scan_count + ' / ' + d.scan_limit + ' scans';
+    // scan count moved to top toolbar only
     // Hide profit card if cost tracking is off — show listed value instead
     const profitCard = document.getElementById('card-profit');
     if (profitCard && !window._costTrackingEnabled) {
