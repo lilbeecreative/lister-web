@@ -2659,3 +2659,85 @@ async def logout(request: Request):
     return resp
 
 
+
+
+# ─── Bad Scan Reports ──────────────────────────────────────────
+
+@app.post("/api/scans/report-bad")
+async def report_bad_scan(request: Request):
+    """User submits a bad scan report."""
+    try:
+        data = await request.json()
+        reporter_email = data.get("reporter_email")
+        if not reporter_email:
+            raise HTTPException(400, "reporter_email required")
+
+        biz = supabase.table("businesses").select("id").eq("email", reporter_email).limit(1).execute()
+        business_id = biz.data[0]["id"] if biz.data else None
+
+        report = {
+            "reporter_email": reporter_email,
+            "business_id": business_id,
+            "group_id": data.get("group_id"),
+            "photo_ids": data.get("photo_ids", []),
+            "item_card": data.get("item_card", {}),
+            "user_note": data.get("user_note", ""),
+        }
+        result = supabase.table("bad_scan_reports").insert(report).execute()
+        return {"ok": True, "id": result.data[0]["id"]}
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/admin/bad-reports")
+async def list_bad_reports(status: str = None):
+    """Admin: list bad scan reports."""
+    try:
+        q = supabase.table("bad_scan_reports").select("*").order("reported_at", desc=True)
+        if status:
+            q = q.eq("status", status)
+        result = q.execute()
+
+        for r in result.data:
+            r["photo_urls"] = [
+                f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{pid}"
+                for pid in (r.get("photo_ids") or [])
+            ]
+
+        counts = {"new": 0, "reviewed": 0, "resolved": 0}
+        all_rows = supabase.table("bad_scan_reports").select("status").execute()
+        for r in all_rows.data:
+            s = r.get("status", "new")
+            if s in counts:
+                counts[s] += 1
+
+        return {"reports": result.data, "counts": counts}
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+
+@app.patch("/api/admin/bad-reports/{report_id}")
+async def update_bad_report(report_id: str, request: Request):
+    """Admin: update report status."""
+    try:
+        data = await request.json()
+        if data.get("status") not in ("new", "reviewed", "resolved"):
+            raise HTTPException(400, "Invalid status")
+        supabase.table("bad_scan_reports").update({"status": data["status"]}).eq("id", report_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+
+@app.delete("/api/admin/bad-reports/{report_id}")
+async def delete_bad_report(report_id: str):
+    """Admin: delete a report."""
+    try:
+        supabase.table("bad_scan_reports").delete().eq("id", report_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
