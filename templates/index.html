@@ -222,6 +222,7 @@ select.field-input { background: #fff; color: #0f172a; }
 .acct-input:focus { border-color:var(--accent); }
 .acct-input:read-only { color:var(--muted); }
 .plan-card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -417,6 +418,33 @@ select.field-input { background: #fff; color: #0f172a; }
 
   <!-- AUCTION TAB -->
   <div class="tab-content" id="tab-auction">
+    <!-- Multi-Item Photo Scanner -->
+    <div class="acct-card" id="multi-scan-card" style="margin-bottom:14px;position:relative;">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+        Multi-Item Photo
+        <span style="font-size:9px;font-weight:700;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;padding:2px 7px;border-radius:10px;letter-spacing:0.05em;">GROWTH+</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Upload one photo of many items - AI detects each one, you review, then scans them all separately. <strong style="color:#f59e0b;">Max 20 items per photo.</strong></div>
+      <div id="multi-scan-locked" style="display:none;background:rgba(124,58,237,0.08);border:1px dashed rgba(124,58,237,0.4);border-radius:10px;padding:18px;text-align:center;">
+        <div style="font-size:32px;margin-bottom:8px;">🔒</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Available on Growth plan or higher</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Detect and scan up to 20 items from one photo.</div>
+        <button class="btn btn-primary" onclick="openPlansModal()" style="font-size:12px;padding:8px 16px;">Upgrade Plan</button>
+      </div>
+      <div id="multi-scan-active" style="display:none;">
+        <label for="multi-scan-input" style="display:block;border:2px dashed var(--border);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;">
+          <div style="font-size:28px;margin-bottom:6px;">📷</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">Click to upload photo</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;">JPG/PNG/HEIC - up to 20 items detected</div>
+        </label>
+        <input type="file" id="multi-scan-input" accept="image/*,image/heic" style="display:none;" onchange="startMultiScan(this)"/>
+      </div>
+      <div id="multi-scan-detecting" style="display:none;text-align:center;padding:24px;">
+        <div style="display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:#7c3aed;border-radius:50%;animation:spin 1s linear infinite;"></div>
+        <div style="font-size:13px;color:var(--muted);margin-top:10px;">Detecting items - this can take 10-20 seconds</div>
+      </div>
+    </div>
+
     <!-- PDF Auction Scanner -->
     <div style="margin-bottom:20px;">
       <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;">📄 PDF Auction Scanner</div>
