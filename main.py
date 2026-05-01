@@ -3837,3 +3837,114 @@ Return ONLY the JSON object, no markdown, no other text."""
         import traceback; traceback.print_exc()
         raise HTTPException(500, f"Scan failed: {str(e)[:200]}")
 
+
+# ─── Intake Inventory ──────────────────────────────────────────
+
+@app.get("/api/intake")
+async def list_intake(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        result = supabase.table("intake_purchases").select("*").eq("business_id", business_id).order("created_at", desc=True).execute()
+        items = result.data or []
+        for it in items:
+            it["photo_url"] = f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{it['photo_id']}" if it.get("photo_id") else ""
+        return {"items": items}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/intake")
+async def create_intake(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        row = {
+            "business_id": business_id,
+            "item_name": body.get("item_name") or "",
+            "purchase_date": body.get("purchase_date") or None,
+            "purchase_price": body.get("purchase_price") or None,
+            "sku_code": body.get("sku_code") or "",
+            "notes": body.get("notes") or "",
+        }
+        result = supabase.table("intake_purchases").insert(row).execute()
+        return {"ok": True, "item": result.data[0] if result.data else None}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.patch("/api/intake/{intake_id}")
+async def update_intake(intake_id: str, request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        allowed = ("item_name", "purchase_date", "purchase_price", "sku_code", "notes", "photo_id")
+        updates = {k: (v if v not in ("", None) else None) for k, v in body.items() if k in allowed}
+        if not updates:
+            raise HTTPException(400, "No valid fields")
+        from datetime import datetime, timezone
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        supabase.table("intake_purchases").update(updates).eq("id", intake_id).eq("business_id", business_id).execute()
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.delete("/api/intake/{intake_id}")
+async def delete_intake(intake_id: str, request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        supabase.table("intake_purchases").delete().eq("id", intake_id).eq("business_id", business_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/intake/upload-photo")
+async def upload_intake_photo(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        form = await request.form()
+        file = form.get("file")
+        if not file:
+            raise HTTPException(400, "No file")
+        contents = await file.read()
+        if len(contents) > 10 * 1024 * 1024:
+            raise HTTPException(413, "Image too large (10MB max)")
+        from datetime import datetime
+        from PIL import Image, ImageOps
+        import io as _io
+        img = Image.open(_io.BytesIO(contents))
+        img = ImageOps.exif_transpose(img)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        if img.width > 1600 or img.height > 1600:
+            img.thumbnail((1600, 1600))
+        buf = _io.BytesIO()
+        img.save(buf, format="JPEG", quality=88)
+        crop_bytes = buf.getvalue()
+        dt = datetime.now()
+        fn = f"intake_{dt.strftime('%d%m%y_%H%M%S')}_{business_id[:8]}.jpg"
+        supabase.storage.from_("part-photos").upload(
+            path=fn,
+            file=crop_bytes,
+            file_options={"content-type": "image/jpeg", "upsert": "true"}
+        )
+        return {"ok": True, "photo_id": fn, "photo_url": f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{fn}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
