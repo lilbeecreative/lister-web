@@ -760,7 +760,7 @@ select.field-input { background: #fff; color: #0f172a; }
           <button class="inv-view-btn" data-view="list" style="font-size:12px;padding:5px 12px;border-radius:5px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;">List</button>
         </div>
       </div>
-      <div id="inv-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;"></div>
+      <div id="inv-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
       <div class="empty" id="inv-empty" style="display:none;">
         <div class="empty-icon">📦</div>
         <div class="empty-title">No items in inventory</div>
@@ -2132,7 +2132,7 @@ function renderInventory() {
     grid.style.gridTemplateColumns = '1fr';
     grid.innerHTML = invItems.map(renderInventoryRow).join('');
   } else {
-    grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(200px,1fr))';
+    grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(260px,1fr))';
     grid.innerHTML = invItems.map(renderInventoryCard).join('');
   }
 }
