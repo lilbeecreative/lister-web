@@ -3481,20 +3481,18 @@ async def multi_scan_detect(request: Request):
         contents = await file.read()
 
         # Send full photo to Gemini for detection
-        from google import genai
-        from google.genai import types as gemini_types
+        import google.generativeai as genai
+        from PIL import Image
+        import io as _io
         gemini_key = os.getenv("GEMINI_API_KEY", "")
-        if not gemini_key:
-            # Fall back to user setting
-            settings_res = supabase.table("business_settings").select("value").eq("business_id", business_id).eq("key", "GEMINI_API_KEY").limit(1).execute()
-            if settings_res.data:
-                gemini_key = settings_res.data[0].get("value", "")
         if not gemini_key:
             raise HTTPException(500, "Gemini API key not configured")
 
-        client = genai.Client(api_key=gemini_key)
+        genai.configure(api_key=gemini_key)
+        model = genai.GenerativeModel("gemini-2.5-flash")
+
         prompt = f"""Look at this image and identify each distinct sellable item.
-Return a JSON array of bounding boxes for each item.
+Return a JSON object with a list of bounding boxes for each item.
 Coordinates are normalized 0-1000 in format [ymin, xmin, ymax, xmax].
 For each item include a brief 1-3 word label.
 Return at most {MULTI_ITEM_CAP} items, prioritizing the most clearly visible.
@@ -3507,14 +3505,15 @@ Format:
   ]
 }}
 
-Return ONLY the JSON, no other text."""
+Return ONLY the JSON object, no markdown, no other text."""
 
-        response = client.models.generate_content(
-            model="gemini-2.0-flash-exp",
-            contents=[
-                gemini_types.Part.from_bytes(data=contents, mime_type="image/jpeg"),
-                prompt
-            ]
+        pil_image = Image.open(_io.BytesIO(contents))
+        if pil_image.mode != "RGB":
+            pil_image = pil_image.convert("RGB")
+
+        response = model.generate_content(
+            [prompt, pil_image],
+            generation_config={"max_output_tokens": 4000}
         )
         raw = (response.text or "").strip()
         # Strip code fences
