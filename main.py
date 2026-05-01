@@ -3213,3 +3213,242 @@ async def toggle_cost_tracking(request: Request):
     except Exception as e:
         raise HTTPException(500, str(e))
 
+
+# ─── Inventory ──────────────────────────────────────────────────
+
+GENERAL_CATEGORY_MAP = {
+    # Maps eBay category fragments → broad buckets
+    "electronics": "Electronics", "phone": "Electronics", "computer": "Electronics",
+    "camera": "Electronics", "audio": "Electronics", "tv": "Electronics",
+    "clothing": "Clothing", "shoes": "Clothing", "apparel": "Clothing", "jewelry": "Clothing",
+    "tops": "Clothing", "shirt": "Clothing", "pant": "Clothing", "dress": "Clothing",
+    "tool": "Tools", "hardware": "Tools", "industrial": "Tools",
+    "home": "Home", "kitchen": "Home", "garden": "Home", "furniture": "Home",
+    "toy": "Toys", "game": "Toys", "doll": "Toys",
+    "book": "Books", "magazine": "Books",
+    "auto": "Auto", "car": "Auto", "motor": "Auto", "vehicle": "Auto",
+    "sport": "Sports", "fitness": "Sports", "bike": "Sports", "outdoor": "Sports",
+    "collectible": "Collectibles", "antique": "Collectibles", "art": "Collectibles", "coin": "Collectibles",
+    "health": "Health", "beauty": "Health",
+}
+
+
+def derive_general_category(ebay_category: str) -> str:
+    if not ebay_category:
+        return "Other"
+    lower = ebay_category.lower()
+    for key, bucket in GENERAL_CATEGORY_MAP.items():
+        if key in lower:
+            return bucket
+    return "Other"
+
+
+def add_to_inventory(business_id: str, listing: dict):
+    """Insert a listing into the inventory table. Called automatically after scan."""
+    try:
+        # Skip if already in inventory (idempotent)
+        existing = supabase.table("inventory").select("id").eq("source_listing_id", listing["id"]).eq("business_id", business_id).limit(1).execute()
+        if existing.data:
+            return existing.data[0]["id"]
+        # Get all photos
+        photo_ids = []
+        if listing.get("photo_id"):
+            try:
+                gp = supabase.table("group_photos").select("group_id").eq("photo_id", listing["photo_id"]).limit(1).execute()
+                if gp.data:
+                    gid = gp.data[0]["group_id"]
+                    all_gp = supabase.table("group_photos").select("photo_id").eq("group_id", gid).execute()
+                    photo_ids = [r["photo_id"] for r in (all_gp.data or [])]
+            except Exception:
+                pass
+            if not photo_ids:
+                photo_ids = [listing["photo_id"]]
+        new_inv = {
+            "business_id": business_id,
+            "source_listing_id": listing.get("id"),
+            "title": listing.get("title", ""),
+            "photo_id": listing.get("photo_id"),
+            "all_photo_ids": photo_ids,
+            "price": listing.get("price") or 0,
+            "price_used": listing.get("price_used") or 0,
+            "price_new": listing.get("price_new") or 0,
+            "cost": listing.get("cost") or 0,
+            "condition": listing.get("condition", "used"),
+            "quantity": listing.get("quantity") or 1,
+            "ebay_category": listing.get("ebay_category"),
+            "general_category": derive_general_category(listing.get("ebay_category", "")),
+        }
+        result = supabase.table("inventory").insert(new_inv).execute()
+        return result.data[0]["id"] if result.data else None
+    except Exception as e:
+        print(f"add_to_inventory failed: {e}")
+        return None
+
+
+@app.get("/api/inventory")
+async def get_inventory(request: Request, search: str = "", status: str = "", location: str = "", category: str = ""):
+    """List inventory items with optional filters. Auto-syncs scanned listings on each load."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        # Auto-backfill: any scanned listings not yet in inventory get added
+        try:
+            scanned = supabase.table("listings").select("*").eq("business_id", business_id).eq("status", "scanned").execute()
+            existing_ids = supabase.table("inventory").select("source_listing_id").eq("business_id", business_id).execute()
+            existing_set = {r["source_listing_id"] for r in (existing_ids.data or []) if r.get("source_listing_id")}
+            for l in (scanned.data or []):
+                if l["id"] not in existing_set:
+                    add_to_inventory(business_id, l)
+        except Exception as _e:
+            print(f"inventory auto-sync warning: {_e}")
+        q = supabase.table("inventory").select("*").eq("business_id", business_id).order("scanned_at", desc=True)
+        if status:
+            q = q.eq("status", status)
+        if location:
+            q = q.eq("storage_location", location)
+        if category:
+            q = q.eq("general_category", category)
+        result = q.execute()
+        items = result.data or []
+
+        # Client-side search across title and barcode_id
+        if search:
+            s = search.lower()
+            items = [i for i in items if s in (i.get("title") or "").lower() or s in (i.get("barcode_id") or "").lower()]
+
+        # Build photo URLs
+        for it in items:
+            it["photo_url"] = f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{it['photo_id']}" if it.get("photo_id") else ""
+            it["all_photo_urls"] = [f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{p}" for p in (it.get("all_photo_ids") or [])]
+
+        # Aggregate stats
+        total_value = sum(float(i.get("price") or 0) for i in items)
+        total_cost = sum(float(i.get("cost") or 0) for i in items)
+        in_stock = sum(1 for i in items if i.get("status") == "in_stock")
+        listed = sum(1 for i in items if i.get("status") == "listed")
+        sold = sum(1 for i in items if i.get("status") == "sold")
+
+        return {
+            "items": items,
+            "stats": {
+                "total": len(items),
+                "in_stock": in_stock,
+                "listed": listed,
+                "sold": sold,
+                "total_value": round(total_value, 2),
+                "total_cost": round(total_cost, 2),
+            }
+        }
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+
+@app.patch("/api/inventory/{inv_id}")
+async def update_inventory(inv_id: str, request: Request):
+    """Update fields on an inventory item."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        allowed = ("title", "price", "cost", "condition", "quantity", "general_category",
+                   "storage_location", "barcode_id", "status")
+        updates = {k: v for k, v in body.items() if k in allowed}
+        if not updates:
+            raise HTTPException(400, "No valid fields")
+        from datetime import datetime, timezone
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        supabase.table("inventory").update(updates).eq("id", inv_id).eq("business_id", business_id).execute()
+        # Track storage location for autocomplete
+        if "storage_location" in updates and updates["storage_location"]:
+            try:
+                existing = supabase.table("storage_locations").select("id,use_count").eq("business_id", business_id).eq("name", updates["storage_location"]).limit(1).execute()
+                if existing.data:
+                    supabase.table("storage_locations").update({"use_count": (existing.data[0].get("use_count") or 0) + 1}).eq("id", existing.data[0]["id"]).execute()
+                else:
+                    supabase.table("storage_locations").insert({"business_id": business_id, "name": updates["storage_location"]}).execute()
+            except Exception:
+                pass
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.delete("/api/inventory/{inv_id}")
+async def delete_inventory(inv_id: str, request: Request):
+    """Permanently delete an inventory item."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        supabase.table("inventory").delete().eq("id", inv_id).eq("business_id", business_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/inventory/bulk-update")
+async def bulk_update_inventory(request: Request):
+    """Apply same field update to many inventory items."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        ids = body.get("ids", [])
+        updates = {k: v for k, v in body.items() if k in ("storage_location", "status", "general_category")}
+        if not ids or not updates:
+            raise HTTPException(400, "ids and updates required")
+        for inv_id in ids:
+            supabase.table("inventory").update(updates).eq("id", inv_id).eq("business_id", business_id).execute()
+        # Track location for autocomplete
+        if updates.get("storage_location"):
+            try:
+                name = updates["storage_location"]
+                existing = supabase.table("storage_locations").select("id,use_count").eq("business_id", business_id).eq("name", name).limit(1).execute()
+                if existing.data:
+                    supabase.table("storage_locations").update({"use_count": (existing.data[0].get("use_count") or 0) + len(ids)}).eq("id", existing.data[0]["id"]).execute()
+                else:
+                    supabase.table("storage_locations").insert({"business_id": business_id, "name": name, "use_count": len(ids)}).execute()
+            except Exception:
+                pass
+        return {"ok": True, "updated": len(ids)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/inventory/locations")
+async def list_locations(request: Request):
+    """Return user's storage locations sorted by usage."""
+    business_id = require_auth(request)
+    if not business_id:
+        return {"locations": []}
+    try:
+        result = supabase.table("storage_locations").select("name,use_count").eq("business_id", business_id).order("use_count", desc=True).execute()
+        return {"locations": [r["name"] for r in (result.data or [])]}
+    except Exception:
+        return {"locations": []}
+
+
+@app.post("/api/inventory/sync-from-listings")
+async def sync_inventory_from_listings(request: Request):
+    """Backfill inventory from existing listings (one-time op for current customers)."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        listings = supabase.table("listings").select("*").eq("business_id", business_id).neq("status", "archived").execute()
+        added = 0
+        for l in (listings.data or []):
+            if add_to_inventory(business_id, l):
+                added += 1
+        return {"ok": True, "added": added}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
