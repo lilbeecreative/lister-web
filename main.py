@@ -3076,3 +3076,130 @@ async def admin_start_thread(business_id: str, request: Request):
     except Exception as e:
         raise HTTPException(500, str(e))
 
+
+# ─── Cost Tracking ─────────────────────────────────────────────
+
+@app.patch("/api/listings/{listing_id}/cost")
+async def update_listing_cost(listing_id: int, request: Request):
+    """Update the cost of a single listing."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        cost = float(body.get("cost", 0) or 0)
+        if cost < 0:
+            raise HTTPException(400, "Cost cannot be negative")
+        supabase.table("listings").update({"cost": cost}).eq("id", listing_id).eq("business_id", business_id).execute()
+        return {"ok": True, "cost": cost}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/listings/lot-cost")
+async def apply_lot_cost(request: Request):
+    """Distribute a total lot cost across selected listings."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        listing_ids = body.get("listing_ids", [])
+        total_cost = float(body.get("total_cost", 0) or 0)
+        method = body.get("method", "even")  # 'even' or 'weighted'
+        if not listing_ids or total_cost <= 0:
+            raise HTTPException(400, "listing_ids and total_cost required")
+
+        if method == "weighted":
+            # Distribute proportionally to listed price
+            res = supabase.table("listings").select("id,price").in_("id", listing_ids).eq("business_id", business_id).execute()
+            items = res.data or []
+            total_listed = sum(float(it.get("price") or 0) for it in items)
+            if total_listed <= 0:
+                # Fall back to even split
+                method = "even"
+            else:
+                for it in items:
+                    portion = (float(it.get("price") or 0) / total_listed) * total_cost
+                    supabase.table("listings").update({"cost": round(portion, 2)}).eq("id", it["id"]).eq("business_id", business_id).execute()
+                return {"ok": True, "method": "weighted", "applied_to": len(items)}
+
+        # Even split
+        per_item = round(total_cost / len(listing_ids), 2)
+        for lid in listing_ids:
+            supabase.table("listings").update({"cost": per_item}).eq("id", lid).eq("business_id", business_id).execute()
+        return {"ok": True, "method": "even", "per_item": per_item, "applied_to": len(listing_ids)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/dashboard/summary")
+async def dashboard_summary(request: Request, period: str = "month"):
+    """Return profit/cost/listed totals for a time period."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        if period == "day":
+            since = now - timedelta(days=1)
+        elif period == "week":
+            since = now - timedelta(days=7)
+        else:  # month
+            since = now - timedelta(days=30)
+
+        # Get all active listings in window
+        res = (supabase.table("listings")
+            .select("id,price,cost,quantity,status")
+            .eq("business_id", business_id)
+            .neq("status", "archived")
+            .gte("created_at", since.isoformat())
+            .execute())
+        items = res.data or []
+
+        total_listed = sum(float(it.get("price") or 0) for it in items)
+        total_cost = sum(float(it.get("cost") or 0) for it in items)
+        total_units = sum(int(it.get("quantity") or 1) for it in items)
+        total_items = len(items)
+        profit = total_listed - total_cost
+
+        # Also return cost_tracking_enabled status
+        biz = supabase.table("businesses").select("cost_tracking_enabled,scan_count,scan_limit").eq("id", business_id).limit(1).execute()
+        biz_data = biz.data[0] if biz.data else {}
+
+        return {
+            "period": period,
+            "items": total_items,
+            "units": total_units,
+            "total_cost": round(total_cost, 2),
+            "total_listed": round(total_listed, 2),
+            "profit": round(profit, 2),
+            "cost_tracking_enabled": biz_data.get("cost_tracking_enabled", True),
+            "scan_count": biz_data.get("scan_count", 0),
+            "scan_limit": biz_data.get("scan_limit", 25),
+        }
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+
+@app.patch("/api/account/cost-tracking")
+async def toggle_cost_tracking(request: Request):
+    """Turn cost tracking on or off for the current business."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        enabled = bool(body.get("enabled", True))
+        supabase.table("businesses").update({"cost_tracking_enabled": enabled}).eq("id", business_id).execute()
+        return {"ok": True, "enabled": enabled}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
