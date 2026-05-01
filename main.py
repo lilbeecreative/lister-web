@@ -65,8 +65,27 @@ async def auction_page(request: Request):
 async def dashboard_v2(request: Request):
     from fastapi.responses import HTMLResponse
     import os
+    # Look up logged-in user's email for client-side use (e.g. bad scan reports)
+    user_email = ""
+    try:
+        token = request.cookies.get("session_id")
+        if token:
+            sess = supabase.table("sessions").select("business_id").eq("token", token).execute()
+            if sess.data:
+                bid = sess.data[0]["business_id"]
+                biz = supabase.table("businesses").select("email").eq("id", bid).limit(1).execute()
+                if biz.data:
+                    user_email = biz.data[0].get("email", "") or ""
+    except Exception:
+        pass
     with open(os.path.join(os.path.dirname(__file__), "templates", "v2.html")) as f:
         html = f.read()
+    # Inject user email so client JS can use it
+    inject = f'<script>window._userEmail={user_email!r};</script>'
+    if "</head>" in html:
+        html = html.replace("</head>", inject + "</head>", 1)
+    else:
+        html = inject + html
     return HTMLResponse(content=html, headers={
         "Content-Security-Policy": "default-src * blob: data:; script-src * blob: data: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * blob: data:;"
     })
