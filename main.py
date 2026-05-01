@@ -3669,3 +3669,136 @@ async def multi_scan_finalize(request: Request):
         import traceback; traceback.print_exc()
         raise HTTPException(500, str(e))
 
+
+# ─── Demo Scanner (Landing Page) ──────────────────────────────
+
+DEMO_RATE_LIMIT = 3  # scans per IP per 24h
+_demo_counts = {}    # in-memory: {ip: [(timestamp, ...), ...]}
+
+
+def _demo_get_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _demo_check_quota(ip: str) -> tuple[bool, int]:
+    """Return (allowed, remaining_after_use)."""
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=24)
+    # Prune old entries
+    if ip in _demo_counts:
+        _demo_counts[ip] = [t for t in _demo_counts[ip] if t > cutoff]
+    used = len(_demo_counts.get(ip, []))
+    if used >= DEMO_RATE_LIMIT:
+        return False, 0
+    return True, DEMO_RATE_LIMIT - used - 1
+
+
+@app.get("/api/demo-scan/quota")
+async def demo_quota(request: Request):
+    ip = _demo_get_ip(request)
+    from datetime import datetime, timezone, timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    if ip in _demo_counts:
+        _demo_counts[ip] = [t for t in _demo_counts[ip] if t > cutoff]
+    used = len(_demo_counts.get(ip, []))
+    return {"used": used, "limit": DEMO_RATE_LIMIT, "remaining": max(0, DEMO_RATE_LIMIT - used)}
+
+
+@app.post("/api/demo-scan")
+async def demo_scan(request: Request):
+    """Lightweight one-shot Gemini scan for the landing page demo. No auth, no DB, no scanner queue."""
+    ip = _demo_get_ip(request)
+    allowed, _remaining = _demo_check_quota(ip)
+    if not allowed:
+        raise HTTPException(429, "Free demo limit reached. Sign up for unlimited scans.")
+    try:
+        form = await request.form()
+        file = form.get("file")
+        if not file:
+            raise HTTPException(400, "No file uploaded")
+        contents = await file.read()
+        if len(contents) > 10 * 1024 * 1024:
+            raise HTTPException(413, "Image too large (10MB max)")
+
+        import google.generativeai as genai
+        from PIL import Image, ImageOps
+        import io as _io
+        import json as _json
+
+        gemini_key = os.getenv("GEMINI_API_KEY", "")
+        if not gemini_key:
+            raise HTTPException(500, "Service temporarily unavailable")
+
+        genai.configure(api_key=gemini_key)
+        model = genai.GenerativeModel("gemini-2.5-flash")
+
+        try:
+            img = Image.open(_io.BytesIO(contents))
+            img = ImageOps.exif_transpose(img)
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            # Resize for speed
+            if img.width > 1600 or img.height > 1600:
+                img.thumbnail((1600, 1600))
+        except Exception as _img_err:
+            raise HTTPException(400, f"Could not read image: {_img_err}")
+
+        prompt = """You are a reseller's pricing assistant. Look at this photo and identify the most valuable item for resale.
+
+Return ONLY a JSON object with this exact shape:
+{
+  "title": "Item title under 80 chars suitable for an eBay listing",
+  "category": "Broad category like Electronics, Clothing, Tools, Home, Toys, Books, Auto, Sports, Collectibles, Health, or Other",
+  "condition_guess": "new" or "used",
+  "estimated_price_used": <integer dollar amount>,
+  "estimated_price_new": <integer dollar amount>,
+  "confidence": "high", "medium", or "low",
+  "notes": "One short sentence with your pricing reasoning"
+}
+
+Pricing rules:
+- Base prices on REAL eBay sold-listing values for similar items
+- Both used and new prices required (estimate even if condition is unclear)
+- Use 0 if you genuinely cannot price it
+- Be realistic - undercut retail by 20-40% for used resale value
+
+Return ONLY the JSON object, no markdown, no other text."""
+
+        response = model.generate_content(
+            [prompt, img],
+            generation_config={"max_output_tokens": 500, "temperature": 0.0}
+        )
+        raw = (response.text or "").strip()
+        import re as _re
+        raw = _re.sub(r"^```[a-z]*\n?", "", raw, flags=_re.IGNORECASE)
+        raw = _re.sub(r"\n?```$", "", raw).strip()
+        try:
+            data = _json.loads(raw)
+        except Exception as _parse_err:
+            raise HTTPException(500, "Could not parse AI response")
+
+        # Record the use after success
+        from datetime import datetime, timezone
+        _demo_counts.setdefault(ip, []).append(datetime.now(timezone.utc))
+
+        return {
+            "ok": True,
+            "title": data.get("title", "Unknown Item"),
+            "category": data.get("category", "Other"),
+            "condition_guess": data.get("condition_guess", "used"),
+            "estimated_price_used": int(data.get("estimated_price_used", 0) or 0),
+            "estimated_price_new": int(data.get("estimated_price_new", 0) or 0),
+            "confidence": data.get("confidence", "medium"),
+            "notes": data.get("notes", ""),
+            "remaining": max(0, DEMO_RATE_LIMIT - len(_demo_counts.get(ip, [])))
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, f"Scan failed: {str(e)[:200]}")
+
