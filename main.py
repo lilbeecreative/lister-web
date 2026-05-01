@@ -3452,3 +3452,228 @@ async def sync_inventory_from_listings(request: Request):
     except Exception as e:
         raise HTTPException(500, str(e))
 
+
+# ─── Multi-Item Photo Detection ───────────────────────────────
+
+MULTI_ITEM_MIN_TIER_LIMIT = 500  # Growth plan or higher
+MULTI_ITEM_CAP = 20
+
+
+@app.post("/api/multi-scan/detect")
+async def multi_scan_detect(request: Request):
+    """Detect items in a single photo using Gemini, return bounding boxes for review."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        # Gate behind plan tier (Growth = scan_limit 500)
+        biz = supabase.table("businesses").select("scan_limit,scan_count,is_admin").eq("id", business_id).limit(1).execute()
+        if not biz.data:
+            raise HTTPException(404, "Business not found")
+        b = biz.data[0]
+        if not b.get("is_admin") and (b.get("scan_limit") or 0) < MULTI_ITEM_MIN_TIER_LIMIT:
+            raise HTTPException(402, "Multi-item scanning requires Growth plan or higher")
+
+        form = await request.form()
+        file = form.get("file")
+        if not file:
+            raise HTTPException(400, "No file")
+        contents = await file.read()
+
+        # Send full photo to Gemini for detection
+        from google import genai
+        from google.genai import types as gemini_types
+        gemini_key = os.getenv("GEMINI_API_KEY", "")
+        if not gemini_key:
+            # Fall back to user setting
+            settings_res = supabase.table("business_settings").select("value").eq("business_id", business_id).eq("key", "GEMINI_API_KEY").limit(1).execute()
+            if settings_res.data:
+                gemini_key = settings_res.data[0].get("value", "")
+        if not gemini_key:
+            raise HTTPException(500, "Gemini API key not configured")
+
+        client = genai.Client(api_key=gemini_key)
+        prompt = f"""Look at this image and identify each distinct sellable item.
+Return a JSON array of bounding boxes for each item.
+Coordinates are normalized 0-1000 in format [ymin, xmin, ymax, xmax].
+For each item include a brief 1-3 word label.
+Return at most {MULTI_ITEM_CAP} items, prioritizing the most clearly visible.
+
+Format:
+{{
+  "items": [
+    {{"box_2d": [100, 200, 400, 500], "label": "blue jeans"}},
+    {{"box_2d": [50, 600, 350, 900], "label": "red shirt"}}
+  ]
+}}
+
+Return ONLY the JSON, no other text."""
+
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-exp",
+            contents=[
+                gemini_types.Part.from_bytes(data=contents, mime_type="image/jpeg"),
+                prompt
+            ]
+        )
+        raw = (response.text or "").strip()
+        # Strip code fences
+        import re as _re
+        raw = _re.sub(r"^```[a-z]*\n?", "", raw, flags=_re.IGNORECASE)
+        raw = _re.sub(r"\n?```$", "", raw).strip()
+        import json
+        data = json.loads(raw)
+        items = (data.get("items") or [])[:MULTI_ITEM_CAP]
+
+        # Get original image dimensions for scaling
+        from PIL import Image
+        import io as _io
+        img = Image.open(_io.BytesIO(contents))
+        w, h = img.size
+
+        # Cache the original photo bytes so /finalize can crop later — store in scan_uploads bucket
+        import uuid
+        upload_id = str(uuid.uuid4())
+        try:
+            supabase.storage.from_("part-photos").upload(
+                path=f"_multiscan/{upload_id}.jpg",
+                file=contents,
+                file_options={"content-type": "image/jpeg", "upsert": "true"}
+            )
+        except Exception as _e:
+            print(f"multiscan upload warn: {_e}")
+
+        # Convert normalized boxes to pixel coords
+        out_items = []
+        for i, it in enumerate(items):
+            box = it.get("box_2d") or [0, 0, 0, 0]
+            if len(box) != 4:
+                continue
+            ymin, xmin, ymax, xmax = box
+            # Gemini returns 0-1000 normalized
+            px = {
+                "x": int(xmin * w / 1000),
+                "y": int(ymin * h / 1000),
+                "w": int((xmax - xmin) * w / 1000),
+                "h": int((ymax - ymin) * h / 1000),
+            }
+            out_items.append({
+                "id": i,
+                "label": it.get("label", f"Item {i+1}"),
+                "box": px,
+                "selected": True
+            })
+
+        return {
+            "ok": True,
+            "upload_id": upload_id,
+            "image_width": w,
+            "image_height": h,
+            "items": out_items
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/multi-scan/finalize")
+async def multi_scan_finalize(request: Request):
+    """Crop the original photo into N item photos and create scan groups for each."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        upload_id = body.get("upload_id")
+        condition = body.get("condition", "used")
+        items = body.get("items", [])
+        if not upload_id or not items:
+            raise HTTPException(400, "upload_id and items required")
+
+        # Re-check tier
+        biz = supabase.table("businesses").select("scan_limit,is_admin").eq("id", business_id).limit(1).execute()
+        b = biz.data[0] if biz.data else {}
+        if not b.get("is_admin") and (b.get("scan_limit") or 0) < MULTI_ITEM_MIN_TIER_LIMIT:
+            raise HTTPException(402, "Growth plan or higher required")
+
+        # Download original
+        try:
+            original = supabase.storage.from_("part-photos").download(f"_multiscan/{upload_id}.jpg")
+        except Exception as e:
+            raise HTTPException(404, f"Original photo not found: {e}")
+
+        from PIL import Image, ImageOps
+        import io as _io
+        from datetime import datetime
+        img = Image.open(_io.BytesIO(original))
+        img = ImageOps.exif_transpose(img)
+
+        import uuid
+        session_id = str(uuid.uuid4())
+        created_groups = []
+
+        # Crop each item, upload as a new photo, create a group
+        for idx, item in enumerate(items[:MULTI_ITEM_CAP]):
+            box = item.get("box") or {}
+            x = max(0, int(box.get("x", 0)))
+            y = max(0, int(box.get("y", 0)))
+            w = int(box.get("w", 0))
+            h = int(box.get("h", 0))
+            if w <= 10 or h <= 10:
+                continue
+            # Add 5% padding around the crop for context
+            pad_x = int(w * 0.05)
+            pad_y = int(h * 0.05)
+            crop_box = (
+                max(0, x - pad_x),
+                max(0, y - pad_y),
+                min(img.width, x + w + pad_x),
+                min(img.height, y + h + pad_y)
+            )
+            cropped = img.crop(crop_box)
+            # Resize if too big
+            if cropped.width > 1600 or cropped.height > 1600:
+                cropped.thumbnail((1600, 1600))
+
+            buf = _io.BytesIO()
+            cropped.convert("RGB").save(buf, format="JPEG", quality=88)
+            crop_bytes = buf.getvalue()
+
+            # Upload crop to part-photos
+            dt = datetime.now()
+            fn = f"{dt.strftime('%d%m%y')}_{dt.strftime('%H%M%S')}_{idx}.jpg"
+            try:
+                supabase.storage.from_("part-photos").upload(
+                    path=fn,
+                    file=crop_bytes,
+                    file_options={"content-type": "image/jpeg", "upsert": "true"}
+                )
+            except Exception as _e:
+                print(f"crop upload warn for {idx}: {_e}")
+                continue
+
+            # Create listing_group
+            try:
+                grp = supabase.table("listing_groups").insert({
+                    "session_id": session_id,
+                    "business_id": business_id,
+                    "condition": condition,
+                    "quantity": 1,
+                    "status": "pending"
+                }).execute()
+                gid = grp.data[0]["id"]
+                supabase.table("group_photos").insert({"group_id": gid, "photo_id": fn}).execute()
+                created_groups.append(gid)
+            except Exception as _e:
+                print(f"group create warn for {idx}: {_e}")
+                continue
+
+        return {"ok": True, "session_id": session_id, "groups_created": len(created_groups)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
