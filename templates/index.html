@@ -929,6 +929,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     if (tab === 'dashboard') { loadListings(); loadDashboardSummary(); }
     if (tab === 'detailed') { loadDetailedAnalytics(); }
     if (tab === 'inventory') { loadInventory(); }
+    if (tab === 'fastscan') { if (typeof checkMultiScanTier === 'function') checkMultiScanTier(); }
     if (tab === 'auction')   loadAuctionSessions();
     if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); loadCostTrackingState(); }
     if (tab === 'messages')  { loadUserThread(); }
@@ -2583,6 +2584,76 @@ function toggleSoldFields() {
   if (block) block.style.display = status === 'sold' ? 'block' : 'none';
 }
 
+
+
+// ── MULTI-ITEM PHOTO SCANNER ──
+var multiPayload = null;
+var multiSelected = new Set();
+
+async function checkMultiScanTier() {
+  try {
+    var r = await fetch('/api/dashboard/summary?period=month');
+    var d = await r.json();
+    var hasAccess = (d.scan_limit || 0) >= 500;
+    var locked = document.getElementById('multi-scan-locked');
+    var active = document.getElementById('multi-scan-active');
+    if (locked) locked.style.display = hasAccess ? 'none' : 'block';
+    if (active) active.style.display = hasAccess ? 'block' : 'none';
+    return hasAccess;
+  } catch(e) {
+    var locked = document.getElementById('multi-scan-locked');
+    var active = document.getElementById('multi-scan-active');
+    if (locked) locked.style.display = 'block';
+    if (active) active.style.display = 'none';
+    return false;
+  }
+}
+
+async function startMultiScan(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  document.getElementById('multi-scan-active').style.display = 'none';
+  document.getElementById('multi-scan-detecting').style.display = 'block';
+  var fd = new FormData();
+  fd.append('file', file);
+  try {
+    var r = await fetch('/api/multi-scan/detect', {method:'POST', body:fd});
+    if (!r.ok) {
+      if (r.status === 402) {
+        toast('Multi-item scanning requires Growth plan or higher', 'error');
+      } else {
+        var txt = await r.text();
+        toast('Detection failed: ' + (txt || r.status), 'error');
+      }
+      document.getElementById('multi-scan-detecting').style.display = 'none';
+      document.getElementById('multi-scan-active').style.display = 'block';
+      input.value = '';
+      return;
+    }
+    var data = await r.json();
+    multiPayload = data;
+    multiSelected = new Set((data.items || []).map(function(it) { return it.id; }));
+    document.getElementById('multi-scan-detecting').style.display = 'none';
+    document.getElementById('multi-scan-active').style.display = 'block';
+    input.value = '';
+    if (!data.items || !data.items.length) {
+      toast('No items detected - try a clearer photo', 'error');
+      return;
+    }
+    openMultiReview(file);
+  } catch(e) {
+    toast('Detection failed: ' + e.message, 'error');
+    document.getElementById('multi-scan-detecting').style.display = 'none';
+    document.getElementById('multi-scan-active').style.display = 'block';
+    input.value = '';
+  }
+}
+
+function openMultiReview(file) {
+  // Stub for now - alerts the user. Full review modal comes in Step C.
+  toast('Detected ' + multiPayload.items.length + ' items. Review screen coming next step.');
+  console.log('multi-scan items:', multiPayload.items);
+}
 
 // ── BARCODE SCANNER ──
 var scanStream = null;
