@@ -2555,6 +2555,116 @@ function toggleSoldFields() {
   if (block) block.style.display = status === 'sold' ? 'block' : 'none';
 }
 
+
+// ── BARCODE SCANNER ──
+var scanStream = null;
+var scanInterval = null;
+
+async function openScanBarcodeModal() {
+  document.getElementById('scan-modal').style.display = 'flex';
+  document.getElementById('scan-status').textContent = 'Starting camera...';
+  document.getElementById('scan-manual-input').value = '';
+  await startCamera();
+}
+
+function closeScanBarcodeModal() {
+  document.getElementById('scan-modal').style.display = 'none';
+  stopCamera();
+}
+
+async function startCamera() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      document.getElementById('scan-status').textContent = 'Camera not supported. Use manual entry below.';
+      document.getElementById('scan-status').style.color = '#ef4444';
+      return;
+    }
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    var video = document.getElementById('scan-video');
+    video.srcObject = scanStream;
+    document.getElementById('scan-status').textContent = 'Looking for QR code...';
+    document.getElementById('scan-status').style.color = 'var(--muted)';
+    await loadJsQR();
+    if (scanInterval) clearInterval(scanInterval);
+    scanInterval = setInterval(scanFrame, 250);
+  } catch(e) {
+    console.error('Camera error', e);
+    document.getElementById('scan-status').textContent = 'Camera permission denied. Allow in browser settings or use manual entry.';
+    document.getElementById('scan-status').style.color = '#ef4444';
+  }
+}
+
+function stopCamera() {
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  if (scanStream) {
+    scanStream.getTracks().forEach(function(t) { t.stop(); });
+    scanStream = null;
+  }
+}
+
+async function loadJsQR() {
+  if (typeof jsQR !== 'undefined') return;
+  return new Promise(function(resolve, reject) {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function scanFrame() {
+  var video = document.getElementById('scan-video');
+  var canvas = document.getElementById('scan-canvas');
+  if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+  if (typeof jsQR === 'undefined') return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  var code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+  if (code && code.data) {
+    handleScannedCode(code.data);
+  }
+}
+
+async function handleScannedCode(code) {
+  stopCamera();
+  document.getElementById('scan-status').textContent = 'Found: ' + code + ' — looking up...';
+  document.getElementById('scan-status').style.color = '#22c55e';
+  try {
+    var r = await fetch('/api/inventory?search=' + encodeURIComponent(code));
+    var d = await r.json();
+    var match = (d.items || []).find(function(it) { return it.barcode_id === code; });
+    if (match) {
+      closeScanBarcodeModal();
+      invItems = d.items || [];
+      openInvEditModal(match.id);
+    } else {
+      document.getElementById('scan-status').innerHTML = 'No item found for code: <b>' + code + '</b>';
+      document.getElementById('scan-status').style.color = '#f59e0b';
+      setTimeout(function() { startCamera(); }, 1500);
+    }
+  } catch(e) {
+    document.getElementById('scan-status').textContent = 'Lookup failed: ' + e.message;
+    document.getElementById('scan-status').style.color = '#ef4444';
+    setTimeout(function() { startCamera(); }, 1500);
+  }
+}
+
+async function manualLookup() {
+  var code = document.getElementById('scan-manual-input').value.trim();
+  if (!code) return;
+  await handleScannedCode(code);
+}
+
+window.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  var m = document.getElementById('scan-modal');
+  if (m && m.style.display === 'flex') closeScanBarcodeModal();
+});
+
 // ── DETAILED ANALYTICS ─────────────────────────────────────
 let detailedPeriod = 'month';
 
