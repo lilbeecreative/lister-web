@@ -2241,9 +2241,12 @@ async function applyLotCost() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeLotCostModal();
 });
-document.getElementById('lot-cost-modal').addEventListener('click', e => {
-  if (e.target.id === 'lot-cost-modal') closeLotCostModal();
-});
+var __lotModal = document.getElementById('lot-cost-modal');
+if (__lotModal) {
+  __lotModal.addEventListener('click', function(e) {
+    if (e.target.id === 'lot-cost-modal') closeLotCostModal();
+  });
+}
 
 // Run on load + every 30s
 loadDashboardSummary();
