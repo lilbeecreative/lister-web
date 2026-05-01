@@ -2884,7 +2884,7 @@ async function startCamera() {
       document.getElementById('scan-status').style.color = '#ef4444';
       return;
     }
-    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
     var video = document.getElementById('scan-video');
     video.srcObject = scanStream;
     document.getElementById('scan-status').textContent = 'Looking for QR code...';
