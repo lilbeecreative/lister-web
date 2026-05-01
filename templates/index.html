@@ -2395,8 +2395,15 @@ async function previewBarcodes() {
   pendingBarcodes = ids.map((id, i) => {
     const num = start + i;
     const numStr = padding > 0 ? String(num).padStart(padding, '0') : String(num);
-    const item = invItems.find(it => it.id === id);
-    return {id, code: prefix + numStr, title: item ? item.title : ''};
+    const item = invItems.find(it => it.id === id) || {};
+    const dateStr = item.scanned_at ? new Date(item.scanned_at).toLocaleDateString() : '';
+    return {
+      id,
+      code: prefix + numStr,
+      title: item.title || '',
+      cost: item.cost || 0,
+      date: dateStr
+    };
   });
   // Save barcode IDs to inventory
   for (const bc of pendingBarcodes) {
@@ -2426,23 +2433,55 @@ async function previewBarcodes() {
 function printBarcodes() {
   if (!pendingBarcodes.length) return;
   const size = document.getElementById('bc-size').value;
-  const qrSizes = {small: 50, medium: 100, large: 180};
+  // QR sizes per label size
+  const qrSizes = {small: 50, medium: 90, large: 140};
   const qrSize = qrSizes[size];
   const cols = {small: 6, medium: 3, large: 2}[size];
+  // Title length limits per label size — small labels need to truncate
+  const titleMax = {small: 24, medium: 50, large: 90}[size];
+  // Font sizes scale with label size
+  const titleFontSize = {small: 7, medium: 10, large: 13}[size];
+  const codeFontSize = {small: 8, medium: 11, large: 14}[size];
+  const metaFontSize = {small: 6, medium: 9, large: 11}[size];
+
+  function escapeHtml(s) {
+    return String(s||'').replace(/[&<>"]/g, function(c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
+  function truncate(s, n) {
+    s = String(s||'');
+    return s.length > n ? s.substring(0, n - 1) + '\u2026' : s;
+  }
+
   const win = window.open('', '_blank');
-  let html = '<html><head><title>Barcodes</title>';
-  html += '<style>body{margin:0;padding:8mm;font-family:Arial,sans-serif;}';
-  html += '.grid{display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:4mm;}';
-  html += '.cell{padding:4mm;text-align:center;border:1px dashed #ccc;page-break-inside:avoid;}';
-  html += '.cell .code{font-size:10px;font-family:monospace;font-weight:700;margin-top:3mm;}';
-  html += '@media print{.cell{border:none;}}</style></head><body><div class="grid">';
-  pendingBarcodes.forEach(bc => {
-    html += '<div class="cell"><div class="qr-print" data-code="' + bc.code + '"></div><div class="code">' + bc.code + '</div></div>';
+  let h = '<html><head><title>Barcodes</title>';
+  h += '<style>body{margin:0;padding:8mm;font-family:Arial,sans-serif;color:#000;}';
+  h += '.grid{display:grid;grid-template-columns:repeat(' + cols + ',1fr);gap:4mm;}';
+  h += '.cell{padding:3mm;text-align:center;border:1px dashed #ccc;page-break-inside:avoid;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;}';
+  h += '.qr-print{margin-bottom:1.5mm;}';
+  h += '.title{font-size:' + titleFontSize + 'px;font-weight:600;line-height:1.2;margin-bottom:1mm;word-break:break-word;}';
+  h += '.code{font-size:' + codeFontSize + 'px;font-family:monospace;font-weight:700;margin-bottom:0.5mm;}';
+  h += '.meta{font-size:' + metaFontSize + 'px;color:#555;line-height:1.3;}';
+  h += '@media print{.cell{border:none;}}</style></head><body><div class="grid">';
+
+  pendingBarcodes.forEach(function(bc) {
+    const title = truncate(bc.title, titleMax);
+    const meta = [];
+    if (bc.cost && bc.cost > 0) meta.push('Cost $' + bc.cost.toFixed(2));
+    if (bc.date) meta.push(bc.date);
+    h += '<div class="cell">';
+    h += '<div class="qr-print" data-code="' + escapeHtml(bc.code) + '"></div>';
+    h += '<div class="code">' + escapeHtml(bc.code) + '</div>';
+    if (title) h += '<div class="title">' + escapeHtml(title) + '</div>';
+    if (meta.length) h += '<div class="meta">' + escapeHtml(meta.join(' \u00b7 ')) + '</div>';
+    h += '</div>';
   });
-  html += '</div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>';
-  html += '<script>setTimeout(function(){document.querySelectorAll(".qr-print").forEach(function(el){new QRCode(el,{text:el.dataset.code,width:' + qrSize + ',height:' + qrSize + ',correctLevel:QRCode.CorrectLevel.M});});setTimeout(function(){window.print();},500);},300);<\/script>';
-  html += '</body></html>';
-  win.document.write(html);
+
+  h += '</div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>';
+  h += '<script>setTimeout(function(){document.querySelectorAll(".qr-print").forEach(function(el){new QRCode(el,{text:el.dataset.code,width:' + qrSize + ',height:' + qrSize + ',correctLevel:QRCode.CorrectLevel.M});});setTimeout(function(){window.print();},500);},300);<\/script>';
+  h += '</body></html>';
+  win.document.write(h);
   win.document.close();
 }
 
