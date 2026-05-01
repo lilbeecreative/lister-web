@@ -2182,5 +2182,93 @@ async function reportBadScan(id) {
     </div>
   </div>
 </div>
+
+<script>
+// ── Account modal & user mailbox functions ──
+function openPlansModal() {
+  document.getElementById('plans-modal').classList.add('open');
+}
+function closePlansModal(e) {
+  if (e && e.target.id !== 'plans-modal') return;
+  document.getElementById('plans-modal').classList.remove('open');
+}
+
+function openUserMailbox() {
+  document.getElementById('user-mailbox-modal').classList.add('open');
+  loadUserThread();
+}
+function closeUserMailbox(e) {
+  if (e && e.target.id !== 'user-mailbox-modal') return;
+  document.getElementById('user-mailbox-modal').classList.remove('open');
+  var banner = document.getElementById('support-alert');
+  if (banner) banner.style.display = 'none';
+  refreshUserMailboxBadge();
+}
+
+async function loadUserThread() {
+  try {
+    var r = await fetch('/api/support/thread');
+    var d = await r.json();
+    var view = document.getElementById('user-thread-view');
+    if (!view) return;
+    if (!d.messages || !d.messages.length) {
+      view.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:24px 0;">No messages yet — say hi!</div>';
+      return;
+    }
+    view.innerHTML = d.messages.map(function(m) {
+      var isUser = m.sender === 'user';
+      var date = new Date(m.created_at).toLocaleString();
+      return '<div style="margin-bottom:10px;display:flex;flex-direction:column;align-items:' + (isUser ? 'flex-end' : 'flex-start') + ';">'
+        + '<div style="background:' + (isUser ? 'var(--accent)' : '#1e2535') + ';color:' + (isUser ? '#fff' : 'var(--text)') + ';padding:9px 13px;border-radius:14px;max-width:75%;font-size:13px;line-height:1.5;white-space:pre-wrap;">' + escapeHtmlMsg(m.body) + '</div>'
+        + '<div style="font-size:10px;color:var(--muted);margin-top:3px;">' + (isUser ? 'You' : 'Support') + ' — ' + date + '</div>'
+        + '</div>';
+    }).join('');
+    view.scrollTop = view.scrollHeight;
+  } catch(e) {
+    document.getElementById('user-thread-view').innerHTML = '<div style="color:var(--red);font-size:12px;text-align:center;padding:20px;">Failed to load</div>';
+  }
+}
+
+async function sendUserThreadMessage() {
+  var input = document.getElementById('user-thread-input');
+  var text = input.value.trim();
+  if (!text) return;
+  try {
+    var r = await fetch('/api/support/send', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({body: text})
+    });
+    if (!r.ok) throw new Error('Failed');
+    input.value = '';
+    loadUserThread();
+  } catch(e) {
+    if (typeof toast === 'function') toast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function refreshUserMailboxBadge() {
+  try {
+    var r = await fetch('/api/support/unread');
+    var d = await r.json();
+    var badge = document.getElementById('user-mailbox-badge');
+    if (!badge) return;
+    badge.style.display = d.unread ? 'inline-block' : 'none';
+  } catch(e) {}
+}
+
+function escapeHtmlMsg(s) {
+  var div = document.createElement('div');
+  div.textContent = String(s||'');
+  return div.innerHTML;
+}
+
+// Run badge check on load + every 30s
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(refreshUserMailboxBadge, 1000);
+});
+setInterval(refreshUserMailboxBadge, 30000);
+</script>
+
 </body>
 </html>
