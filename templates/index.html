@@ -2659,6 +2659,11 @@ function openMultiReview(file) {
   reader.readAsDataURL(file);
   renderMultiItemList();
   updateMultiSubmitCount();
+  // Show cap banner when detection hit the 20-item ceiling
+  var banner = document.getElementById('multi-cap-banner');
+  if (banner) {
+    banner.style.display = (multiPayload && multiPayload.items && multiPayload.items.length >= 20) ? 'block' : 'none';
+  }
   document.getElementById('multi-review-modal').style.display = 'block';
 }
 
