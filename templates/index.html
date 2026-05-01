@@ -222,7 +222,6 @@ select.field-input { background: #fff; color: #0f172a; }
 .acct-input:focus { border-color:var(--accent); }
 .acct-input:read-only { color:var(--muted); }
 .plan-card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -418,33 +417,6 @@ select.field-input { background: #fff; color: #0f172a; }
 
   <!-- AUCTION TAB -->
   <div class="tab-content" id="tab-auction">
-    <!-- Multi-Item Photo Scanner -->
-    <div class="acct-card" id="multi-scan-card" style="margin-bottom:14px;position:relative;">
-      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-        🖼️ Multi-Item Photo
-        <span style="font-size:9px;font-weight:700;background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff;padding:2px 7px;border-radius:10px;letter-spacing:0.05em;">GROWTH+</span>
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Upload one photo of many items — AI detects each one, you review, then it scans them all separately. <strong style="color:#f59e0b;">Max 20 items per photo.</strong></div>
-      <div id="multi-scan-locked" style="display:none;background:rgba(124,58,237,0.08);border:1px dashed rgba(124,58,237,0.4);border-radius:10px;padding:18px;text-align:center;">
-        <div style="font-size:32px;margin-bottom:8px;">🔒</div>
-        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Available on Growth plan or higher</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Detect and scan up to 20 items from a single photo.</div>
-        <button class="btn btn-primary" onclick="openPlansModal()" style="font-size:12px;padding:8px 16px;">Upgrade Plan</button>
-      </div>
-      <div id="multi-scan-active" style="display:none;">
-        <label for="multi-scan-input" style="display:block;border:2px dashed var(--border);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;" onmouseover="this.style.borderColor='#7c3aed';this.style.background='rgba(124,58,237,0.05)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent';">
-          <div style="font-size:28px;margin-bottom:6px;">📷</div>
-          <div style="font-size:13px;font-weight:600;color:var(--text);">Click or drag a photo here</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px;">JPG/PNG/HEIC · Up to 20 items detected</div>
-        </label>
-        <input type="file" id="multi-scan-input" accept="image/*,image/heic" style="display:none;" onchange="startMultiScan(this)"/>
-      </div>
-      <div id="multi-scan-detecting" style="display:none;text-align:center;padding:24px;">
-        <div style="display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:#7c3aed;border-radius:50%;animation:spin 1s linear infinite;"></div>
-        <div style="font-size:13px;color:var(--muted);margin-top:10px;">Detecting items... this can take 10–20 seconds</div>
-      </div>
-    </div>
-
     <!-- PDF Auction Scanner -->
     <div style="margin-bottom:20px;">
       <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;">📄 PDF Auction Scanner</div>
@@ -929,7 +901,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     if (tab === 'dashboard') { loadListings(); loadDashboardSummary(); }
     if (tab === 'detailed') { loadDetailedAnalytics(); }
     if (tab === 'inventory') { loadInventory(); }
-    if (tab === 'fastscan') { checkMultiScanTier(); }
     if (tab === 'auction')   loadAuctionSessions();
     if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); loadCostTrackingState(); }
     if (tab === 'messages')  { loadUserThread(); }
@@ -2548,48 +2519,6 @@ function printBarcodes() {
     </div>
   </div>
 </div>
-
-<!-- Multi-Item Review Modal -->
-<div id="multi-review-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999;overflow-y:auto;padding:16px;">
-  <div style="max-width:1100px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-      <div>
-        <div style="font-size:18px;font-weight:700;">Review Detected Items</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="multi-review-summary">—</div>
-      </div>
-      <div style="display:flex;gap:6px;">
-        <button class="btn" style="font-size:12px;padding:7px 12px;" onclick="multiSelectAll()">Select all</button>
-        <button class="btn" style="font-size:12px;padding:7px 12px;" onclick="multiDeselectAll()">Deselect all</button>
-        <button class="btn" onclick="closeMultiReview()" style="font-size:12px;padding:7px 12px;">Cancel</button>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;">
-      <!-- Photo with overlays -->
-      <div style="position:relative;background:#000;border-radius:10px;overflow:hidden;align-self:start;">
-        <img id="multi-review-img" src="" style="display:block;width:100%;height:auto;"/>
-        <svg id="multi-review-svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;" preserveAspectRatio="none"></svg>
-      </div>
-
-      <!-- Item checklist -->
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:60vh;overflow-y:auto;">
-        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Detected items</div>
-        <div id="multi-review-list"></div>
-      </div>
-    </div>
-
-    <div style="display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px 10px;">
-        <span style="font-size:11px;color:var(--muted);font-weight:600;">Condition:</span>
-        <select id="multi-review-condition" class="acct-input" style="width:auto;padding:3px 8px;font-size:12px;">
-          <option value="used">Used</option>
-          <option value="new">New</option>
-        </select>
-      </div>
-      <button class="btn btn-primary" id="multi-submit-btn" onclick="submitMultiScan()" style="margin-left:auto;font-size:13px;padding:9px 18px;">Scan <span id="multi-submit-count">0</span> Items</button>
-    </div>
-  </div>
-</div>
 </body></html>';
   win.document.write(h);
   win.document.close();
@@ -2647,185 +2576,6 @@ function toggleSoldFields() {
   const status = document.getElementById('inv-edit-status').value;
   const block = document.getElementById('inv-edit-sold-fields');
   if (block) block.style.display = status === 'sold' ? 'block' : 'none';
-}
-
-
-// ── MULTI-ITEM PHOTO SCANNER ──
-let multiPayload = null;  // {upload_id, image_width, image_height, items}
-let multiSelected = new Set();
-
-async function checkMultiScanTier() {
-  // Determine if user has Growth+ tier
-  try {
-    const r = await fetch('/api/dashboard/summary?period=month');
-    const d = await r.json();
-    const hasAccess = (d.scan_limit || 0) >= 500;
-    document.getElementById('multi-scan-locked').style.display = hasAccess ? 'none' : 'block';
-    document.getElementById('multi-scan-active').style.display = hasAccess ? 'block' : 'none';
-    return hasAccess;
-  } catch(e) {
-    document.getElementById('multi-scan-locked').style.display = 'block';
-    document.getElementById('multi-scan-active').style.display = 'none';
-    return false;
-  }
-}
-
-async function startMultiScan(input) {
-  const file = input.files && input.files[0];
-  if (!file) return;
-  // Show detecting spinner
-  document.getElementById('multi-scan-active').style.display = 'none';
-  document.getElementById('multi-scan-detecting').style.display = 'block';
-  const fd = new FormData();
-  fd.append('file', file);
-  try {
-    const r = await fetch('/api/multi-scan/detect', {method:'POST', body:fd});
-    if (!r.ok) {
-      if (r.status === 402) {
-        toast('Multi-item scanning requires Growth plan or higher', 'error');
-      } else {
-        const txt = await r.text();
-        toast('Detection failed: ' + (txt || r.status), 'error');
-      }
-      document.getElementById('multi-scan-detecting').style.display = 'none';
-      document.getElementById('multi-scan-active').style.display = 'block';
-      input.value = '';
-      return;
-    }
-    const data = await r.json();
-    multiPayload = data;
-    multiSelected = new Set((data.items || []).map(it => it.id));
-    document.getElementById('multi-scan-detecting').style.display = 'none';
-    document.getElementById('multi-scan-active').style.display = 'block';
-    input.value = '';
-    if (!data.items || !data.items.length) {
-      toast('No items detected — try a clearer photo', 'error');
-      return;
-    }
-    openMultiReview(file);
-  } catch(e) {
-    toast('Detection failed: ' + e.message, 'error');
-    document.getElementById('multi-scan-detecting').style.display = 'none';
-    document.getElementById('multi-scan-active').style.display = 'block';
-    input.value = '';
-  }
-}
-
-function openMultiReview(file) {
-  // Show user the original photo using FileReader (faster than re-fetching from server)
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = document.getElementById('multi-review-img');
-    img.src = e.target.result;
-    img.onload = () => drawBoxes();
-  };
-  reader.readAsDataURL(file);
-  renderItemList();
-  updateMultiSubmitCount();
-  document.getElementById('multi-review-modal').style.display = 'block';
-}
-
-function drawBoxes() {
-  if (!multiPayload) return;
-  const svg = document.getElementById('multi-review-svg');
-  const w = multiPayload.image_width;
-  const h = multiPayload.image_height;
-  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
-  let html = '';
-  multiPayload.items.forEach((it, idx) => {
-    const sel = multiSelected.has(it.id);
-    const color = sel ? '#22c55e' : '#64748b';
-    const opacity = sel ? '1' : '0.35';
-    const b = it.box;
-    html += '<g opacity="' + opacity + '">';
-    html += '<rect x="' + b.x + '" y="' + b.y + '" width="' + b.w + '" height="' + b.h + '" stroke="' + color + '" stroke-width="4" fill="' + color + '" fill-opacity="0.12"/>';
-    html += '<rect x="' + b.x + '" y="' + (b.y - 30) + '" width="36" height="28" fill="' + color + '"/>';
-    html += '<text x="' + (b.x + 18) + '" y="' + (b.y - 10) + '" text-anchor="middle" fill="#fff" font-size="20" font-weight="700">' + (idx + 1) + '</text>';
-    html += '</g>';
-  });
-  svg.innerHTML = html;
-}
-
-function renderItemList() {
-  if (!multiPayload) return;
-  const list = document.getElementById('multi-review-list');
-  list.innerHTML = multiPayload.items.map((it, idx) => {
-    const sel = multiSelected.has(it.id);
-    return '<label style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;">'
-      + '<input type="checkbox" ' + (sel ? 'checked' : '') + ' onchange="toggleMultiItem(' + it.id + ')" style="width:16px;height:16px;cursor:pointer;"/>'
-      + '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:' + (sel ? '#22c55e' : '#64748b') + ';color:#fff;border-radius:5px;font-size:11px;font-weight:700;flex-shrink:0;">' + (idx + 1) + '</span>'
-      + '<span style="font-size:12px;flex:1;' + (sel ? '' : 'color:var(--muted);text-decoration:line-through;') + '">' + escapeText(it.label || ('Item ' + (idx + 1))) + '</span>'
-      + '</label>';
-  }).join('');
-}
-
-function toggleMultiItem(id) {
-  if (multiSelected.has(id)) multiSelected.delete(id); else multiSelected.add(id);
-  drawBoxes();
-  renderItemList();
-  updateMultiSubmitCount();
-}
-
-function multiSelectAll() {
-  if (!multiPayload) return;
-  multiPayload.items.forEach(it => multiSelected.add(it.id));
-  drawBoxes(); renderItemList(); updateMultiSubmitCount();
-}
-function multiDeselectAll() {
-  multiSelected.clear();
-  drawBoxes(); renderItemList(); updateMultiSubmitCount();
-}
-
-function updateMultiSubmitCount() {
-  document.getElementById('multi-submit-count').textContent = multiSelected.size;
-  const btn = document.getElementById('multi-submit-btn');
-  btn.disabled = multiSelected.size === 0;
-  document.getElementById('multi-review-summary').textContent =
-    multiPayload.items.length + ' detected · ' + multiSelected.size + ' selected · max 20 per photo';
-}
-
-function closeMultiReview() {
-  document.getElementById('multi-review-modal').style.display = 'none';
-  multiPayload = null;
-  multiSelected.clear();
-}
-
-async function submitMultiScan() {
-  if (!multiPayload || !multiSelected.size) return;
-  const condition = document.getElementById('multi-review-condition').value;
-  const items = multiPayload.items.filter(it => multiSelected.has(it.id));
-  const btn = document.getElementById('multi-submit-btn');
-  btn.disabled = true;
-  btn.textContent = 'Submitting...';
-  try {
-    const r = await fetch('/api/multi-scan/finalize', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({upload_id: multiPayload.upload_id, items, condition})
-    });
-    if (!r.ok) {
-      const txt = await r.text();
-      throw new Error(txt || ('Status ' + r.status));
-    }
-    const d = await r.json();
-    toast('Started scan of ' + d.groups_created + ' items — they will appear in your dashboard');
-    closeMultiReview();
-    // Switch to dashboard so user sees scan progress
-    const dashBtn = document.querySelector('[data-tab="dashboard"]');
-    if (dashBtn) dashBtn.click();
-  } catch(e) {
-    toast('Failed: ' + e.message, 'error');
-    btn.disabled = false;
-    btn.innerHTML = 'Scan <span id="multi-submit-count">' + multiSelected.size + '</span> Items';
-  }
-}
-
-// Check tier when fast-scan tab is shown
-const oldFastScanHook = window.__fastScanTierChecked;
-if (!oldFastScanHook) {
-  window.__fastScanTierChecked = true;
-  document.addEventListener('DOMContentLoaded', () => {
-    checkMultiScanTier();
-  });
 }
 
 // ── DETAILED ANALYTICS ─────────────────────────────────────
