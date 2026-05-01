@@ -3530,17 +3530,9 @@ Return ONLY the JSON object, no markdown, no other text."""
         img = Image.open(_io.BytesIO(contents))
         w, h = img.size
 
-        # Cache the original photo bytes so /finalize can crop later — store in scan_uploads bucket
+        # No longer caching original server-side — frontend re-uploads it on /finalize
         import uuid
         upload_id = str(uuid.uuid4())
-        try:
-            supabase.storage.from_("part-photos").upload(
-                path=f"_multiscan/{upload_id}.jpg",
-                file=contents,
-                file_options={"content-type": "image/jpeg", "upsert": "true"}
-            )
-        except Exception as _e:
-            print(f"multiscan upload warn: {_e}")
 
         # Convert normalized boxes to pixel coords
         out_items = []
@@ -3584,12 +3576,17 @@ async def multi_scan_finalize(request: Request):
     if not business_id:
         raise HTTPException(401, "Not authenticated")
     try:
-        body = await request.json()
-        upload_id = body.get("upload_id")
-        condition = body.get("condition", "used")
-        items = body.get("items", [])
-        if not upload_id or not items:
-            raise HTTPException(400, "upload_id and items required")
+        # Frontend now sends multipart form: file + items + condition (JSON-encoded)
+        form = await request.form()
+        file = form.get("file")
+        if not file:
+            raise HTTPException(400, "No file")
+        condition = form.get("condition", "used")
+        import json as _json
+        items_json = form.get("items", "[]")
+        items = _json.loads(items_json) if isinstance(items_json, str) else (items_json or [])
+        if not items:
+            raise HTTPException(400, "items required")
 
         # Re-check tier
         biz = supabase.table("businesses").select("scan_limit,is_admin").eq("id", business_id).limit(1).execute()
@@ -3597,11 +3594,7 @@ async def multi_scan_finalize(request: Request):
         if not b.get("is_admin") and (b.get("scan_limit") or 0) < MULTI_ITEM_MIN_TIER_LIMIT:
             raise HTTPException(402, "Growth plan or higher required")
 
-        # Download original
-        try:
-            original = supabase.storage.from_("part-photos").download(f"_multiscan/{upload_id}.jpg")
-        except Exception as e:
-            raise HTTPException(404, f"Original photo not found: {e}")
+        original = await file.read()
 
         from PIL import Image, ImageOps
         import io as _io

@@ -2632,6 +2632,7 @@ async function startMultiScan(input) {
     }
     var data = await r.json();
     multiPayload = data;
+    multiPayload.originalFile = file;
     multiSelected = new Set((data.items || []).map(function(it) { return it.id; }));
     document.getElementById('multi-scan-detecting').style.display = 'none';
     document.getElementById('multi-scan-active').style.display = 'block';
@@ -2745,10 +2746,11 @@ async function submitMultiScan() {
   btn.disabled = true;
   btn.textContent = 'Submitting...';
   try {
-    var r = await fetch('/api/multi-scan/finalize', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({upload_id: multiPayload.upload_id, items: items, condition: condition})
-    });
+    var fd = new FormData();
+    fd.append('file', multiPayload.originalFile);
+    fd.append('items', JSON.stringify(items));
+    fd.append('condition', condition);
+    var r = await fetch('/api/multi-scan/finalize', {method:'POST', body: fd});
     if (!r.ok) {
       var txt = await r.text();
       throw new Error(txt || ('Status ' + r.status));
