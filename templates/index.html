@@ -44,6 +44,8 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 .pdf-value-low { color: #f59e0b; font-weight: 700; }
 
 .nav-btn[data-tab="messages"].active { background: #f59e0b; color:#000; }
+
+.nav-btn[data-tab="inventory"].active { background: #7c3aed; }
 .nav-btn[data-tab="settings"].active { background: #475569; }
 .nav-btn[data-tab="fastscan"].active { background: #16a34a; }
 .fastscan-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: border-color 0.15s; position: relative; overflow: hidden; }
@@ -238,6 +240,7 @@ select.field-input { background: #fff; color: #0f172a; }
   {% if is_admin %}<button class="nav-btn" data-tab="auction">🔨 Auctions</button>{% endif %}
   {% if is_admin %}<button class="nav-btn" data-tab="parts">🔍 Parts Lookup</button>{% endif %}
   <button class="nav-btn" data-tab="detailed" style="display:none;">📊 Detailed</button>
+  <button class="nav-btn" data-tab="inventory">📦 Inventory</button>
   <button class="nav-btn" data-tab="settings">👤 Account</button>
   <button class="nav-btn" data-tab="messages" id="user-mailbox-btn" style="position:relative;">💬 Messages <span id="user-mailbox-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;">●</span></button>
   <div class="nav-spacer"></div>
@@ -713,6 +716,56 @@ select.field-input { background: #fff; color: #0f172a; }
         </div>
       </div>
 
+    </div>
+  </div>
+
+
+  <!-- INVENTORY TAB -->
+  <div class="tab-content" id="tab-inventory">
+    <div style="max-width:1100px;margin:0 auto;">
+      <div style="margin-bottom:14px;">
+        <div style="font-size:22px;font-weight:800;">Inventory</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px;" id="inv-stats">Loading...</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="inv-search" class="acct-input" style="flex:1;min-width:220px;" placeholder="Search title, barcode..."/>
+        <select id="inv-filter-status" class="acct-input" style="width:auto;">
+          <option value="">All status</option>
+          <option value="in_stock">In Stock</option>
+          <option value="listed">Listed</option>
+          <option value="sold">Sold</option>
+          <option value="archived">Archived</option>
+        </select>
+        <select id="inv-filter-location" class="acct-input" style="width:auto;">
+          <option value="">All locations</option>
+        </select>
+        <select id="inv-filter-category" class="acct-input" style="width:auto;">
+          <option value="">All categories</option>
+          <option>Electronics</option><option>Clothing</option><option>Tools</option>
+          <option>Home</option><option>Toys</option><option>Books</option>
+          <option>Auto</option><option>Sports</option><option>Collectibles</option>
+          <option>Health</option><option>Other</option>
+        </select>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn" style="font-size:12px;padding:7px 12px;" onclick="invSelectAll()">Select all</button>
+          <button class="btn" style="font-size:12px;padding:7px 12px;" onclick="invDeselectAll()">Deselect</button>
+          <button class="btn" style="font-size:12px;padding:7px 12px;" id="inv-bulk-loc-btn" onclick="openBulkLocationModal()" disabled>Set Location</button>
+          <button class="btn" style="font-size:12px;padding:7px 12px;background:#7c3aed;border-color:#7c3aed;color:#fff;" id="inv-barcode-btn" onclick="openBarcodeModal()" disabled>Generate Barcodes</button>
+          <button class="btn btn-danger" style="font-size:12px;padding:7px 12px;" id="inv-bulk-del-btn" onclick="bulkDeleteInventory()" disabled>Delete</button>
+        </div>
+        <div style="display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:3px;">
+          <button class="inv-view-btn active" data-view="grid" style="font-size:12px;padding:5px 12px;border-radius:5px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;font-weight:500;">Grid</button>
+          <button class="inv-view-btn" data-view="list" style="font-size:12px;padding:5px 12px;border-radius:5px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;">List</button>
+        </div>
+      </div>
+      <div id="inv-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;"></div>
+      <div class="empty" id="inv-empty" style="display:none;">
+        <div class="empty-icon">📦</div>
+        <div class="empty-title">No items in inventory</div>
+        <div class="empty-sub">Scan items to add them here</div>
+      </div>
     </div>
   </div>
 
