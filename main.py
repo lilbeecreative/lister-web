@@ -370,6 +370,18 @@ async def report_bad_scan(listing_id: int, request: Request):
                     photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{pid}")
             except Exception:
                 photo_urls.append(f"{SUPABASE_URL}/storage/v1/object/public/part-photos/{pid}")
+        # Save to bad_scan_reports table for admin dashboard
+        try:
+            supabase.table("bad_scan_reports").insert({
+                "reporter_email": biz_data.get("email", ""),
+                "business_id": business_id,
+                "group_id": None,
+                "photo_ids": photo_ids if photo_ids else [],
+                "item_card": listing,
+                "user_note": reason,
+            }).execute()
+        except Exception as _e:
+            print(f"bad_scan_reports insert failed: {_e}")
         # Send email via Resend
         import resend
         resend.api_key = os.getenv("RESEND_API_KEY", "")
@@ -2659,34 +2671,6 @@ async def logout(request: Request):
 
 
 
-
-# ─── Bad Scan Reports ──────────────────────────────────────────
-
-@app.post("/api/scans/report-bad")
-async def report_bad_scan(request: Request):
-    """User submits a bad scan report."""
-    try:
-        data = await request.json()
-        reporter_email = data.get("reporter_email")
-        if not reporter_email:
-            raise HTTPException(400, "reporter_email required")
-
-        biz = supabase.table("businesses").select("id").eq("email", reporter_email).limit(1).execute()
-        business_id = biz.data[0]["id"] if biz.data else None
-
-        report = {
-            "reporter_email": reporter_email,
-            "business_id": business_id,
-            "group_id": data.get("group_id"),
-            "photo_ids": data.get("photo_ids", []),
-            "item_card": data.get("item_card", {}),
-            "user_note": data.get("user_note", ""),
-        }
-        result = supabase.table("bad_scan_reports").insert(report).execute()
-        return {"ok": True, "id": result.data[0]["id"]}
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        raise HTTPException(500, str(e))
 
 
 @app.get("/api/admin/bad-reports")
