@@ -3770,15 +3770,25 @@ Return ONLY the JSON object, no markdown, no other text."""
 
         response = model.generate_content(
             [prompt, img],
-            generation_config={"max_output_tokens": 500, "temperature": 0.0}
+            generation_config={
+                "max_output_tokens": 600,
+                "temperature": 0.0,
+                "response_mime_type": "application/json"
+            }
         )
         raw = (response.text or "").strip()
         import re as _re
+        # Strip code fences
         raw = _re.sub(r"^```[a-z]*\n?", "", raw, flags=_re.IGNORECASE)
         raw = _re.sub(r"\n?```$", "", raw).strip()
+        # If there's extra text around the JSON, extract just the JSON object
+        match = _re.search(r"\{[\s\S]*\}", raw)
+        if match:
+            raw = match.group(0)
         try:
             data = _json.loads(raw)
         except Exception as _parse_err:
+            print(f"DEMO SCAN PARSE FAIL — raw response was:\n{raw[:500]}")
             raise HTTPException(500, "Could not parse AI response")
 
         # Record the use after success
