@@ -2387,23 +2387,26 @@ async function pushToShopify() {
 
 async function submitToShopify() {
   if (!selected.size) return;
-  const btn = document.getElementById('submit-shopify-btn');
-  const orig = btn.textContent;
-  btn.disabled = true;
+  const btn = document.getElementById('submit-batch-btn');
+  const orig = btn ? btn.textContent : '';
+  if (btn) btn.disabled = true;
   let success = 0, failed = 0;
   const total = selected.size;
   const ids = Array.from(selected);
   for (let i = 0; i < ids.length; i++) {
-    btn.textContent = `⏳ ${i+1}/${total}...`;
+    if (btn) btn.textContent = `Pushing ${i+1}/${total}...`;
     try {
       const r = await fetch('/api/shopify/push/' + ids[i], {method: 'POST'});
       if (r.ok) success++;
       else failed++;
     } catch(e) { failed++; }
   }
-  btn.disabled = false;
-  btn.textContent = orig;
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = `Submit (<span id="submit-count">${selected.size}</span>) ▾`;
+  }
   toast(`Pushed ${success}/${total} to Shopify` + (failed ? ` (${failed} failed)` : ''), failed ? 'error' : 'success');
+  if (success > 0) loadListings();
 }
 
 
