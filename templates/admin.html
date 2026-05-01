@@ -299,68 +299,25 @@ async function loadBadReports() {
 
 function resolveReport(id, email) {
   const caseNum = id.substring(0,8).toUpperCase();
-  const subject = 'Re: Your bad scan report — Case #' + caseNum;
-  const body = 'Hi,
-
-Thanks for reporting the issue with your scan (Case #' + caseNum + '). We\'ve reviewed it and wanted to follow up:
-
-[your message here]
-
-Best,
-Lister AI Team';
-  document.getElementById('resolve-to').value = email;
-  document.getElementById('resolve-subject').value = subject;
-  document.getElementById('resolve-body').value = body;
-  document.getElementById('resolve-modal').dataset.reportId = id;
-  document.getElementById('resolve-modal').classList.add('open');
-}
-
-function copyResolveField(fieldId, btn) {
-  const val = document.getElementById(fieldId).value;
-  navigator.clipboard.writeText(val).then(() => {
-    const orig = btn.textContent;
-    btn.textContent = '✓ Copied';
-    setTimeout(() => btn.textContent = orig, 1500);
-  });
-}
-
-function copyAllResolve(btn) {
-  const to = document.getElementById('resolve-to').value;
-  const subject = document.getElementById('resolve-subject').value;
-  const body = document.getElementById('resolve-body').value;
-  const all = 'To: ' + to + '
-Subject: ' + subject + '
-
-' + body;
-  navigator.clipboard.writeText(all).then(() => {
-    btn.textContent = '✓ All copied';
-    setTimeout(() => btn.textContent = 'Copy all', 1500);
-  });
-}
-
-function openInGmail() {
-  const to = encodeURIComponent(document.getElementById('resolve-to').value);
-  const subject = encodeURIComponent(document.getElementById('resolve-subject').value);
-  const body = encodeURIComponent(document.getElementById('resolve-body').value);
-  window.open('https://mail.google.com/mail/?view=cm&to=' + to + '&su=' + subject + '&body=' + body, '_blank');
-}
-
-function openInYahoo() {
-  const to = encodeURIComponent(document.getElementById('resolve-to').value);
-  const subject = encodeURIComponent(document.getElementById('resolve-subject').value);
-  const body = encodeURIComponent(document.getElementById('resolve-body').value);
-  window.open('https://compose.mail.yahoo.com/?to=' + to + '&subject=' + subject + '&body=' + body, '_blank');
-}
-
-function markResolveAndClose() {
-  const id = document.getElementById('resolve-modal').dataset.reportId;
-  setReportStatus(id, 'resolved');
-  document.getElementById('resolve-modal').classList.remove('open');
-}
-
-function closeResolveModal(e) {
-  if (e && e.target.id !== 'resolve-modal') return;
-  document.getElementById('resolve-modal').classList.remove('open');
+  const subject = encodeURIComponent('Re: Your bad scan report — Case #' + caseNum);
+  const body = encodeURIComponent(
+    'Hi,\n\n' +
+    'Thanks for reporting the issue with your scan (Case #' + caseNum + '). ' +
+    'We\'ve reviewed it and wanted to follow up:\n\n' +
+    '[your message here]\n\n' +
+    'Best,\nLister AI Team'
+  );
+  const mailtoUrl = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
+  // Use anchor click for reliable mailto handling across browsers
+  const a = document.createElement('a');
+  a.href = mailtoUrl;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Mark resolved after small delay so mailto fires first
+  setTimeout(() => setReportStatus(id, 'resolved'), 300);
 }
 
 async function setReportStatus(id, status) {
@@ -520,41 +477,6 @@ setInterval(loadData, 60000);
     </div>
     <div id="archive-list">
       <div class="empty">Loading...</div>
-    </div>
-  </div>
-</div>
-
-<!-- Resolve email modal -->
-<div class="modal-overlay" id="resolve-modal" onclick="closeResolveModal(event)">
-  <div class="modal" onclick="event.stopPropagation()" style="max-width:560px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-      <h2 style="margin:0;">📧 Email Reporter</h2>
-      <button class="btn-sm" style="background:#1e2535;color:#94a3b8;" onclick="closeResolveModal()">Close</button>
-    </div>
-    <div class="field">
-      <label>To</label>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="resolve-to" readonly>
-        <button class="btn-sm btn-blue" onclick="copyResolveField('resolve-to', this)" style="white-space:nowrap;">Copy</button>
-      </div>
-    </div>
-    <div class="field">
-      <label>Subject</label>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="resolve-subject" readonly>
-        <button class="btn-sm btn-blue" onclick="copyResolveField('resolve-subject', this)" style="white-space:nowrap;">Copy</button>
-      </div>
-    </div>
-    <div class="field">
-      <label>Body</label>
-      <textarea id="resolve-body" readonly style="width:100%;min-height:140px;background:#0f1117;border:1px solid #1e2330;border-radius:8px;padding:10px 12px;color:#f1f5f9;font-size:13px;font-family:inherit;outline:none;resize:vertical;"></textarea>
-      <button class="btn-sm btn-blue" onclick="copyResolveField('resolve-body', this)" style="margin-top:8px;">Copy body</button>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-      <button class="btn-sm btn-blue" onclick="copyAllResolve(this)">Copy all</button>
-      <button class="btn-sm btn-blue" onclick="openInGmail()">Open in Gmail ↗</button>
-      <button class="btn-sm btn-blue" onclick="openInYahoo()">Open in Yahoo ↗</button>
-      <button class="btn-sm btn-green" onclick="markResolveAndClose()" style="margin-left:auto;">Mark resolved ✓</button>
     </div>
   </div>
 </div>
