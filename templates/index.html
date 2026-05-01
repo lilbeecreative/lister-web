@@ -1297,6 +1297,7 @@ function renderTiles() {
     ` : '';
 
     return `<div class="tile${isSel?' selected':''}${ebayDraft?' ebay-draft':''}" id="tile-${l.id}" data-photos='${JSON.stringify(photos)}' data-photo-idx="0" style="position:relative;">
+      <div class="tile-batch-num" style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px;z-index:6;font-family:'DM Mono',monospace;letter-spacing:0.05em;">#${l.batch_order || 0}</div>
       ${checkmark}
       <div class="tile-photo" onclick="openModal('${l.id}')">
         ${photoHtml}
@@ -2903,6 +2904,50 @@ window.addEventListener('keydown', function(e) {
   var m = document.getElementById('scan-modal');
   if (m && m.style.display === 'flex') closeScanBarcodeModal();
 });
+
+
+// ── DASHBOARD SORT ──
+var dashSortMode = 'batch_desc';
+
+function changeDashSort() {
+  var sel = document.getElementById('dash-sort');
+  if (!sel) return;
+  dashSortMode = sel.value;
+  sortListings();
+  renderTiles();
+}
+
+function sortListings() {
+  if (!Array.isArray(listings)) return;
+  listings.sort(function(a, b) {
+    switch(dashSortMode) {
+      case 'batch_asc':
+        return (a.batch_order || 0) - (b.batch_order || 0);
+      case 'batch_desc':
+        return (b.batch_order || 0) - (a.batch_order || 0);
+      case 'price_asc':
+        return (a.price || 0) - (b.price || 0);
+      case 'price_desc':
+        return (b.price || 0) - (a.price || 0);
+      case 'profit_asc':
+        return ((a.price || 0) - (a.cost || 0)) - ((b.price || 0) - (b.cost || 0));
+      case 'profit_desc':
+        return ((b.price || 0) - (b.cost || 0)) - ((a.price || 0) - (a.cost || 0));
+      default:
+        return 0;
+    }
+  });
+}
+
+// Hook sort into loadListings — sort BEFORE rendering
+var __origLoadListings = window.loadListings;
+if (typeof __origLoadListings === 'function') {
+  window.loadListings = async function() {
+    await __origLoadListings.apply(this, arguments);
+    sortListings();
+    if (typeof renderTiles === 'function') renderTiles();
+  };
+}
 
 // ── DETAILED ANALYTICS ─────────────────────────────────────
 let detailedPeriod = 'month';
