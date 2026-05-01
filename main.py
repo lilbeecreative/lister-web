@@ -2720,6 +2720,48 @@ async def update_bad_report(report_id: str, request: Request):
         raise HTTPException(500, str(e))
 
 
+
+
+@app.post("/api/admin/bad-reports/{report_id}/send-reply")
+async def send_bad_report_reply(report_id: str, request: Request):
+    """Admin sends an email reply to the reporter via Resend, then marks resolved."""
+    try:
+        body = await request.json()
+        to_email = body.get("to", "").strip()
+        subject = body.get("subject", "").strip()
+        message = body.get("body", "").strip()
+        if not to_email or not subject or not message:
+            raise HTTPException(400, "to, subject, and body are required")
+
+        import resend
+        resend.api_key = os.getenv("RESEND_API_KEY", "")
+        # Convert plain text to HTML (preserve line breaks)
+        html_body = message.replace("\n", "<br>")
+        email_html = f'''<div style="font-family:-apple-system,sans-serif;max-width:560px;padding:16px;color:#1f2937;line-height:1.6;">{html_body}</div>'''
+        try:
+            resend.Emails.send({
+                "from": "Lister AI Reports <reports@reselljunkie.com>",
+                "to": to_email,
+                "subject": subject,
+                "html": email_html
+            })
+        except Exception:
+            resend.Emails.send({
+                "from": "Lister AI <onboarding@resend.dev>",
+                "to": to_email,
+                "subject": subject,
+                "html": email_html
+            })
+
+        # Mark resolved
+        supabase.table("bad_scan_reports").update({"status": "resolved"}).eq("id", report_id).execute()
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
 @app.delete("/api/admin/bad-reports/{report_id}")
 async def delete_bad_report(report_id: str):
     """Admin: delete a report."""

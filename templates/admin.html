@@ -321,35 +321,46 @@ function rmCopy(fieldId, btn) {
   });
 }
 
-function rmCopyAll(btn) {
-  var nl = String.fromCharCode(10);
-  var all = 'To: ' + document.getElementById('rmTo').value + nl
-    + 'Subject: ' + document.getElementById('rmSubject').value + nl + nl
-    + document.getElementById('rmBody').value;
-  navigator.clipboard.writeText(all).then(function() {
-    btn.textContent = 'All copied';
-    setTimeout(function() { btn.textContent = 'Copy all'; }, 1500);
-  });
-}
-
-function rmOpenGmail() {
-  var to = encodeURIComponent(document.getElementById('rmTo').value);
-  var su = encodeURIComponent(document.getElementById('rmSubject').value);
-  var body = encodeURIComponent(document.getElementById('rmBody').value);
-  window.open('https://mail.google.com/mail/?view=cm&to=' + to + '&su=' + su + '&body=' + body, '_blank');
-}
-
-function rmOpenYahoo() {
-  var to = encodeURIComponent(document.getElementById('rmTo').value);
-  var su = encodeURIComponent(document.getElementById('rmSubject').value);
-  var body = encodeURIComponent(document.getElementById('rmBody').value);
-  window.open('https://compose.mail.yahoo.com/?to=' + to + '&subject=' + su + '&body=' + body, '_blank');
-}
-
-function rmMarkResolved() {
+async function rmSendReply() {
+  var btn = document.getElementById('rmSendBtn');
+  var status = document.getElementById('rmStatus');
   var id = document.getElementById('resolveModal').dataset.reportId;
-  setReportStatus(id, 'resolved');
-  document.getElementById('resolveModal').classList.remove('open');
+  var to = document.getElementById('rmTo').value;
+  var subject = document.getElementById('rmSubject').value;
+  var body = document.getElementById('rmBody').value;
+  if (!to || !subject || !body.trim()) {
+    status.style.color = '#ef4444';
+    status.textContent = 'Please fill in all fields';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  status.style.color = '#94a3b8';
+  status.textContent = '';
+  try {
+    var r = await fetch('/api/admin/bad-reports/' + id + '/send-reply', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({to: to, subject: subject, body: body})
+    });
+    if (!r.ok) {
+      var err = await r.json().catch(function(){return {};});
+      throw new Error(err.detail || 'Failed to send');
+    }
+    status.style.color = '#22c55e';
+    status.textContent = 'Sent! Closing...';
+    setTimeout(function() {
+      document.getElementById('resolveModal').classList.remove('open');
+      loadBadReports();
+      btn.disabled = false;
+      btn.textContent = 'Send & Resolve';
+    }, 1200);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Send & Resolve';
+    status.style.color = '#ef4444';
+    status.textContent = 'Failed: ' + e.message;
+  }
 }
 
 function rmClose(e) {
@@ -540,14 +551,13 @@ setInterval(loadData, 60000);
     </div>
     <div class="field">
       <label>Body</label>
-      <textarea id="rmBody" readonly style="width:100%;min-height:140px;background:#0f1117;border:1px solid #1e2330;border-radius:8px;padding:10px 12px;color:#f1f5f9;font-size:13px;font-family:inherit;outline:none;resize:vertical;"></textarea>
+      <textarea id="rmBody" style="width:100%;min-height:140px;background:#0f1117;border:1px solid #1e2330;border-radius:8px;padding:10px 12px;color:#f1f5f9;font-size:13px;font-family:inherit;outline:none;resize:vertical;"></textarea>
       <button class="btn-sm btn-blue" onclick="rmCopy('rmBody', this)" style="margin-top:8px;">Copy body</button>
     </div>
-    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
-      <button class="btn-sm btn-blue" onclick="rmCopyAll(this)">Copy all</button>
-      <button class="btn-sm btn-blue" onclick="rmOpenGmail()">Open in Gmail</button>
-      <button class="btn-sm btn-blue" onclick="rmOpenYahoo()">Open in Yahoo</button>
-      <button class="btn-sm btn-green" onclick="rmMarkResolved()" style="margin-left:auto;">Mark resolved</button>
+    <div style="display:flex;gap:8px;margin-top:16px;align-items:center;">
+      <div id="rmStatus" style="flex:1;font-size:12px;color:#94a3b8;"></div>
+      <button class="btn-sm" style="background:#1e2535;color:#94a3b8;padding:9px 16px;" onclick="rmClose()">Cancel</button>
+      <button class="btn-sm btn-green" id="rmSendBtn" onclick="rmSendReply()" style="padding:9px 18px;font-weight:700;">Send & Resolve</button>
     </div>
   </div>
 </div>
