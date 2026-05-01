@@ -86,6 +86,10 @@
   .report-alert-banner .dismiss { background:rgba(255,255,255,0.2); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }
   .report-alert-banner .dismiss:hover { background:rgba(255,255,255,0.3); }
   @keyframes pulse { 0%,100%{box-shadow:0 4px 20px rgba(239,68,68,0.3);} 50%{box-shadow:0 4px 30px rgba(239,68,68,0.6);} }
+
+  .thread-item { background:#0f1117; border:1px solid #1e2330; border-radius:10px; padding:14px; margin-bottom:10px; cursor:pointer; transition:background 0.15s; }
+  .thread-item:hover { background:#161b28; }
+  .mailbox-modal-content { max-width:720px !important; max-height:80vh; display:flex; flex-direction:column; }
 </style>
 </head>
 <body>
@@ -95,7 +99,10 @@
       <h1>Admin Dashboard <span class="badge">Internal</span></h1>
       <p>Precision Industrial LLC — Lister AI user management</p>
     </div>
-    <button class="refresh" onclick="loadData()">↻ Refresh</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="refresh" id="mailbox-btn" onclick="openMailbox()" style="position:relative;">💬 Mailbox <span id="mailbox-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:6px;">0</span></button>
+      <button class="refresh" onclick="loadData()">↻ Refresh</button>
+    </div>
   </div>
 
   <div class="report-alert-banner" id="report-alert"><span class="icon">⚠️</span><span class="msg" id="report-alert-msg"></span><button class="dismiss" onclick="dismissReportAlert()">Dismiss</button></div>
@@ -387,6 +394,133 @@ async function deleteReport(id) {
   } catch(e) { alert('Failed: ' + e.message); }
 }
 
+
+
+function addMessageButtonsToBusinesses() {
+  // Find every row in biz-tbody and add a Message button if missing
+  document.querySelectorAll('#biz-tbody tr').forEach((row, i) => {
+    const biz = allBusinesses[i];
+    if (!biz) return;
+    const lastCell = row.querySelector('td:last-child');
+    if (!lastCell || lastCell.querySelector('.msg-biz-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'btn-sm btn-blue msg-biz-btn';
+    btn.textContent = '💬';
+    btn.title = 'Message ' + biz.name;
+    btn.style.marginRight = '4px';
+    btn.onclick = (e) => { e.stopPropagation(); msgBusiness(biz.id, biz.name); };
+    lastCell.insertBefore(btn, lastCell.firstChild);
+  });
+}
+
+function msgBusiness(bizId, name) {
+  const text = prompt('Send message to ' + name + ':');
+  if (!text || !text.trim()) return;
+  fetch('/api/admin/businesses/' + bizId + '/start-thread', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({body: text.trim()})
+  }).then(r => r.ok ? alert('Message sent') : alert('Failed'));
+}
+
+async function openMailbox() {
+  document.getElementById('mailbox-modal').classList.add('open');
+  await loadThreads();
+}
+
+async function loadThreads() {
+  try {
+    const r = await fetch('/api/admin/threads');
+    const d = await r.json();
+    const list = document.getElementById('thread-list');
+    if (!d.threads || !d.threads.length) {
+      list.innerHTML = '<div class="empty">No conversations yet</div>';
+      return;
+    }
+    list.innerHTML = d.threads.map(t => {
+      const last = t.last_message ? (t.last_message.sender === 'admin' ? 'You: ' : '') + (t.last_message.body || '').substring(0, 80) : '(no messages)';
+      const unread = t.unread_for_admin ? '<span style="background:#ef4444;color:#fff;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:8px;">NEW</span>' : '';
+      const date = new Date(t.last_message_at).toLocaleString();
+      return '<div class="thread-item" onclick="openThread(\'' + t.id + '\')">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+        +   '<div style="font-weight:700;">' + escapeHtml(t.business_name) + unread + '</div>'
+        +   '<div style="font-size:11px;color:#64748b;">' + date + '</div>'
+        + '</div>'
+        + '<div style="font-size:12px;color:#94a3b8;">' + escapeHtml(t.business_email) + '</div>'
+        + '<div style="font-size:13px;color:#cbd5e1;margin-top:6px;">' + escapeHtml(last) + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    document.getElementById('thread-list').innerHTML = '<div class="empty">Failed to load: ' + e.message + '</div>';
+  }
+}
+
+let currentThreadId = null;
+
+async function openThread(id) {
+  currentThreadId = id;
+  document.getElementById('thread-list-view').style.display = 'none';
+  document.getElementById('thread-conversation-view').style.display = 'block';
+  try {
+    const r = await fetch('/api/admin/threads/' + id);
+    const d = await r.json();
+    document.getElementById('thread-header').textContent = d.business.name + ' (' + d.business.email + ')';
+    const msgsEl = document.getElementById('thread-messages');
+    msgsEl.innerHTML = (d.messages || []).map(m => {
+      const isAdmin = m.sender === 'admin';
+      const date = new Date(m.created_at).toLocaleString();
+      return '<div style="margin-bottom:12px;display:flex;flex-direction:column;align-items:' + (isAdmin ? 'flex-end' : 'flex-start') + ';">'
+        + '<div style="background:' + (isAdmin ? '#3b82f6' : '#1e2535') + ';color:' + (isAdmin ? '#fff' : '#f1f5f9') + ';padding:10px 14px;border-radius:14px;max-width:75%;font-size:13px;line-height:1.5;white-space:pre-wrap;">' + escapeHtml(m.body) + '</div>'
+        + '<div style="font-size:10px;color:#64748b;margin-top:4px;">' + (isAdmin ? 'You' : 'Customer') + ' • ' + date + '</div>'
+        + '</div>';
+    }).join('');
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  } catch(e) {
+    document.getElementById('thread-messages').innerHTML = '<div class="empty">Failed</div>';
+  }
+}
+
+function backToThreadList() {
+  document.getElementById('thread-list-view').style.display = 'block';
+  document.getElementById('thread-conversation-view').style.display = 'none';
+  loadThreads();
+  refreshMailboxBadge();
+}
+
+async function sendThreadReply() {
+  const input = document.getElementById('thread-reply-input');
+  const text = input.value.trim();
+  if (!text || !currentThreadId) return;
+  try {
+    const r = await fetch('/api/admin/threads/' + currentThreadId + '/reply', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({body: text})
+    });
+    if (!r.ok) throw new Error('Failed');
+    input.value = '';
+    openThread(currentThreadId);
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+function closeMailbox(e) {
+  if (e && e.target.id !== 'mailbox-modal') return;
+  document.getElementById('mailbox-modal').classList.remove('open');
+  backToThreadList();
+}
+
+async function refreshMailboxBadge() {
+  try {
+    const r = await fetch('/api/admin/threads');
+    const d = await r.json();
+    const badge = document.getElementById('mailbox-badge');
+    if (d.unread_count > 0) {
+      badge.textContent = d.unread_count;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
 function escapeHtml(s) {
   return String(s||'').replace(/[&<>"\']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -409,6 +543,8 @@ async function loadData() {
     document.getElementById('stat-active').textContent = active;
 
     renderTable(allBusinesses);
+    addMessageButtonsToBusinesses();
+    refreshMailboxBadge();
     loadBadReports();
   } catch(e) {
     document.getElementById('biz-tbody').innerHTML = '<tr><td colspan="7" class="empty">Error loading data</td></tr>';
@@ -558,6 +694,33 @@ setInterval(loadData, 60000);
       <div id="rmStatus" style="flex:1;font-size:12px;color:#94a3b8;"></div>
       <button class="btn-sm" style="background:#1e2535;color:#94a3b8;padding:9px 16px;" onclick="rmClose()">Cancel</button>
       <button class="btn-sm btn-green" id="rmSendBtn" onclick="rmSendReply()" style="padding:9px 18px;font-weight:700;">Send & Resolve</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mailbox Modal -->
+<div class="modal-overlay" id="mailbox-modal" onclick="closeMailbox(event)">
+  <div class="modal mailbox-modal-content" onclick="event.stopPropagation()">
+    <div id="thread-list-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <h2 style="margin:0;">💬 Customer Messages</h2>
+        <button class="btn-sm" style="background:#1e2535;color:#94a3b8;" onclick="closeMailbox()">Close</button>
+      </div>
+      <div id="thread-list" style="overflow-y:auto;max-height:60vh;">
+        <div class="empty">Loading...</div>
+      </div>
+    </div>
+    <div id="thread-conversation-view" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;">
+        <button class="btn-sm" style="background:#1e2535;color:#94a3b8;" onclick="backToThreadList()">← Back</button>
+        <div id="thread-header" style="flex:1;font-weight:700;font-size:14px;text-align:center;"></div>
+        <button class="btn-sm" style="background:#1e2535;color:#94a3b8;" onclick="closeMailbox()">Close</button>
+      </div>
+      <div id="thread-messages" style="background:#0a0c10;border:1px solid #1e2330;border-radius:10px;padding:16px;min-height:300px;max-height:50vh;overflow-y:auto;margin-bottom:12px;"></div>
+      <div style="display:flex;gap:8px;">
+        <textarea id="thread-reply-input" placeholder="Type your reply..." style="flex:1;background:#0f1117;border:1px solid #1e2330;border-radius:8px;padding:10px 12px;color:#f1f5f9;font-size:13px;resize:vertical;min-height:60px;font-family:inherit;outline:none;"></textarea>
+        <button class="btn-sm btn-green" style="padding:0 20px;font-weight:700;" onclick="sendThreadReply()">Send</button>
+      </div>
     </div>
   </div>
 </div>

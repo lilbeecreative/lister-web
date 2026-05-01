@@ -2902,3 +2902,177 @@ async def contact_support(request: Request):
         import traceback; traceback.print_exc()
         raise HTTPException(500, str(e))
 
+
+# ─── Support Messaging ─────────────────────────────────────────
+
+def _get_or_create_thread(business_id):
+    """Return existing open thread for business, or create a new one."""
+    res = supabase.table("support_threads").select("*").eq("business_id", business_id).order("last_message_at", desc=True).limit(1).execute()
+    if res.data:
+        return res.data[0]
+    new = supabase.table("support_threads").insert({"business_id": business_id}).execute()
+    return new.data[0]
+
+
+# ─── User-side messaging ───
+
+@app.get("/api/support/thread")
+async def user_get_thread(request: Request):
+    """User: get their own thread + messages."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        thread = _get_or_create_thread(business_id)
+        msgs = supabase.table("support_messages").select("*").eq("thread_id", thread["id"]).order("created_at").execute()
+        # Mark as read for user
+        supabase.table("support_threads").update({"unread_for_user": False}).eq("id", thread["id"]).execute()
+        return {"thread": thread, "messages": msgs.data or []}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/support/send")
+async def user_send_message(request: Request):
+    """User: send a message to support."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        text = str(body.get("body", "")).strip()
+        if not text:
+            raise HTTPException(400, "Message required")
+        thread = _get_or_create_thread(business_id)
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).isoformat()
+        supabase.table("support_messages").insert({
+            "thread_id": thread["id"],
+            "sender": "user",
+            "body": text
+        }).execute()
+        supabase.table("support_threads").update({
+            "last_message_at": now,
+            "unread_for_admin": True
+        }).eq("id", thread["id"]).execute()
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/support/unread")
+async def user_unread_check(request: Request):
+    """User: check if they have unread admin messages."""
+    business_id = require_auth(request)
+    if not business_id:
+        return {"unread": False}
+    try:
+        res = supabase.table("support_threads").select("id,unread_for_user").eq("business_id", business_id).eq("unread_for_user", True).limit(1).execute()
+        return {"unread": bool(res.data)}
+    except Exception:
+        return {"unread": False}
+
+
+# ─── Admin-side messaging ───
+
+@app.get("/api/admin/threads")
+async def admin_list_threads(request: Request):
+    """Admin: list all support threads with last message preview + business info."""
+    try:
+        threads = supabase.table("support_threads").select("*").order("last_message_at", desc=True).execute()
+        out = []
+        unread_count = 0
+        for t in (threads.data or []):
+            biz = supabase.table("businesses").select("name,email").eq("id", t["business_id"]).limit(1).execute()
+            biz_data = biz.data[0] if biz.data else {}
+            last_msg = supabase.table("support_messages").select("body,sender,created_at").eq("thread_id", t["id"]).order("created_at", desc=True).limit(1).execute()
+            preview = last_msg.data[0] if last_msg.data else None
+            if t.get("unread_for_admin"):
+                unread_count += 1
+            out.append({
+                **t,
+                "business_name": biz_data.get("name", "Unknown"),
+                "business_email": biz_data.get("email", ""),
+                "last_message": preview,
+            })
+        return {"threads": out, "unread_count": unread_count}
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/admin/threads/{thread_id}")
+async def admin_get_thread(thread_id: str):
+    """Admin: get full thread + mark as read for admin."""
+    try:
+        thread = supabase.table("support_threads").select("*").eq("id", thread_id).limit(1).execute()
+        if not thread.data:
+            raise HTTPException(404, "Not found")
+        msgs = supabase.table("support_messages").select("*").eq("thread_id", thread_id).order("created_at").execute()
+        biz = supabase.table("businesses").select("name,email").eq("id", thread.data[0]["business_id"]).limit(1).execute()
+        supabase.table("support_threads").update({"unread_for_admin": False}).eq("id", thread_id).execute()
+        return {
+            "thread": thread.data[0],
+            "messages": msgs.data or [],
+            "business": biz.data[0] if biz.data else {}
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/admin/threads/{thread_id}/reply")
+async def admin_reply(thread_id: str, request: Request):
+    """Admin: reply to a thread."""
+    try:
+        body = await request.json()
+        text = str(body.get("body", "")).strip()
+        if not text:
+            raise HTTPException(400, "Message required")
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).isoformat()
+        supabase.table("support_messages").insert({
+            "thread_id": thread_id,
+            "sender": "admin",
+            "body": text
+        }).execute()
+        supabase.table("support_threads").update({
+            "last_message_at": now,
+            "unread_for_user": True
+        }).eq("id", thread_id).execute()
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/admin/businesses/{business_id}/start-thread")
+async def admin_start_thread(business_id: str, request: Request):
+    """Admin: start (or get) a thread with a business and send first message."""
+    try:
+        body = await request.json()
+        text = str(body.get("body", "")).strip()
+        if not text:
+            raise HTTPException(400, "Message required")
+        thread = _get_or_create_thread(business_id)
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).isoformat()
+        supabase.table("support_messages").insert({
+            "thread_id": thread["id"],
+            "sender": "admin",
+            "body": text
+        }).execute()
+        supabase.table("support_threads").update({
+            "last_message_at": now,
+            "unread_for_user": True
+        }).eq("id", thread["id"]).execute()
+        return {"ok": True, "thread_id": thread["id"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+

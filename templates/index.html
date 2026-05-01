@@ -213,6 +213,12 @@ select.field-input { background: #fff; color: #0f172a; }
 </head>
 <body>
 
+<div id="support-alert" style="display:none;position:fixed;top:14px;right:14px;z-index:9999;background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;padding:12px 16px;border-radius:10px;box-shadow:0 4px 20px rgba(239,68,68,0.4);align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;" onclick="document.querySelector('[data-tab=\'settings\']').click();">
+  <span style="font-size:18px;">💬</span>
+  <span>You have a new message from support</span>
+</div>
+
+
 <nav class="nav">
   <div class="nav-logo">📦 Lister AI</div>
   <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
@@ -482,21 +488,17 @@ select.field-input { background: #fff; color: #0f172a; }
       <div id="shopify-actions" style="margin-top:12px;"></div>
     </div>
 
-    <!-- Contact support -->
+    <!-- Support chat -->
     <div class="settings-section" style="border-left:4px solid #f59e0b;">
-      <div class="settings-title">📩 Contact Support</div>
-      <div class="settings-sub">Need help? Send us a message and we'll reply by email.</div>
-      <div class="field-label">Topic</div>
-      <select class="field-input" id="support-topic" style="margin-bottom:10px;">
-        <option>General Question</option>
-        <option>Billing</option>
-        <option>Bug Report</option>
-        <option>Feature Request</option>
-        <option>Other</option>
-      </select>
-      <div class="field-label">Message</div>
-      <textarea class="field-input" id="support-message" rows="5" style="resize:vertical;margin-bottom:10px;font-size:13px;line-height:1.5;" placeholder="How can we help?"></textarea>
-      <button class="btn btn-primary" style="width:100%;" onclick="sendSupportMessage()">Send Message</button>
+      <div class="settings-title">💬 Support Chat</div>
+      <div class="settings-sub">Send us a message and we'll reply here. Check back anytime.</div>
+      <div id="support-thread-view" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:240px;max-height:400px;overflow-y:auto;margin-top:12px;">
+        <div style="text-align:center;color:var(--muted);font-size:12px;padding:24px 0;">Loading...</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <textarea class="field-input" id="support-input" rows="2" style="flex:1;resize:vertical;font-size:13px;line-height:1.5;" placeholder="Type your message..."></textarea>
+        <button class="btn btn-primary" style="padding:0 20px;font-weight:700;" onclick="sendSupportChat()">Send</button>
+      </div>
     </div>
 
     <!-- API keys (kept from before, collapsed visually below) -->
@@ -657,6 +659,77 @@ window._defaultDesc = 'Shipped primarily with UPS and sometimes USPS. If you hav
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('modal').classList.remove('open');
 });
+
+// ── SUPPORT CHAT ────────────────────────────────────────────────
+async function loadSupportThread() {
+  try {
+    const r = await fetch('/api/support/thread');
+    const d = await r.json();
+    const view = document.getElementById('support-thread-view');
+    if (!view) return;
+    if (!d.messages || !d.messages.length) {
+      view.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:24px 0;">No messages yet — say hi!</div>';
+      return;
+    }
+    view.innerHTML = d.messages.map(m => {
+      const isUser = m.sender === 'user';
+      const date = new Date(m.created_at).toLocaleString();
+      return '<div style="margin-bottom:10px;display:flex;flex-direction:column;align-items:' + (isUser ? 'flex-end' : 'flex-start') + ';">'
+        + '<div style="background:' + (isUser ? 'var(--accent)' : '#1e2535') + ';color:' + (isUser ? '#000' : 'var(--text)') + ';padding:9px 13px;border-radius:14px;max-width:75%;font-size:13px;line-height:1.5;white-space:pre-wrap;">' + escapeHtmlSimple(m.body) + '</div>'
+        + '<div style="font-size:10px;color:var(--muted);margin-top:3px;">' + (isUser ? 'You' : 'Support') + ' • ' + date + '</div>'
+        + '</div>';
+    }).join('');
+    view.scrollTop = view.scrollHeight;
+    // Hide alert banner since we're in the chat
+    const banner = document.getElementById('support-alert');
+    if (banner) banner.style.display = 'none';
+  } catch(e) {
+    const view = document.getElementById('support-thread-view');
+    if (view) view.innerHTML = '<div style="color:var(--red);font-size:12px;">Failed to load</div>';
+  }
+}
+
+async function sendSupportChat() {
+  const input = document.getElementById('support-input');
+  const text = input.value.trim();
+  if (!text) return;
+  try {
+    const r = await fetch('/api/support/send', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({body: text})
+    });
+    if (!r.ok) throw new Error('Failed');
+    input.value = '';
+    loadSupportThread();
+    toast('Sent');
+  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+function escapeHtmlSimple(s) {
+  return String(s||'').replace(/[&<>"\']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function checkSupportUnread() {
+  try {
+    const r = await fetch('/api/support/unread');
+    const d = await r.json();
+    const banner = document.getElementById('support-alert');
+    if (!banner) return;
+    if (d.unread) {
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+// Poll every 30 seconds for new admin replies
+setInterval(checkSupportUnread, 30000);
+// Run once on load
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(checkSupportUnread, 1500);
+});
+
 
 // ── ACCOUNT PAGE ────────────────────────────────────────────────
 const PLAN_TIERS = [
