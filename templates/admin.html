@@ -75,6 +75,14 @@
   .report-status.new { background:rgba(239,68,68,0.15); color:#ef4444; }
   .report-status.reviewed { background:rgba(245,158,11,0.15); color:#f59e0b; }
   .report-status.resolved { background:rgba(34,197,94,0.15); color:#22c55e; }
+
+  .report-alert-banner { background:linear-gradient(90deg,#ef4444,#dc2626); color:#fff; padding:14px 20px; border-radius:12px; margin-bottom:24px; display:none; align-items:center; gap:12px; box-shadow:0 4px 20px rgba(239,68,68,0.3); animation:pulse 2s ease-in-out infinite; }
+  .report-alert-banner.show { display:flex; }
+  .report-alert-banner .icon { font-size:22px; }
+  .report-alert-banner .msg { flex:1; font-weight:600; font-size:14px; }
+  .report-alert-banner .dismiss { background:rgba(255,255,255,0.2); color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }
+  .report-alert-banner .dismiss:hover { background:rgba(255,255,255,0.3); }
+  @keyframes pulse { 0%,100%{box-shadow:0 4px 20px rgba(239,68,68,0.3);} 50%{box-shadow:0 4px 30px rgba(239,68,68,0.6);} }
 </style>
 </head>
 <body>
@@ -87,12 +95,29 @@
     <button class="refresh" onclick="loadData()">↻ Refresh</button>
   </div>
 
+  <div class="report-alert-banner" id="report-alert"><span class="icon">⚠️</span><span class="msg" id="report-alert-msg"></span><button class="dismiss" onclick="dismissReportAlert()">Dismiss</button></div>
+
   <div class="stats-row">
     <div class="stat-card green"><div class="val" id="stat-businesses">—</div><div class="lbl">Total Businesses</div></div>
     <div class="stat-card blue"><div class="val" id="stat-listings">—</div><div class="lbl">Total Listings</div></div>
     <div class="stat-card amber"><div class="val" id="stat-scans">—</div><div class="lbl">Total Scans Used</div></div>
     <div class="stat-card"><div class="val" id="stat-active">—</div><div class="lbl">Active This Week</div></div>
     <div class="stat-card red"><div class="val" id="stat-bad-reports">—</div><div class="lbl">New Bad Reports</div></div>
+  </div>
+
+  <div id="bad-reports-section" style="margin-top:40px;">
+    <div class="toolbar">
+      <div class="section-title" style="margin:0;flex:1;">Bad Scan Reports</div>
+      <select id="report-filter" onchange="loadBadReports()" style="background:#111318;border:1px solid #1e2330;color:#f1f5f9;padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
+        <option value="">All</option>
+        <option value="new" selected>New</option>
+        <option value="reviewed">Reviewed</option>
+        <option value="resolved">Resolved</option>
+      </select>
+    </div>
+    <div id="reports-list">
+      <div class="empty">Loading...</div>
+    </div>
   </div>
 
   <div class="toolbar">
@@ -117,20 +142,6 @@
     </tbody>
   </table>
 
-  <div id="bad-reports-section" style="margin-top:40px;">
-    <div class="toolbar">
-      <div class="section-title" style="margin:0;flex:1;">Bad Scan Reports</div>
-      <select id="report-filter" onchange="loadBadReports()" style="background:#111318;border:1px solid #1e2330;color:#f1f5f9;padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
-        <option value="">All</option>
-        <option value="new" selected>New</option>
-        <option value="reviewed">Reviewed</option>
-        <option value="resolved">Resolved</option>
-      </select>
-    </div>
-    <div id="reports-list">
-      <div class="empty">Loading...</div>
-    </div>
-  </div>
 </div>
 
 <!-- Edit Modal -->
@@ -155,6 +166,13 @@
 
 <script>
 
+
+function dismissReportAlert() {
+  const count = document.getElementById('stat-bad-reports').textContent;
+  sessionStorage.setItem('reports_alert_dismissed_' + count, '1');
+  document.getElementById('report-alert').classList.remove('show');
+}
+
 async function loadBadReports() {
   try {
     const filter = document.getElementById('report-filter').value;
@@ -165,6 +183,18 @@ async function loadBadReports() {
     const counts = data.counts || {};
 
     document.getElementById('stat-bad-reports').textContent = counts.new || 0;
+
+    // Show alert banner if there are new reports and not dismissed
+    const newCount = counts.new || 0;
+    const dismissed = sessionStorage.getItem('reports_alert_dismissed_' + newCount);
+    const banner = document.getElementById('report-alert');
+    if (newCount > 0 && !dismissed) {
+      document.getElementById('report-alert-msg').textContent =
+        newCount + ' new bad scan report' + (newCount > 1 ? 's' : '') + ' need' + (newCount > 1 ? '' : 's') + ' your attention';
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
 
     const list = document.getElementById('reports-list');
     if (!reports.length) {
@@ -208,6 +238,21 @@ async function loadBadReports() {
   } catch(e) {
     document.getElementById('reports-list').innerHTML = '<div class="empty">Failed to load reports: ' + e.message + '</div>';
   }
+}
+
+
+function resolveReport(id, email) {
+  const caseNum = id.substring(0,8).toUpperCase();
+  const subject = encodeURIComponent('Re: Your bad scan report — Case #' + caseNum);
+  const body = encodeURIComponent(
+    'Hi,\n\n' +
+    'Thanks for reporting the issue with your scan (Case #' + caseNum + '). ' +
+    'We\'ve reviewed it and wanted to follow up:\n\n' +
+    '[your message here]\n\n' +
+    'Best,\nLister AI Team'
+  );
+  window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
+  setReportStatus(id, 'resolved');
 }
 
 async function setReportStatus(id, status) {
