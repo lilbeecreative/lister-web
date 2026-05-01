@@ -280,7 +280,17 @@ select.field-input { background: #fff; color: #0f172a; }
         <button class="period-pill" data-period="week" style="font-size:12px;padding:6px 14px;border-radius:5px;color:var(--muted);cursor:pointer;background:transparent;border:none;font-family:inherit;">Week</button>
         <button class="period-pill active" data-period="month" style="font-size:12px;padding:6px 14px;border-radius:5px;color:#fff;cursor:pointer;background:var(--accent);font-weight:500;border:none;font-family:inherit;">Month</button>
       </div>
-      <button class="btn" style="font-size:12px;padding:7px 14px;" onclick="document.querySelector('[data-tab=\'detailed\']').click();">Detailed view →</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="dash-sort" onchange="changeDashSort()" style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:7px 10px;cursor:pointer;font-family:inherit;outline:none;">
+          <option value="batch_desc">Newest first</option>
+          <option value="batch_asc">Oldest first</option>
+          <option value="price_desc">Price high → low</option>
+          <option value="price_asc">Price low → high</option>
+          <option value="profit_desc">Profit high → low</option>
+          <option value="profit_asc">Profit low → high</option>
+        </select>
+        <button class="btn" style="font-size:12px;padding:7px 14px;" onclick="document.querySelector('[data-tab=\'detailed\']').click();">Detailed view →</button>
+      </div>
     </div>
 
     <!-- Stat cards -->
