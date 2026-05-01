@@ -3014,6 +3014,173 @@ if (typeof __origLoadListings === 'function') {
   };
 }
 
+
+
+// ── INTAKE INVENTORY ──
+var intakeRows = [];
+
+async function loadIntake() {
+  try {
+    const r = await fetch('/api/intake', {credentials:'include'});
+    const d = await r.json();
+    intakeRows = (d.items || []);
+    renderIntakeTable();
+  } catch(e) {
+    console.error('Intake load error:', e);
+    toast('Could not load intake', 'error');
+  }
+}
+
+function renderIntakeTable() {
+  const tbody = document.getElementById('intake-body');
+  const empty = document.getElementById('intake-empty');
+  const stats = document.getElementById('intake-stats');
+  if (!tbody) return;
+
+  if (!intakeRows.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    if (stats) stats.textContent = 'Track purchases before you scan them';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  let total = 0;
+  intakeRows.forEach(r => { total += parseFloat(r.purchase_price) || 0; });
+  if (stats) stats.textContent = `${intakeRows.length} record${intakeRows.length===1?'':'s'} · $${total.toFixed(2)} total purchase value`;
+
+  tbody.innerHTML = intakeRows.map(r => {
+    const photo = r.photo_url
+      ? `<img src="${r.photo_url}" style="width:60px;height:60px;border-radius:6px;object-fit:cover;cursor:pointer;" onclick="changeIntakePhoto('${r.id}')"/>`
+      : `<div onclick="changeIntakePhoto('${r.id}')" style="width:60px;height:60px;border-radius:6px;background:var(--bg);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:18px;">📷</div>`;
+    return `<tr style="border-bottom:1px solid var(--border);" data-id="${r.id}">
+      <td style="padding:8px 12px;">${photo}</td>
+      <td style="padding:8px 12px;"><input type="text" value="${(r.item_name||'').replace(/"/g,'&quot;')}" placeholder="Item name..." data-field="item_name" onblur="saveIntakeField(this)" style="width:100%;background:transparent;border:1px solid transparent;color:var(--text);font-size:13px;padding:5px 7px;border-radius:5px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--border)';this.style.background='var(--bg)';" onblur2="this.style.borderColor='transparent';this.style.background='transparent';"/></td>
+      <td style="padding:8px 12px;"><input type="date" value="${r.purchase_date||''}" data-field="purchase_date" onblur="saveIntakeField(this)" style="background:transparent;border:1px solid transparent;color:var(--text);font-size:13px;padding:5px 7px;border-radius:5px;font-family:inherit;outline:none;width:130px;color-scheme:dark;"/></td>
+      <td style="padding:8px 12px;text-align:right;"><input type="number" step="0.01" value="${r.purchase_price||''}" placeholder="0.00" data-field="purchase_price" onblur="saveIntakeField(this)" style="width:100%;background:transparent;border:1px solid transparent;color:var(--text);font-size:13px;padding:5px 7px;border-radius:5px;font-family:inherit;outline:none;text-align:right;"/></td>
+      <td style="padding:8px 12px;"><input type="text" value="${(r.sku_code||'').replace(/"/g,'&quot;')}" placeholder="SKU..." data-field="sku_code" onblur="saveIntakeField(this)" style="width:100%;background:transparent;border:1px solid transparent;color:var(--text);font-size:13px;padding:5px 7px;border-radius:5px;font-family:'DM Mono',monospace;outline:none;"/></td>
+      <td style="padding:8px 12px;"><input type="text" value="${(r.notes||'').replace(/"/g,'&quot;')}" placeholder="Notes..." data-field="notes" onblur="saveIntakeField(this)" style="width:100%;background:transparent;border:1px solid transparent;color:var(--text);font-size:13px;padding:5px 7px;border-radius:5px;font-family:inherit;outline:none;"/></td>
+      <td style="padding:8px 12px;text-align:center;"><button onclick="deleteIntakeRow('${r.id}')" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:14px;line-height:1;" title="Delete row">×</button></td>
+    </tr>`;
+  }).join('');
+
+  // Add focus styles after render
+  document.querySelectorAll('#intake-body input').forEach(inp => {
+    inp.addEventListener('focus', function() {
+      this.style.borderColor = 'var(--border)';
+      this.style.background = 'var(--bg)';
+    });
+    inp.addEventListener('blur', function() {
+      this.style.borderColor = 'transparent';
+      this.style.background = 'transparent';
+    });
+  });
+}
+
+async function addIntakeRow() {
+  try {
+    const r = await fetch('/api/intake', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body: JSON.stringify({})
+    });
+    const d = await r.json();
+    if (d.ok && d.item) {
+      intakeRows.unshift(d.item);
+      renderIntakeTable();
+      // Focus the item name input on the new row
+      setTimeout(function() {
+        const newRow = document.querySelector('#intake-body tr[data-id="' + d.item.id + '"]');
+        if (newRow) {
+          const nameInput = newRow.querySelector('input[data-field="item_name"]');
+          if (nameInput) nameInput.focus();
+        }
+      }, 50);
+    }
+  } catch(e) {
+    toast('Could not add row', 'error');
+  }
+}
+
+async function saveIntakeField(input) {
+  const tr = input.closest('tr');
+  if (!tr) return;
+  const id = tr.dataset.id;
+  const field = input.dataset.field;
+  let val = input.value;
+  if (field === 'purchase_price') val = val ? parseFloat(val) : null;
+  if (field === 'purchase_date' && !val) val = null;
+  try {
+    await fetch('/api/intake/' + id, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body: JSON.stringify({[field]: val})
+    });
+    // Update local cache
+    const row = intakeRows.find(r => r.id === id);
+    if (row) row[field] = val;
+    // Update stats line
+    const stats = document.getElementById('intake-stats');
+    if (stats) {
+      let total = 0;
+      intakeRows.forEach(r => { total += parseFloat(r.purchase_price) || 0; });
+      stats.textContent = `${intakeRows.length} record${intakeRows.length===1?'':'s'} · $${total.toFixed(2)} total purchase value`;
+    }
+  } catch(e) {
+    toast('Save failed', 'error');
+  }
+}
+
+async function deleteIntakeRow(id) {
+  if (!confirm('Delete this intake row?')) return;
+  try {
+    await fetch('/api/intake/' + id, {method:'DELETE', credentials:'include'});
+    intakeRows = intakeRows.filter(r => r.id !== id);
+    renderIntakeTable();
+    toast('Row deleted');
+  } catch(e) {
+    toast('Delete failed', 'error');
+  }
+}
+
+function changeIntakePhoto(id) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.onchange = async function() {
+    const file = inp.files && inp.files[0];
+    if (!file) return;
+    if (file.size > 10*1024*1024) { toast('Image too large (10MB max)', 'error'); return; }
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      toast('Uploading photo...');
+      const r = await fetch('/api/intake/upload-photo', {method:'POST', body: fd, credentials:'include'});
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || 'Upload failed');
+      // Patch the row with the new photo_id
+      await fetch('/api/intake/' + id, {
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        credentials:'include',
+        body: JSON.stringify({photo_id: d.photo_id})
+      });
+      const row = intakeRows.find(r => r.id === id);
+      if (row) {
+        row.photo_id = d.photo_id;
+        row.photo_url = d.photo_url;
+      }
+      renderIntakeTable();
+      toast('Photo saved ✓');
+    } catch(e) {
+      toast('Upload failed', 'error');
+    }
+  };
+  inp.click();
+}
+
 // ── DETAILED ANALYTICS ─────────────────────────────────────
 let detailedPeriod = 'month';
 
