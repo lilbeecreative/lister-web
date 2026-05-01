@@ -209,6 +209,15 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system, Bl
 
 /* SELECT dropdown */
 select.field-input { background: #fff; color: #0f172a; }
+
+.acct-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+.acct-card-header { display:flex; align-items:center; justify-content:space-between; }
+.acct-card-title { font-size:14px; font-weight:700; color:var(--text); }
+.acct-field-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; margin-bottom:5px; }
+.acct-input { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:8px 11px; color:var(--text); font-size:13px; outline:none; font-family:inherit; }
+.acct-input:focus { border-color:var(--accent); }
+.acct-input:read-only { color:var(--muted); }
+.plan-card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
 </style>
 </head>
 <body>
@@ -227,6 +236,7 @@ select.field-input { background: #fff; color: #0f172a; }
   {% if is_admin %}<button class="nav-btn" data-tab="auction">🔨 Auctions</button>{% endif %}
   {% if is_admin %}<button class="nav-btn" data-tab="parts">🔍 Parts Lookup</button>{% endif %}
   <button class="nav-btn" data-tab="settings">👤 Account</button>
+  <button class="nav-btn" id="user-mailbox-btn" onclick="openUserMailbox()" style="position:relative;">💬 Messages <span id="user-mailbox-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;">●</span></button>
   <div class="nav-spacer"></div>
   <div style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:12px;margin-bottom:4px;">
     <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Scans Used</div>
@@ -462,61 +472,93 @@ select.field-input { background: #fff; color: #0f172a; }
 
     <!-- SETTINGS TAB -->
   <div class="tab-content" id="tab-settings">
+    <div style="max-width:760px;margin:0 auto;">
 
-    <!-- Account info -->
-    <div class="settings-section" style="border-left:4px solid #3b82f6;">
-      <div class="settings-title">👤 Business Info</div>
-      <div class="settings-sub">Your business name and login email.</div>
-      <div class="field-label">Business Name</div>
-      <input type="text" class="field-input" id="acct-name" style="margin-bottom:10px;"/>
-      <div class="field-label">Email Address</div>
-      <input type="email" class="field-input" id="acct-email" style="margin-bottom:12px;"/>
-      <button class="btn btn-primary" style="width:100%;" onclick="saveAccountInfo()">Save Changes</button>
-    </div>
-
-    <!-- Plan / usage -->
-    <div class="settings-section" style="border-left:4px solid #22c55e;">
-      <div class="settings-title">💎 Plan & Usage</div>
-      <div class="settings-sub" id="acct-plan-summary">Loading...</div>
-      <div id="plan-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px;"></div>
-    </div>
-
-    <!-- Shopify -->
-    <div class="settings-section" style="border-left:4px solid #5a8e3b;">
-      <div class="settings-title">🛍️ Shopify Store</div>
-      <div class="settings-sub" id="shopify-status">Checking connection...</div>
-      <div id="shopify-actions" style="margin-top:12px;"></div>
-    </div>
-
-    <!-- Support chat -->
-    <div class="settings-section" style="border-left:4px solid #f59e0b;">
-      <div class="settings-title">💬 Support Chat</div>
-      <div class="settings-sub">Send us a message and we'll reply here. Check back anytime.</div>
-      <div id="support-thread-view" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:240px;max-height:400px;overflow-y:auto;margin-top:12px;">
-        <div style="text-align:center;color:var(--muted);font-size:12px;padding:24px 0;">Loading...</div>
+      <!-- Header -->
+      <div style="margin-bottom:24px;">
+        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Account</div>
+        <div style="font-size:13px;color:var(--muted);">Manage your business info, plan, and integrations</div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <textarea class="field-input" id="support-input" rows="2" style="flex:1;resize:vertical;font-size:13px;line-height:1.5;" placeholder="Type your message..."></textarea>
-        <button class="btn btn-primary" style="padding:0 20px;font-weight:700;" onclick="sendSupportChat()">Send</button>
-      </div>
-    </div>
 
-    <!-- API keys (kept from before, collapsed visually below) -->
-    <div class="settings-section" style="border-left:4px solid var(--accent);">
-      <div class="settings-title">🤖 Google Gemini API</div>
-      <div class="settings-sub">Used for AI scanning and value research.</div>
-      <div class="field-label">API Key</div>
-      <input type="password" class="field-input" id="set-gemini" placeholder="AIza..." style="margin-bottom:10px;"/>
-      <button class="btn btn-primary" style="width:100%;" onclick="saveSetting('GEMINI_API_KEY','set-gemini')">Save</button>
-    </div>
-    <div class="settings-section" style="border-left:4px solid var(--orange);">
-      <div class="settings-title">🏷️ eBay API Credentials</div>
-      <div class="settings-sub">For direct listing submission. Find at developer.ebay.com</div>
-      <div class="field-label">App ID</div><input type="text" class="field-input" id="set-ebay-app" style="margin-bottom:8px;"/>
-      <div class="field-label">Dev ID</div><input type="text" class="field-input" id="set-ebay-dev" style="margin-bottom:8px;"/>
-      <div class="field-label">Cert ID</div><input type="password" class="field-input" id="set-ebay-cert" style="margin-bottom:8px;"/>
-      <div class="field-label">User Token</div><input type="password" class="field-input" id="set-ebay-token" style="margin-bottom:10px;"/>
-      <button class="btn btn-primary" style="width:100%;" onclick="saveEbaySettings()">Save eBay Settings</button>
+      <!-- Plan summary row -->
+      <div class="acct-card" style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💎</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Current Plan</div>
+            <div style="font-size:16px;font-weight:700;margin-top:2px;" id="acct-plan-name">—</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="acct-plan-usage">—</div>
+          </div>
+          <button class="btn btn-primary" style="padding:8px 16px;font-size:13px;white-space:nowrap;" onclick="openPlansModal()">Change Plan</button>
+        </div>
+        <div style="margin-top:12px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;">
+          <div id="acct-usage-bar" style="height:100%;background:linear-gradient(90deg,#3b82f6,#8b5cf6);width:0%;transition:width 0.3s;"></div>
+        </div>
+      </div>
+
+      <!-- Business info -->
+      <div class="acct-card" style="margin-bottom:14px;">
+        <div class="acct-card-header">
+          <div class="acct-card-title">Business Info</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+          <div>
+            <div class="acct-field-label">Business Name</div>
+            <input type="text" class="acct-input" id="acct-name"/>
+          </div>
+          <div>
+            <div class="acct-field-label">Email</div>
+            <input type="email" class="acct-input" id="acct-email"/>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+          <button class="btn btn-primary" style="padding:7px 18px;font-size:13px;" onclick="saveAccountInfo()">Save</button>
+        </div>
+      </div>
+
+      <!-- Shopify -->
+      <div class="acct-card" style="margin-bottom:14px;">
+        <div class="acct-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:30px;height:30px;border-radius:7px;background:#5a8e3b;display:flex;align-items:center;justify-content:center;font-size:14px;">🛍️</div>
+            <div>
+              <div class="acct-card-title">Shopify Store</div>
+              <div id="shopify-status" style="font-size:11px;color:var(--muted);margin-top:1px;">Checking...</div>
+            </div>
+          </div>
+          <div id="shopify-actions"></div>
+        </div>
+      </div>
+
+      <!-- API keys (collapsible) -->
+      <details class="acct-card" style="margin-bottom:14px;">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div class="acct-card-title">API Keys & Integrations</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px;">Gemini AI, eBay credentials</div>
+          </div>
+          <span style="color:var(--muted);font-size:12px;">▾</span>
+        </summary>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+          <div class="acct-field-label">🤖 Google Gemini API Key</div>
+          <div style="display:flex;gap:6px;">
+            <input type="password" class="acct-input" id="set-gemini" placeholder="AIza..." style="flex:1;"/>
+            <button class="btn btn-primary" style="padding:7px 14px;font-size:12px;white-space:nowrap;" onclick="saveSetting('GEMINI_API_KEY','set-gemini')">Save</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:14px;">Used for AI scanning and value research.</div>
+
+          <div class="acct-field-label" style="margin-top:8px;">🏷️ eBay API Credentials</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <input type="text" class="acct-input" id="set-ebay-app" placeholder="App ID"/>
+            <input type="text" class="acct-input" id="set-ebay-dev" placeholder="Dev ID"/>
+            <input type="password" class="acct-input" id="set-ebay-cert" placeholder="Cert ID"/>
+            <input type="password" class="acct-input" id="set-ebay-token" placeholder="User Token"/>
+          </div>
+          <button class="btn btn-primary" style="width:100%;padding:8px;font-size:12px;" onclick="saveEbaySettings()">Save eBay Credentials</button>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Find at developer.ebay.com</div>
+        </div>
+      </details>
+
     </div>
   </div>
 
@@ -631,7 +673,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     activeTab = tab;
     if (tab === 'dashboard') loadListings();
     if (tab === 'auction')   loadAuctionSessions();
-    if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); loadSupportThread(); }
+    if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); }
   });
 });
 
@@ -747,12 +789,13 @@ async function loadAccountInfo() {
     document.getElementById('acct-email').value = a.email || '';
     const used = a.scan_count || 0;
     const limit = a.scan_limit || 0;
-    const remaining = Math.max(0, limit - used);
-    document.getElementById('acct-plan-summary').textContent =
-      'Current plan: ' + (a.plan || 'Free Trial') + ' • ' + used + ' / ' + limit + ' scans used (' + remaining + ' remaining)';
+    const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+    document.getElementById('acct-plan-name').textContent = a.plan || 'Free Trial';
+    document.getElementById('acct-plan-usage').textContent = used + ' / ' + limit + ' scans used this month';
+    document.getElementById('acct-usage-bar').style.width = pct + '%';
     renderPlanCards(a.plan);
   } catch(e) {
-    document.getElementById('acct-plan-summary').textContent = 'Failed to load account info';
+    document.getElementById('acct-plan-name').textContent = 'Failed to load';
   }
 }
 
@@ -2108,5 +2151,36 @@ async function reportBadScan(id) {
 
 </script>
 
+
+<!-- Plans Modal -->
+<div class="modal-overlay" id="plans-modal" onclick="closePlansModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:880px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div>
+        <h2 style="margin:0;">Choose Your Plan</h2>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;">Switch anytime, no contracts</div>
+      </div>
+      <button class="btn-sm" style="background:#1e2535;color:#94a3b8;padding:6px 12px;" onclick="closePlansModal()">Close</button>
+    </div>
+    <div id="plan-cards" class="plan-card-grid"></div>
+  </div>
+</div>
+
+<!-- User Mailbox Modal -->
+<div class="modal-overlay" id="user-mailbox-modal" onclick="closeUserMailbox(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;display:flex;flex-direction:column;max-height:80vh;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h2 style="margin:0;">💬 Support Chat</h2>
+      <button class="btn-sm" style="background:#1e2535;color:#94a3b8;padding:6px 12px;" onclick="closeUserMailbox()">Close</button>
+    </div>
+    <div id="user-thread-view" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:280px;max-height:55vh;overflow-y:auto;">
+      <div style="text-align:center;color:var(--muted);font-size:12px;padding:24px 0;">Loading...</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <textarea class="acct-input" id="user-thread-input" rows="2" style="flex:1;resize:vertical;" placeholder="Type your message..."></textarea>
+      <button class="btn btn-primary" style="padding:0 20px;font-weight:700;" onclick="sendUserThreadMessage()">Send</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
