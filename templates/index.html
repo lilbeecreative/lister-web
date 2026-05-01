@@ -1325,10 +1325,7 @@ function cyclePhoto(id, dir) {
 
 function toggleSelect(id) {
   if (selected.has(id)) selected.delete(id); else selected.add(id);
-  const tile = document.getElementById('tile-' + id);
-  const chk  = tile.querySelector('.tile-check');
-  tile.classList.toggle('selected', selected.has(id));
-  chk.classList.toggle('checked', selected.has(id));
+  renderTiles();
   updateSubmitBtn();
 }
 function selectAll()   { listings.forEach(l => selected.add(l.id)); renderTiles(); }
