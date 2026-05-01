@@ -108,12 +108,7 @@
   <div id="bad-reports-section" style="margin-top:40px;">
     <div class="toolbar">
       <div class="section-title" style="margin:0;flex:1;">Bad Scan Reports</div>
-      <select id="report-filter" onchange="loadBadReports()" style="background:#111318;border:1px solid #1e2330;color:#f1f5f9;padding:8px 12px;border-radius:8px;font-size:13px;outline:none;">
-        <option value="">All</option>
-        <option value="new" selected>New</option>
-        <option value="reviewed">Reviewed</option>
-        <option value="resolved">Resolved</option>
-      </select>
+      <button id="show-archive-btn" class="btn-sm btn-blue" style="padding:8px 14px;font-size:12px;" onclick="openArchive()">📁 View Resolved Reports</button>
     </div>
     <div id="reports-list">
       <div class="empty">Loading...</div>
@@ -173,13 +168,71 @@ function dismissReportAlert() {
   document.getElementById('report-alert').classList.remove('show');
 }
 
-async function loadBadReports() {
+
+async function openArchive() {
+  document.getElementById('archive-modal').classList.add('open');
   try {
-    const filter = document.getElementById('report-filter').value;
-    const url = '/api/admin/bad-reports' + (filter ? '?status=' + filter : '');
-    const r = await fetch(url);
+    const r = await fetch('/api/admin/bad-reports?status=resolved');
     const data = await r.json();
     const reports = data.reports || [];
+    const list = document.getElementById('archive-list');
+    if (!reports.length) {
+      list.innerHTML = '<div class="empty">No resolved reports yet</div>';
+      return;
+    }
+    list.innerHTML = reports.map(r => {
+      const card = r.item_card || {};
+      const photos = r.photo_urls || [];
+      const firstPhoto = photos[0] || '';
+      const photoHtml = firstPhoto
+        ? '<div class="report-photo report-photo-stack"><img src="' + firstPhoto + '" onclick="window.open(this.src)" />' + (photos.length > 1 ? '<div class="report-photo-count">' + photos.length + '</div>' : '') + '</div>'
+        : '<div class="report-photo">No photo</div>';
+      const date = new Date(r.reported_at).toLocaleString();
+      const price = card.price || card.price_used || card.price_new || 0;
+      const cat = card.ebay_category || '';
+      const cond = card.condition || '';
+      const note = r.user_note ? '<div class="note">"' + escapeHtml(r.user_note) + '"</div>' : '';
+      const caseNum = r.id.substring(0,8).toUpperCase();
+      return '<div class="report-card resolved" style="margin-bottom:10px;">'
+        + photoHtml
+        + '<div class="report-info">'
+        +   '<div class="meta">' + date + ' • ' + escapeHtml(r.reporter_email || 'unknown') + '</div>'
+        +   '<div class="title">' + escapeHtml(card.title || '(no title)') + '</div>'
+        +   '<div class="fields">'
+        +     '<div><strong>Price:</strong> $' + price + (card.price_low ? ' (range: $' + card.price_low + '–$' + (card.price_high||'?') + ')' : '') + '</div>'
+        +     (card.price_used ? '<div><strong>Used price:</strong> $' + card.price_used + '</div>' : '')
+        +     (card.price_new ? '<div><strong>New price:</strong> $' + card.price_new + '</div>' : '')
+        +     (cond ? '<div><strong>Condition:</strong> ' + cond + '</div>' : '')
+        +     (cat ? '<div><strong>Category:</strong> ' + escapeHtml(cat) + (card.ebay_category_id ? ' (ID: ' + card.ebay_category_id + ')' : '') + '</div>' : '')
+        +     ((card.weight_lb||card.weight_oz) ? '<div><strong>Weight:</strong> ' + (card.weight_lb||0) + ' lb ' + (card.weight_oz||0) + ' oz</div>' : '')
+        +     (card.quantity ? '<div><strong>Quantity:</strong> ' + card.quantity + '</div>' : '')
+        +     (card.description ? '<div style="margin-top:6px;color:#64748b;font-size:11px;"><strong>Description:</strong> ' + escapeHtml(card.description.substring(0,200)) + '</div>' : '')
+        +     '<div style="margin-top:6px;color:#64748b;font-size:10px;"><strong>Case #:</strong> ' + caseNum + '</div>'
+        +   '</div>'
+        +   note
+        + '</div>'
+        + '<div class="report-actions">'
+        +   '<div class="report-status resolved">Resolved</div>'
+        +   '<button class="btn-sm btn-blue" onclick="setReportStatus(\'' + r.id + '\',\'new\');closeArchive();">Reopen</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    document.getElementById('archive-list').innerHTML = '<div class="empty">Failed to load: ' + e.message + '</div>';
+  }
+}
+
+function closeArchive(e) {
+  if (e && e.target.id !== 'archive-modal') return;
+  document.getElementById('archive-modal').classList.remove('open');
+}
+
+async function loadBadReports() {
+  try {
+    const url = '/api/admin/bad-reports';
+    const r = await fetch(url);
+    const data = await r.json();
+    const reports = (data.reports || []).filter(rep => rep.status !== 'resolved');
     const counts = data.counts || {};
 
     document.getElementById('stat-bad-reports').textContent = counts.new || 0;
@@ -198,7 +251,7 @@ async function loadBadReports() {
 
     const list = document.getElementById('reports-list');
     if (!reports.length) {
-      list.innerHTML = '<div class="empty">No reports' + (filter ? ' with status: ' + filter : '') + '</div>';
+      list.innerHTML = '<div class="empty">No active reports — all caught up ✓</div>';
       return;
     }
 
@@ -402,5 +455,18 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 loadData();
 setInterval(loadData, 60000);
 </script>
+
+<!-- Archive (Resolved Reports) Modal -->
+<div class="modal-overlay" id="archive-modal" onclick="closeArchive(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:900px;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h2 style="margin:0;">📁 Resolved Bad Scan Reports</h2>
+      <button class="btn-sm" style="background:#1e2535;color:#94a3b8;" onclick="closeArchive()">Close</button>
+    </div>
+    <div id="archive-list">
+      <div class="empty">Loading...</div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
