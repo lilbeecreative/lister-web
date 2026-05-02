@@ -4505,7 +4505,7 @@ function loadHomeOverview() {
       }
       list.innerHTML = batches.slice(0, 5).map(function(b) {
         var timeAgo = b.updated_at ? timeAgoStr(b.updated_at) : '';
-        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 12px;cursor:pointer;" onclick="loadSavedBatch('" + b.id + "')">' +
+        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 12px;cursor:pointer;" onclick="loadSavedBatch(' + String.fromCharCode(39) + b.id + String.fromCharCode(39) + ')">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">' +
           '<div style="font-size:12px;font-weight:700;color:var(--text);">' + escapeHtml(b.name || 'Untitled batch') + '</div>' +
           '<div style="font-size:10px;color:var(--muted);">' + timeAgo + '</div></div>' +
