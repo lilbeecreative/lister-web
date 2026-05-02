@@ -3217,11 +3217,23 @@ async def home_overview(request: Request):
         except Exception:
             spent_mtd = 0.0
 
-        # Scan limits + business name + connection statuses
+        # Scan limits + business name
         biz = supabase.table("businesses").select(
-            "name, scan_count, scan_limit, ebay_user_id, shopify_shop_domain"
+            "name, scan_count, scan_limit"
         ).eq("id", business_id).limit(1).execute()
         b = biz.data[0] if biz.data else {}
+
+        # Connection statuses from token tables
+        try:
+            ebay_tok = supabase.table("ebay_tokens").select("id").eq("business_id", business_id).limit(1).execute()
+            ebay_connected = bool(ebay_tok.data)
+        except Exception:
+            ebay_connected = False
+        try:
+            shop_tok = supabase.table("shopify_tokens").select("id").eq("business_id", business_id).limit(1).execute()
+            shopify_connected = bool(shop_tok.data)
+        except Exception:
+            shopify_connected = False
 
         return {
             "business_name": b.get("name", ""),
@@ -3232,8 +3244,8 @@ async def home_overview(request: Request):
             "spent_mtd": round(spent_mtd, 2),
             "scan_count": b.get("scan_count", 0),
             "scan_limit": b.get("scan_limit", 25),
-            "ebay_connected": bool(b.get("ebay_user_id")),
-            "shopify_connected": bool(b.get("shopify_shop_domain")),
+            "ebay_connected": ebay_connected,
+            "shopify_connected": shopify_connected,
         }
     except HTTPException:
         raise
