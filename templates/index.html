@@ -2880,7 +2880,14 @@ async function openScanBarcodeModal() {
   } catch(pre_e) {
     // Permission denied at OS/browser level — open modal to show manual entry
     document.getElementById('scan-modal').style.display = 'flex';
-    document.getElementById('scan-status').textContent = 'Camera blocked — use manual entry below or enable camera in browser settings.';
+    var isIphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    var currentUrl = window.location.href;
+    if (isIphone) {
+      document.getElementById('scan-status').innerHTML = '📱 iPhone camera requires Safari. <a href="' + currentUrl + '" style="color:#e8ff47;font-weight:700;">Tap to open in Safari →</a> or use manual entry below.';
+    } else {
+      document.getElementById('scan-status').textContent = 'Camera blocked — allow camera access in browser settings or use manual entry below.';
+    }
+    document.getElementById('scan-status').style.color = '#f59e0b';
     document.getElementById('scan-status').style.color = '#ef4444';
     return;
   }
