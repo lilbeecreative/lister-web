@@ -4352,17 +4352,11 @@ function setScannerMode(mode) {
 }
 
 function handleScannerUpload(input) {
-  var files = input.files || input;
-  if (!files || !files.length) return;
-
+  if (!input || !input.files || !input.files.length) return;
   if (currentScannerMode === 'fast') {
-    // Fast scan — one file at a time, use existing fast scan logic
-    Array.from(files).forEach(function(file) {
-      uploadFastScanFile(file);
-    });
+    startFastScan(input);
   } else if (currentScannerMode === 'bulk') {
-    // Bulk — use existing upload logic
-    handleBulkFiles(files);
+    handleUploadFiles(input);
   }
 }
 
