@@ -403,40 +403,6 @@ select.field-input { background: #fff; color: #0f172a; }
   </div>
 </aside>
 <div class="main-wrapper" style="flex:1;margin-left:200px;min-width:0;">
-  <button class="nav-btn active" data-tab="dashboard">📊 Dashboard</button>
-  <button class="nav-btn" data-tab="upload">📸 Upload</button>
-  <button class="nav-btn" data-tab="fastscan">⚡ Fast Scan</button>
-  {% if is_admin %}<button class="nav-btn" data-tab="auction">🔨 Auctions</button>{% endif %}
-  {% if is_admin %}<button class="nav-btn" data-tab="parts">🔍 Parts Lookup</button>{% endif %}
-  <button class="nav-btn" data-tab="detailed" style="display:none;">📊 Detailed</button>
-  <button class="nav-btn" data-tab="expenses">💰 Expenses</button>
-  <button class="nav-btn" data-tab="intake">📥 Intake</button>
-  <button class="nav-btn" data-tab="inventory">📦 Inventory</button>
-  <button class="nav-btn" data-tab="settings">👤 Account</button>
-  <button class="nav-btn" data-tab="messages" id="user-mailbox-btn" style="position:relative;">💬 Messages <span id="user-mailbox-badge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;">●</span></button>
-  <div class="nav-spacer"></div>
-  <div style="padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:12px;margin-bottom:4px;">
-    <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Scans Used</div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-        <div style="height:100%;border-radius:2px;background:{% if scan_count >= scan_limit %}#ef4444{% elif scan_count >= scan_limit * 0.8 %}#f59e0b{% else %}#22c55e{% endif %};width:{{ [[((scan_count / scan_limit) * 100)|round|int, 100]|min, 0]|max }}%;"></div>
-      </div>
-      <span style="font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;">{{ scan_count }}/{{ scan_limit }}</span>
-    </div>
-  </div>
-  <a class="nav-download" href="#" onclick="connectEbay();return false;" id="ebay-connect-btn" style="background:#0064D2;color:#fff;border-color:#0064D2;">🔗 Connect eBay</a>
-  <a class="nav-download" href="#" onclick="connectShopify();return false;" id="shopify-connect-btn" style="background:#5a8e3b;color:#fff;border-color:#5a8e3b;">🛍️ Connect Shopify</a>
-  <a class="nav-download" href="#" onclick="window.location.href='/api/export/ebay-csv';return false;">⬇️ eBay CSV</a>
-  <div style="position:relative;">
-    <a class="nav-download" href="#" onclick="toggleSavedBatchesDropdown(event)" id="saved-batches-trigger">📁 <span id="saved-batches-trigger-label">Saved</span> <span id="saved-batches-trigger-count" style="color:var(--muted);font-size:10px;margin-left:2px;"></span></a>
-    <div id="saved-batches-dropdown" style="display:none;position:fixed;top:60px;right:16px;min-width:260px;max-width:320px;max-height:400px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:1000;padding:10px;">
-      <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;padding:4px 6px 8px 6px;border-bottom:1px solid var(--border);margin-bottom:6px;">📁 Saved Batches</div>
-      <div id="saved-batches-list" style="display:flex;flex-direction:column;gap:3px;"></div>
-      <div id="saved-batches-empty" style="color:var(--muted);font-size:11px;padding:8px 6px;font-style:italic;">No saved batches yet</div>
-    </div>
-  </div>
-  <a class="nav-download" href="/logout" style="color:#ef4444;border-color:#7f1d1d;">⏻ Logout</a>
-
 <!-- MOBILE BOTTOM TAB BAR -->
 <div class="mobile-tabbar">
   <div class="mobile-tabbar-inner" id="mobile-tabbar-inner">
