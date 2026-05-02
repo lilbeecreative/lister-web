@@ -3629,7 +3629,7 @@ Return ONLY the JSON object, no markdown, no other text."""
         raw = (response.text or "").strip()
         # Strip code fences
         import re as _re
-        raw = _re.sub(r"^```[a-zA-Z]*", "", raw).strip()
+        raw = _re.sub(r"^```[a-zA-Z]*\n?", "", raw, flags=_re.IGNORECASE)
         raw = _re.sub(r"```$", "", raw).strip()
         import json
         data = json.loads(raw)
@@ -3890,7 +3890,7 @@ Return ONLY the JSON object, no markdown, no other text."""
         raw = (response.text or "").strip()
         import re as _re
         # Strip code fences
-        raw = _re.sub(r"^```[a-zA-Z]*", "", raw).strip()
+        raw = _re.sub(r"^```[a-zA-Z]*\n?", "", raw, flags=_re.IGNORECASE)
         raw = _re.sub(r"```$", "", raw).strip()
         # If there's extra text around the JSON, extract just the JSON object
         match = _re.search(r"\{[\s\S]*\}", raw)
@@ -4214,7 +4214,7 @@ If you cannot read a field clearly, use null. For category, make your best guess
                 raw = response.candidates[0].content.parts[0].text.strip()
             except Exception:
                 raw = ""
-        raw = _re.sub(r"^```[a-zA-Z]*
+        raw = _re.sub(r"^```[a-zA-Z]*\n?", "", raw, flags=_re.IGNORECASE)
 ?", "", raw, flags=_re.IGNORECASE)
         raw = _re.sub(r"
 ?```$", "", raw).strip()
