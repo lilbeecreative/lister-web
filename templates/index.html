@@ -86,6 +86,14 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .sidebar-icon-btn:hover { background: #2d3348; }
 .main { padding: 20px 20px 80px; max-width: 1200px; margin: 0 auto; margin-left: 210px; }
 
+/* ── MOBILE TOP BAR ── */
+.mobile-topbar {
+  display: none; align-items: center; justify-content: space-between;
+  padding: 10px 16px; background: #090b0f; border-bottom: 1px solid #1a1f2e;
+  position: sticky; top: 0; z-index: 150; flex-shrink: 0;
+}
+@media (max-width: 768px) { .mobile-topbar { display: flex; } }
+
 /* ── MOBILE BOTTOM TAB BAR ── */
 .mobile-tabbar {
   display: none; position: fixed; bottom: 0; left: 0; right: 0;
@@ -419,6 +427,22 @@ select.field-input { background: #fff; color: #0f172a; }
   </div>
 </aside>
 <div class="main-wrapper" style="flex:1;min-width:0;">
+
+  <!-- MOBILE TOP BAR -->
+  <div class="mobile-topbar">
+    <div style="font-size:17px;font-weight:800;color:#e8ff47;letter-spacing:0.05em;">Lister<span style="color:#64748b;font-size:13px;">AI</span></div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="document.querySelector('.nav-btn[data-tab=\'messages\']').click()" style="width:36px;height:36px;background:#1a1f2e;border:none;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <span id="mobile-msg-badge" style="display:none;position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:1.5px solid #090b0f;"></span>
+      </button>
+      <button onclick="document.querySelector('.nav-btn[data-tab=\'settings\']').click()" style="width:36px;height:36px;background:#1a1f2e;border:none;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+      </button>
+    </div>
+  </div>
+
+
 <!-- MOBILE BOTTOM TAB BAR -->
 <div class="mobile-tabbar">
   <div class="mobile-tabbar-inner" id="mobile-tabbar-inner">
