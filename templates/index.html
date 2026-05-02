@@ -4391,7 +4391,8 @@ document.addEventListener('DOMContentLoaded', function() {
   var scannerBtn = document.querySelector('.nav-btn[data-tab="dashboard"]');
   if (scannerBtn) {
     scannerBtn.addEventListener('click', function() {
-      setTimeout(function() { setScannerMode(currentScannerMode); }, 50);
+      currentScannerMode = 'fast';
+      setTimeout(function() { setScannerMode('fast'); }, 50);
     });
   }
   // Init mode on load if scanner is active
