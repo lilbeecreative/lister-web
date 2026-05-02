@@ -3948,3 +3948,253 @@ async def upload_intake_photo(request: Request):
         import traceback; traceback.print_exc()
         raise HTTPException(500, str(e))
 
+
+# ─── Expenses ──────────────────────────────────────────────────
+
+EXPENSE_CATEGORIES = [
+    "Cost of Goods", "Shipping & Postage", "Supplies & Packaging",
+    "Fees & Subscriptions", "Gas & Travel", "Food & Meals",
+    "Software & Tools", "Other"
+]
+
+CATEGORY_COLORS = {
+    "Cost of Goods":       "#ef4444",
+    "Shipping & Postage":  "#f97316",
+    "Supplies & Packaging":"#eab308",
+    "Fees & Subscriptions":"#22c55e",
+    "Gas & Travel":        "#3b82f6",
+    "Food & Meals":        "#a855f7",
+    "Software & Tools":    "#06b6d4",
+    "Other":               "#6b7280",
+}
+
+@app.get("/api/expenses")
+async def list_expenses(request: Request, period: str = "month", category: str = ""):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        date_filter = None
+        if period == "day":
+            date_filter = (now - timedelta(days=1)).date()
+        elif period == "week":
+            date_filter = (now - timedelta(weeks=1)).date()
+        elif period == "month":
+            date_filter = (now - timedelta(days=30)).date()
+        elif period == "3month":
+            date_filter = (now - timedelta(days=90)).date()
+        elif period == "6month":
+            date_filter = (now - timedelta(days=180)).date()
+        elif period == "12month":
+            date_filter = (now - timedelta(days=365)).date()
+
+        q = supabase.table("expenses").select("*").eq("business_id", business_id)
+        if date_filter:
+            q = q.gte("expense_date", str(date_filter))
+        if category:
+            q = q.eq("category", category)
+        result = q.order("expense_date", desc=True).execute()
+        items = result.data or []
+
+        # Summary by category
+        summary = {}
+        for cat in EXPENSE_CATEGORIES:
+            summary[cat] = {"total": 0, "count": 0, "color": CATEGORY_COLORS.get(cat, "#6b7280")}
+        for it in items:
+            cat = it.get("category", "Other")
+            if cat not in summary:
+                summary[cat] = {"total": 0, "count": 0, "color": "#6b7280"}
+            summary[cat]["total"] += float(it.get("amount") or 0)
+            summary[cat]["count"] += 1
+
+        total = sum(float(i.get("amount") or 0) for i in items)
+        return {"items": items, "summary": summary, "total": total, "period": period}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/expenses")
+async def create_expense(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        row = {
+            "business_id": business_id,
+            "amount": float(body.get("amount") or 0),
+            "category": body.get("category") or "Other",
+            "merchant": body.get("merchant") or "",
+            "notes": body.get("notes") or "",
+            "expense_date": body.get("expense_date") or str(__import__("datetime").date.today()),
+            "source": body.get("source") or "manual",
+        }
+        result = supabase.table("expenses").insert(row).execute()
+        return {"ok": True, "item": result.data[0] if result.data else None}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.patch("/api/expenses/{expense_id}")
+async def update_expense(expense_id: str, request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        allowed = ("amount","category","merchant","notes","expense_date","receipt_photo_id")
+        updates = {k: v for k, v in body.items() if k in allowed}
+        if "amount" in updates:
+            updates["amount"] = float(updates["amount"] or 0)
+        from datetime import datetime, timezone
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        supabase.table("expenses").update(updates).eq("id", expense_id).eq("business_id", business_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.delete("/api/expenses/{expense_id}")
+async def delete_expense(expense_id: str, request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        supabase.table("expenses").delete().eq("id", expense_id).eq("business_id", business_id).execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/expenses/scan-receipt")
+async def scan_receipt(request: Request):
+    """Gemini one-shot receipt scan — returns extracted data for user to confirm."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        form = await request.form()
+        file = form.get("file")
+        if not file:
+            raise HTTPException(400, "No file")
+        contents = await file.read()
+        from PIL import Image, ImageOps
+        import io as _io, json as _json, re as _re
+        img = Image.open(_io.BytesIO(contents))
+        img = ImageOps.exif_transpose(img)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        if img.width > 1600 or img.height > 1600:
+            img.thumbnail((1600, 1600))
+        buf = _io.BytesIO()
+        img.save(buf, format="JPEG", quality=88)
+
+        import google.generativeai as genai
+        import base64
+        genai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY",""))
+        img_b64 = base64.b64encode(buf.getvalue()).decode()
+
+        prompt = """You are a receipt scanning assistant. Extract the following from this receipt image and return ONLY raw JSON, no other text:
+{
+  "merchant": "store or vendor name",
+  "amount": <total amount as number, no currency symbol>,
+  "expense_date": "YYYY-MM-DD",
+  "category": "one of: Cost of Goods, Shipping & Postage, Supplies & Packaging, Fees & Subscriptions, Gas & Travel, Food & Meals, Software & Tools, Other",
+  "notes": "brief description of what was purchased"
+}
+If you cannot read a field clearly, use null. For category, make your best guess based on the merchant and items."""
+
+        from google.genai import types as _gtypes
+        response = genai_client.models.generate_content(
+            model="models/gemini-2.5-flash",
+            contents=[
+                _gtypes.Part(inline_data=_gtypes.Blob(mime_type="image/jpeg", data=buf.getvalue())),
+                prompt
+            ],
+            config=_gtypes.GenerateContentConfig(
+                max_output_tokens=300,
+                temperature=0.0,
+                response_mime_type="application/json"
+            )
+        )
+        raw = (response.text or "").strip()
+        raw = _re.sub(r"^```[a-z]*
+?", "", raw, flags=_re.IGNORECASE)
+        raw = _re.sub(r"
+?```$", "", raw).strip()
+        match = _re.search(r"\{[\s\S]*\}", raw)
+        if match:
+            raw = match.group(0)
+        data = _json.loads(raw)
+        return {"ok": True, "data": data}
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/expenses/toggle-cogs")
+async def toggle_cogs_import(request: Request):
+    """Toggle COGS import from scans. Records timestamp when enabled."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        enabled = bool(body.get("enabled", False))
+        from datetime import datetime, timezone
+        updates = {"cogs_import_enabled": enabled}
+        if enabled:
+            updates["cogs_import_since"] = datetime.now(timezone.utc).isoformat()
+        supabase.table("businesses").update(updates).eq("id", business_id).execute()
+        return {"ok": True, "enabled": enabled}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/expenses/export")
+async def export_expenses(request: Request, period: str = "month", fmt: str = "csv"):
+    """Export expenses as CSV."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        from datetime import datetime, timezone, timedelta
+        import csv, io as _io
+        now = datetime.now(timezone.utc)
+        date_filter = None
+        if period != "all":
+            days = {"day":1,"week":7,"month":30,"3month":90,"6month":180,"12month":365}.get(period,30)
+            date_filter = (now - timedelta(days=days)).date()
+        q = supabase.table("expenses").select("*").eq("business_id", business_id)
+        if date_filter:
+            q = q.gte("expense_date", str(date_filter))
+        result = q.order("expense_date", desc=True).execute()
+        items = result.data or []
+
+        buf = _io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(["Date","Merchant","Category","Amount","Notes","Source"])
+        for it in items:
+            writer.writerow([
+                it.get("expense_date",""),
+                it.get("merchant",""),
+                it.get("category",""),
+                f"${float(it.get('amount') or 0):.2f}",
+                it.get("notes",""),
+                it.get("source","manual"),
+            ])
+        total = sum(float(i.get("amount") or 0) for i in items)
+        writer.writerow([])
+        writer.writerow(["TOTAL","","",f"${total:.2f}","",""])
+
+        from fastapi.responses import Response
+        return Response(
+            content=buf.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=expenses_{period}.csv"}
+        )
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
