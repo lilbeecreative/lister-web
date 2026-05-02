@@ -4208,11 +4208,21 @@ If you cannot read a field clearly, use null. For category, make your best guess
             )
         )
         raw = (response.text or "").strip()
-        raw = _re.sub(r"^```[a-zA-Z]*", "", raw, flags=_re.IGNORECASE)
-        raw = _re.sub(r"```$", "", raw).strip()
+        if not raw:
+            # Try getting text from parts
+            try:
+                raw = response.candidates[0].content.parts[0].text.strip()
+            except Exception:
+                raw = ""
+        raw = _re.sub(r"^```[a-zA-Z]*
+?", "", raw, flags=_re.IGNORECASE)
+        raw = _re.sub(r"
+?```$", "", raw).strip()
         match = _re.search(r"\{[\s\S]*\}", raw)
         if match:
             raw = match.group(0)
+        if not raw:
+            return {"ok": True, "data": {"merchant": "", "amount": None, "expense_date": "", "category": "Other", "notes": "Could not read receipt automatically — please fill in manually"}}
         data = _json.loads(raw)
         return {"ok": True, "data": data}
     except Exception as e:
