@@ -3175,17 +3175,18 @@ async def home_overview(request: Request):
         now = datetime.now(timezone.utc)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-        # Inventory value + count (all unsold, non-archived listings)
-        inv = (supabase.table("listings")
-            .select("price, quantity, sold_count")
+        # Inventory value + count — read from inventory table (same source as Inventory page)
+        inv = (supabase.table("inventory")
+            .select("price, status")
             .eq("business_id", business_id)
-            .neq("status", "archived")
             .execute())
         inv_items = inv.data or []
         inventory_value = 0.0
-        total_items = len(inv_items)
+        total_items = 0
         for it in inv_items:
-            inventory_value += float(it.get("price") or 0)
+            if it.get("status") != "sold":
+                inventory_value += float(it.get("price") or 0)
+                total_items += 1
 
         # Sold this month — from inventory table (sold_date set this month)
         try:
