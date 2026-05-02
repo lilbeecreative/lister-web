@@ -4067,7 +4067,7 @@ function renderMobileTabBar() {
     var def = MOBILE_ALL_TABS.find(function(t) { return t.tab === tabId; });
     if (!def) return;
     var isActive = currentMobileTab === tabId;
-    html += '<button class="mobile-tab' + (isActive?' active':'') + '" onclick="switchMobileTab('' + tabId + '')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;cursor:pointer;color:' + (isActive?'#22c55e':'#64748b') + ';padding:0;height:100%;">' +
+    html += '<button class="mobile-tab' + (isActive?' active':'') + '" onclick="switchMobileTab(\\x27' + tabId + '\\x27)" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;cursor:pointer;color:' + (isActive?'#22c55e':'#64748b') + ';padding:0;height:100%;">' +
       def.svg +
       '<span style="font-size:9px;font-weight:600;">' + def.label + '</span>' +
       '</button>';
