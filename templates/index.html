@@ -2366,11 +2366,34 @@ function setUpCondition(c) {
   document.getElementById('up-cond-new').className  = 'btn' + (c==='new'  ? ' btn-primary' : '');
 }
 
+var upBatchTitle = '';
+var upLotPrice = 0;
+var upItemCount = 0;
+
 async function startUploadBatch() {
   upBatchId = crypto.randomUUID();
-  upItems = []; upPhotos = []; upQtyVal = 1;
+  upItems = []; upPhotos = []; upQtyVal = 1; upItemCount = 0;
+  upBatchTitle = (document.getElementById('up-batch-title') || {}).value || '';
+  upLotPrice = parseFloat((document.getElementById('up-lot-price') || {}).value) || 0;
+
   document.getElementById('upload-start').style.display = 'none';
   document.getElementById('upload-active').style.display = 'block';
+
+  // Show batch title in active header
+  var titleDisplay = document.getElementById('up-batch-title-display');
+  if (titleDisplay && upBatchTitle) {
+    titleDisplay.textContent = upBatchTitle;
+    titleDisplay.style.display = 'block';
+  }
+
+  // Show lot price indicator
+  var lotIndicator = document.getElementById('up-lot-indicator');
+  var lotDisplay = document.getElementById('up-lot-display');
+  if (lotIndicator && upLotPrice > 0) {
+    if (lotDisplay) lotDisplay.textContent = upLotPrice.toFixed(2);
+    lotIndicator.style.display = 'block';
+  }
+
   await createUpGroup();
 }
 
@@ -2411,6 +2434,7 @@ function upQty(d) {
 
 async function submitUploadItem() {
   if (!upPhotos.length) { toast('Select photos first', 'error'); return; }
+  upItemCount++;
   const prog = document.getElementById('up-progress');
   const bar  = document.getElementById('up-progress-bar');
   const txt  = document.getElementById('up-progress-text');
