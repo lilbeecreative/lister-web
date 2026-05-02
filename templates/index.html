@@ -596,7 +596,7 @@ select.field-input { background: #fff; color: #0f172a; }
       </div>
 
       <!-- Mode Pills -->
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;">
         <button id="scanner-mode-fast" onclick="setScannerMode('fast')" style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;border:2px solid #fbbf24;background:rgba(251,191,36,0.1);color:#fbbf24;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Fast Scan
         </button>
@@ -705,11 +705,10 @@ select.field-input { background: #fff; color: #0f172a; }
         <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="batch-summary">—</div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-        <button class="btn" style="font-size:12px;padding:7px 12px;" onclick="selectAll()">☑ Select all</button>
-        <button class="btn" style="font-size:12px;padding:7px 12px;" onclick="deselectAll()">☐ Deselect</button>
-        <span style="width:1px;background:var(--border);align-self:stretch;"></span>
-        <button class="btn" style="font-size:12px;padding:7px 12px;" onclick="openLotCostModal()" id="lot-cost-btn">Add Lot Cost</button>
-        <button class="btn" style="font-size:12px;padding:7px 12px;background:#1a3a1a;border-color:#2d5a2d;color:#86efac;" onclick="openSaveBatchModal()">Save Batch</button>
+        <button class="btn" style="font-size:12px;padding:7px 10px;" onclick="selectAll()">Select all</button>
+        <button class="btn" style="font-size:12px;padding:7px 10px;" onclick="deselectAll()">Deselect</button>
+        <button class="btn" style="font-size:12px;padding:7px 10px;" onclick="openLotCostModal()" id="lot-cost-btn">Lot Cost</button>
+        <button class="btn" style="font-size:12px;padding:7px 10px;background:#1a3a1a;border-color:#2d5a2d;color:#86efac;" onclick="openSaveBatchModal()">Save Batch</button>
         <div style="position:relative;" id="submit-dropdown-wrap">
           <button class="btn btn-primary" id="submit-batch-btn" style="font-size:12px;padding:7px 14px;display:none;" onclick="toggleSubmitDropdown()">Submit (<span id="submit-count">0</span>) ▾</button>
           <div id="submit-dropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px;min-width:180px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
