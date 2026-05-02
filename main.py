@@ -4204,7 +4204,6 @@ If you cannot read a field clearly, use null. For category, make your best guess
             config=_gtypes.GenerateContentConfig(
                 max_output_tokens=300,
                 temperature=0.0,
-                response_mime_type="application/json"
             )
         )
         raw = (response.text or "").strip()
