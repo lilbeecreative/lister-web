@@ -4029,6 +4029,192 @@ function exportExpenses(fmt) {
   win.document.close();
 }
 
+
+// ── MOBILE BOTTOM TAB BAR ──
+var MOBILE_ALL_TABS = [
+  { tab: 'dashboard', label: 'Home',      svg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' },
+  { tab: 'fastscan',  label: 'Scan',      svg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' },
+  { tab: 'expenses',  label: 'Expenses',  svg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
+  { tab: 'inventory', label: 'Inventory', svg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' },
+  { tab: 'upload',    label: 'Upload',    svg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' },
+  { tab: 'intake',    label: 'Intake',    svg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>' },
+  { tab: 'settings',  label: 'Account',   svg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
+  { tab: 'messages',  label: 'Messages',  svg: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' },
+];
+
+var DEFAULT_MOBILE_TABS = ['dashboard','fastscan','expenses','inventory'];
+
+function getMobileTabs() {
+  try {
+    var saved = localStorage.getItem('mobile_tab_order');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return DEFAULT_MOBILE_TABS;
+}
+
+function saveMobileTabs(tabs) {
+  try { localStorage.setItem('mobile_tab_order', JSON.stringify(tabs)); } catch(e) {}
+}
+
+var currentMobileTab = 'dashboard';
+
+function renderMobileTabBar() {
+  var bar = document.getElementById('mobile-tabbar-inner');
+  if (!bar) return;
+  var activeTabs = getMobileTabs();
+  var html = '';
+  activeTabs.forEach(function(tabId) {
+    var def = MOBILE_ALL_TABS.find(function(t) { return t.tab === tabId; });
+    if (!def) return;
+    var isActive = currentMobileTab === tabId;
+    html += '<button class="mobile-tab' + (isActive?' active':'') + '" onclick="switchMobileTab('' + tabId + '')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;cursor:pointer;color:' + (isActive?'#22c55e':'#64748b') + ';padding:0;height:100%;">' +
+      def.svg +
+      '<span style="font-size:9px;font-weight:600;">' + def.label + '</span>' +
+      '</button>';
+  });
+  // More button (always last)
+  html += '<button class="mobile-tab" onclick="openMobileMore()" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;cursor:pointer;color:#64748b;padding:0;height:100%;">' +
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>' +
+    '<span style="font-size:9px;font-weight:600;">More</span>' +
+    '</button>';
+  bar.innerHTML = html;
+}
+
+function switchMobileTab(tabId) {
+  currentMobileTab = tabId;
+  // Click the matching desktop nav button to trigger all existing tab logic
+  var btn = document.querySelector('.nav-btn[data-tab="' + tabId + '"]');
+  if (btn) btn.click();
+  renderMobileTabBar();
+  closeMobileMore();
+}
+
+// ── MOBILE MORE SHEET ──
+function openMobileMore() {
+  var sheet = document.getElementById('mobile-more-sheet');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'mobile-more-sheet';
+    sheet.style.cssText = 'position:fixed;bottom:58px;left:0;right:0;background:#0d0f14;border-top:1px solid #1a1f2e;z-index:300;padding:16px;display:none;';
+    document.body.appendChild(sheet);
+  }
+  var activeTabs = getMobileTabs();
+  var otherTabs = MOBILE_ALL_TABS.filter(function(t) { return activeTabs.indexOf(t.tab) === -1; });
+
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+    '<div style="font-size:13px;font-weight:700;color:#f1f5f9;">More</div>' +
+    '<button onclick="openTabEditor()" style="background:#1a1f2e;border:none;color:#94a3b8;font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:inherit;">Edit Tabs</button>' +
+    '</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">';
+  otherTabs.forEach(function(def) {
+    html += '<button onclick="switchMobileTab('' + def.tab + '')" style="display:flex;flex-direction:column;align-items:center;gap:6px;background:#1a1f2e;border:none;color:#94a3b8;padding:12px 6px;border-radius:10px;cursor:pointer;font-family:inherit;">' +
+      def.svg + '<span style="font-size:10px;font-weight:600;">' + def.label + '</span></button>';
+  });
+  html += '</div>';
+  sheet.innerHTML = html;
+  sheet.style.display = 'block';
+  // Tap outside to close
+  setTimeout(function() {
+    document.addEventListener('click', closeMobileMoreOutside);
+  }, 50);
+}
+
+function closeMobileMoreOutside(e) {
+  var sheet = document.getElementById('mobile-more-sheet');
+  if (sheet && !sheet.contains(e.target) && e.target.closest && !e.target.closest('.mobile-tabbar')) {
+    closeMobileMore();
+  }
+}
+
+function closeMobileMore() {
+  var sheet = document.getElementById('mobile-more-sheet');
+  if (sheet) sheet.style.display = 'none';
+  document.removeEventListener('click', closeMobileMoreOutside);
+}
+
+// ── TAB EDITOR ──
+function openTabEditor() {
+  closeMobileMore();
+  var sheet = document.getElementById('mobile-reorder-sheet');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'mobile-reorder-sheet';
+    sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:400;display:none;align-items:flex-end;';
+    document.body.appendChild(sheet);
+  }
+  var activeTabs = getMobileTabs();
+  var html = '<div style="background:#0d0f14;border-radius:16px 16px 0 0;padding:20px;width:100%;max-height:80vh;overflow-y:auto;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+    '<div style="font-size:15px;font-weight:800;color:#f1f5f9;">Edit Tab Bar</div>' +
+    '<button onclick="closeMobileTabEditor()" style="background:#1a1f2e;border:none;color:#94a3b8;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;">×</button>' +
+    '</div>' +
+    '<div style="font-size:12px;color:#64748b;margin-bottom:16px;">Choose up to 4 tabs to show in your tab bar</div>' +
+    '<div id="tab-editor-list">';
+
+  MOBILE_ALL_TABS.forEach(function(def) {
+    var isActive = activeTabs.indexOf(def.tab) !== -1;
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1a1f2e;">' +
+      '<div style="color:#64748b;">' + def.svg + '</div>' +
+      '<div style="flex:1;font-size:14px;font-weight:600;color:#f1f5f9;">' + def.label + '</div>' +
+      '<label style="display:flex;align-items:center;cursor:pointer;">' +
+      '<input type="checkbox" data-tab="' + def.tab + '" ' + (isActive?'checked':'') + ' onchange="updateTabSelection()" style="width:18px;height:18px;accent-color:#22c55e;cursor:pointer;">' +
+      '</label></div>';
+  });
+  html += '</div>' +
+    '<div id="tab-editor-error" style="color:#ef4444;font-size:12px;margin-top:8px;display:none;">Choose between 2 and 4 tabs</div>' +
+    '<button onclick="saveTabEditor()" style="width:100%;margin-top:16px;background:#22c55e;color:#000;border:none;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Save</button>' +
+    '</div>';
+
+  sheet.innerHTML = html;
+  sheet.style.display = 'flex';
+}
+
+function updateTabSelection() {
+  var checked = document.querySelectorAll('#tab-editor-list input:checked');
+  var err = document.getElementById('tab-editor-error');
+  if (checked.length > 4) {
+    // Uncheck the last one
+    event.target.checked = false;
+    if (err) { err.textContent = 'Max 4 tabs allowed'; err.style.display = 'block'; }
+    setTimeout(function() { if(err) err.style.display='none'; }, 2000);
+  }
+}
+
+function saveTabEditor() {
+  var checked = document.querySelectorAll('#tab-editor-list input:checked');
+  if (checked.length < 2) {
+    var err = document.getElementById('tab-editor-error');
+    if (err) { err.textContent = 'Choose at least 2 tabs'; err.style.display = 'block'; }
+    return;
+  }
+  var newTabs = [];
+  checked.forEach(function(inp) { newTabs.push(inp.dataset.tab); });
+  saveMobileTabs(newTabs);
+  closeMobileTabEditor();
+  renderMobileTabBar();
+  toast('Tab bar updated ✓');
+}
+
+function closeMobileTabEditor() {
+  var sheet = document.getElementById('mobile-reorder-sheet');
+  if (sheet) sheet.style.display = 'none';
+}
+
+// Init on page load
+document.addEventListener('DOMContentLoaded', function() {
+  renderMobileTabBar();
+  // Keep mobile tab bar in sync when desktop nav buttons are clicked
+  document.querySelectorAll('.nav-btn[data-tab]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var tabId = this.dataset.tab;
+      if (tabId && tabId !== 'detailed') {
+        currentMobileTab = tabId;
+        renderMobileTabBar();
+      }
+    });
+  });
+});
+
 // ── DETAILED ANALYTICS ─────────────────────────────────────
 let detailedPeriod = 'month';
 
