@@ -1098,7 +1098,7 @@ select.field-input { background: #fff; color: #0f172a; }
           <div style="font-size:14px;font-weight:600;">Tap to upload receipt photo</div>
           <div style="font-size:11px;color:var(--muted);margin-top:4px;">JPG/PNG, up to 10MB</div>
         </label>
-        <input type="file" id="receipt-file-input" accept="image/*" style="display:none;" onchange="scanReceipt(this)">
+        <input type="file" id="receipt-file-input" accept="image/*" capture="environment" style="display:none;" onchange="scanReceipt(this)">
       </div>
 
       <div id="receipt-step-scanning" style="display:none;text-align:center;padding:30px;">
