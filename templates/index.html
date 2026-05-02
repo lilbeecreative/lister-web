@@ -4072,14 +4072,16 @@ function renderMobileTabBar() {
     var isActive = currentMobileTab === tabId;
     var color = isActive ? '#22c55e' : '#64748b';
     var btn = document.createElement('button');
-    btn.style.cssText = 'flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:transparent;border:none;cursor:pointer;color:' + color + ';padding:0;height:100%;';
+    btn.className = 'mobile-tab' + (isActive ? ' active' : '');
+    btn.style.cssText = 'flex:1 1 0;min-width:0;color:' + color + ';';
     btn.onclick = function() { switchMobileTab(tabId); };
     btn.innerHTML = def.svg + '<span style="font-size:11px;font-weight:700;color:' + color + ';line-height:1;">' + def.label + '</span>';
     bar.appendChild(btn);
   });
   // More button
   var moreBtn = document.createElement('button');
-  moreBtn.style.cssText = 'flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:transparent;border:none;cursor:pointer;color:#64748b;padding:0;height:100%;';
+  moreBtn.className = 'mobile-tab';
+  moreBtn.style.cssText = 'flex:1 1 0;min-width:0;';
   moreBtn.onclick = function() { openMobileMore(); };
   moreBtn.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>' +
     '<span style="font-size:11px;font-weight:700;line-height:1;">More</span>';
