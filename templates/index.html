@@ -4065,6 +4065,26 @@ function renderExpChart() {
   var data = cats.map(function(c) { return expSummary[c].total; });
   var colors = cats.map(function(c) { return EXP_COLORS[c] || '#6b7280'; });
 
+  // Update center total
+  var centerEl = document.getElementById('exp-chart-total');
+  if (centerEl) centerEl.textContent = '$' + expTotal.toFixed(0);
+  var badgeEl = document.getElementById('exp-total-badge');
+  if (badgeEl) badgeEl.textContent = '';
+
+  // Render custom HTML legend
+  var legendEl = document.getElementById('exp-chart-legend');
+  if (legendEl) {
+    legendEl.innerHTML = cats.map(function(c) {
+      var pct = expTotal > 0 ? ((expSummary[c].total / expTotal) * 100).toFixed(1) : 0;
+      return '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<div style="width:10px;height:10px;border-radius:50%;background:' + (EXP_COLORS[c]||'#6b7280') + ';flex-shrink:0;"></div>' +
+        '<div style="flex:1;font-size:12px;color:var(--text);font-weight:600;">' + c + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);">' + pct + '%</div>' +
+        '<div style="font-size:12px;font-weight:700;color:var(--text);min-width:52px;text-align:right;">$' + expSummary[c].total.toFixed(0) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
   expChartInstance = new Chart(canvas, {
     type: 'doughnut',
     data: {
@@ -4072,36 +4092,17 @@ function renderExpChart() {
       datasets: [{
         data: data,
         backgroundColor: colors,
-        borderColor: 'var(--bg)',
+        borderColor: '#0d0f14',
         borderWidth: 3,
-        hoverOffset: 8
+        hoverOffset: 6
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      cutout: '65%',
+      responsive: false,
+      maintainAspectRatio: false,
+      cutout: '70%',
       plugins: {
-        legend: {
-          position: 'right',
-          labels: {
-            color: '#94a3b8',
-            font: { size: 12, family: 'Instrument Sans' },
-            padding: 16,
-            usePointStyle: true,
-            generateLabels: function(chart) {
-              return chart.data.labels.map(function(label, i) {
-                return {
-                  text: (EXP_EMOJIS[label]||'') + ' ' + label + '  $' + (chart.data.datasets[0].data[i]||0).toFixed(2),
-                  fillStyle: chart.data.datasets[0].backgroundColor[i],
-                  strokeStyle: chart.data.datasets[0].backgroundColor[i],
-                  pointStyle: 'circle',
-                  index: i
-                };
-              });
-            }
-          }
-        },
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: function(ctx) {
