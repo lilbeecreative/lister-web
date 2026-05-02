@@ -134,15 +134,14 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 
 @media (max-width: 768px) {
   .sidebar { display: none; }
-  .main { margin-left: 0; padding-bottom: 70px; }
+  .main { margin-left: 0 !important; padding-bottom: 70px; }
+  .main-wrapper { margin-left: 0 !important; }
   .mobile-tabbar { display: flex; }
 }
 @media (min-width: 769px) {
   .mobile-more-sheet, .mobile-reorder-sheet { display: none !important; }
 }
-.nav-btn[data-tab="dashboard"].active { background: var(--accent); }
-.nav-btn[data-tab="scan"].active { background: var(--orange); }
-.nav-btn[data-tab="upload"].active { background: #0891b2; }
+
 .nav-btn[data-tab="auction"].active { background: var(--amber); }
 .pdf-drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 28px; text-align: center; cursor: pointer; transition: border-color 0.15s; position: relative; overflow: hidden; margin-bottom: 14px; }
 .pdf-drop-zone:hover { border-color: var(--amber); }
@@ -412,7 +411,7 @@ select.field-input { background: #fff; color: #0f172a; }
     </button>
   </div>
 </aside>
-<div class="main-wrapper" style="flex:1;margin-left:200px;min-width:0;">
+<div class="main-wrapper" style="flex:1;min-width:0;">
 <!-- MOBILE BOTTOM TAB BAR -->
 <div class="mobile-tabbar">
   <div class="mobile-tabbar-inner" id="mobile-tabbar-inner">
