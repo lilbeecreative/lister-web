@@ -4200,8 +4200,10 @@ If you cannot read a field clearly, use null. For category, make your best guess
         response = genai_client.models.generate_content(
             model="models/gemini-2.5-flash",
             contents=[
-                _gtypes.Part(inline_data=_gtypes.Blob(mime_type="image/jpeg", data=buf.getvalue())),
-                prompt
+                _gtypes.Content(parts=[
+                    _gtypes.Part(inline_data=_gtypes.Blob(mime_type="image/jpeg", data=buf.getvalue())),
+                    _gtypes.Part(text=prompt)
+                ])
             ],
             config=_gtypes.GenerateContentConfig(
                 max_output_tokens=300,
