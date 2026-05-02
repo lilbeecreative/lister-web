@@ -4462,41 +4462,69 @@ function loadHomeOverview() {
     .then(d => {
       var byId = function(id) { return document.getElementById(id); };
       if (byId('home-business-name')) byId('home-business-name').textContent = d.business_name || 'Your business';
-      if (byId('home-inventory-value')) byId('home-inventory-value').textContent = '$' + Number(d.inventory_value || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
       if (byId('home-total-items')) byId('home-total-items').textContent = (d.total_items || 0).toLocaleString();
-      if (byId('home-sold-mtd')) byId('home-sold-mtd').textContent = '$' + Number(d.sold_mtd || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
-      if (byId('home-sold-count')) byId('home-sold-count').textContent = (d.sold_count_mtd || 0) + ' items';
-      if (byId('home-spent-mtd')) byId('home-spent-mtd').textContent = '$' + Number(d.spent_mtd || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
       if (byId('home-inv-count-label')) byId('home-inv-count-label').textContent = (d.total_items || 0) + ' items';
-      if (byId('home-spent-label')) byId('home-spent-label').textContent = '$' + Number(d.spent_mtd || 0).toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0}) + ' MTD';
 
-      // Scan bar
+      // Scans
+      var scansLeft = Math.max(0, (d.scan_limit || 500) - (d.scan_count || 0));
+      if (byId('home-scans-left')) byId('home-scans-left').textContent = scansLeft.toLocaleString();
+      if (byId('home-scan-pct')) byId('home-scan-pct').textContent = (d.scan_count || 0) + '/' + (d.scan_limit || 500);
+      if (byId('home-scan-remaining')) byId('home-scan-remaining').textContent = scansLeft + ' scans remaining this period';
       var pct = (d.scan_count || 0) / Math.max(1, d.scan_limit || 500) * 100;
       pct = Math.min(100, Math.max(0, pct));
-      if (byId('home-scan-pct')) byId('home-scan-pct').textContent = (d.scan_count || 0) + '/' + (d.scan_limit || 500);
       if (byId('home-scan-bar')) {
         byId('home-scan-bar').style.width = pct + '%';
-        byId('home-scan-bar').style.background = pct >= 100 ? '#ef4444' : (pct >= 80 ? '#f59e0b' : '#22c55e');
+        byId('home-scan-bar').style.background = pct >= 100 ? '#ef4444' : (pct >= 80 ? '#f59e0b' : '#fbbf24');
       }
 
-      // Connection dots — update both Home header and sidebar
+      // Connection dots
       var eDot = byId('home-ebay-dot');
       if (eDot) eDot.style.background = d.ebay_connected ? '#22c55e' : '#ef4444';
       var eLabel = byId('home-ebay-label');
       if (eLabel) eLabel.textContent = d.ebay_connected ? 'eBay' : 'eBay off';
-
       var sDot = byId('home-shopify-dot');
       if (sDot) sDot.style.background = d.shopify_connected ? '#22c55e' : '#ef4444';
       var sLabel = byId('home-shopify-label');
       if (sLabel) sLabel.textContent = d.shopify_connected ? 'Shopify' : 'Shopify off';
-
-      // Also sync sidebar bottom dots
       var sideEbay = byId('ebay-status-dot');
       if (sideEbay) sideEbay.style.background = d.ebay_connected ? '#22c55e' : '#ef4444';
       var sideShopify = byId('shopify-status-dot');
       if (sideShopify) sideShopify.style.background = d.shopify_connected ? '#22c55e' : '#ef4444';
     })
     .catch(function(e) { console.error('home overview load failed', e); });
+
+  // Load recent batches
+  fetch('/api/saved-batches', { credentials: 'include' })
+    .then(r => r.json())
+    .then(batches => {
+      var list = document.getElementById('home-batches-list');
+      if (!list) return;
+      if (!batches || !batches.length) {
+        list.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;">No batches yet — start scanning!</div>';
+        return;
+      }
+      list.innerHTML = batches.slice(0, 5).map(function(b) {
+        var timeAgo = b.updated_at ? timeAgoStr(b.updated_at) : '';
+        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 12px;cursor:pointer;" onclick="loadSavedBatch('' + b.id + '')">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--text);">' + escapeHtml(b.name || 'Untitled batch') + '</div>' +
+          '<div style="font-size:10px;color:var(--muted);">' + timeAgo + '</div></div>' +
+          '<div style="font-size:11px;color:var(--muted);">' + (b.count || 0) + ' items</div>' +
+          '</div>';
+      }).join('');
+    })
+    .catch(function() {
+      var list = document.getElementById('home-batches-list');
+      if (list) list.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;">No batches yet</div>';
+    });
+}
+
+function timeAgoStr(dateStr) {
+  var diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 3600) return Math.round(diff/60) + 'm ago';
+  if (diff < 86400) return Math.round(diff/3600) + 'h ago';
+  if (diff < 604800) return Math.round(diff/86400) + 'd ago';
+  return Math.round(diff/604800) + 'w ago';
 }
 
 // Load home overview on page load + tab click
