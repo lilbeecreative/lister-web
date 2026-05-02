@@ -4550,7 +4550,7 @@ function setScannerMode(mode) {
     return;
   }
 
-  // Multi-item mode — switch to fastscan tab directly
+  // Multi-item mode — show inline upload area
   if (mode === 'multi') {
     var scanLimit = {{ scan_limit }};
     if (scanLimit < 500) {
@@ -4558,12 +4558,7 @@ function setScannerMode(mode) {
       toast('Multi-item scan requires Growth+ plan', 'error');
       return;
     }
-    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
-    var fsTab = document.getElementById('tab-fastscan');
-    if (fsTab) { fsTab.style.removeProperty('display'); fsTab.classList.add('active'); }
-    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
-    var fsBtn = document.querySelector('.nav-btn[data-tab="fastscan"]');
-    if (fsBtn) fsBtn.classList.add('active');
+    // Show the multi upload area — it calls startMultiScan directly
     return;
   }
 }
@@ -4580,14 +4575,14 @@ function handleScannerUpload(input) {
 function handleMultiScannerUpload(input) {
   var files = input.files;
   if (!files || !files.length) return;
-  // Trigger existing multi-scan logic
-  var multiInput = document.getElementById('multi-photo-input');
+  // Use the existing startMultiScan function directly
+  var multiInput = document.getElementById('multi-scan-input');
   if (multiInput) {
-    // Copy files to existing multi input and trigger
     var dt = new DataTransfer();
     Array.from(files).forEach(function(f) { dt.items.add(f); });
     multiInput.files = dt.files;
-    multiInput.dispatchEvent(new Event('change'));
+    // Trigger startMultiScan
+    startMultiScan(multiInput);
   } else {
     toast('Multi-item scanner not available', 'error');
   }
