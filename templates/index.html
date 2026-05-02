@@ -4416,14 +4416,11 @@ function loadHomeOverview() {
     .catch(function(e) { console.error('home overview load failed', e); });
 }
 
-// Load when home tab is opened
+// Load home overview on page load + tab click
+window.addEventListener('load', function() {
+  setTimeout(loadHomeOverview, 200);
+});
 document.addEventListener('DOMContentLoaded', function() {
-  // Initial load if Home is the active tab
-  var homeTab = document.getElementById('tab-home');
-  if (homeTab && homeTab.classList.contains('active')) {
-    loadHomeOverview();
-  }
-  // Reload on tab click
   var homeBtn = document.querySelector('.nav-btn[data-tab="home"]');
   if (homeBtn) {
     homeBtn.addEventListener('click', function() {
