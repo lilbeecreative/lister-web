@@ -2847,8 +2847,9 @@ var fsCond = 'new';
 
 function setFsCond(c) {
   fsCond = c;
-  document.getElementById('fs-cond-new').className = 'fastscan-cond-btn' + (c==='new' ? ' active' : '');
-  document.getElementById('fs-cond-used').className = 'fastscan-cond-btn' + (c==='used' ? ' active' : '');
+  var n=document.getElementById('fs-cond-new'),u=document.getElementById('fs-cond-used');
+  if(n) n.className='fastscan-cond-btn'+(c==='new'?' active':'');
+  if(u) u.className='fastscan-cond-btn'+(c==='used'?' active':'');
 }
 setFsCond('new');
 
