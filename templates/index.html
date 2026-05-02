@@ -89,7 +89,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .mobile-tabbar {
   display: none; position: fixed; bottom: 0; left: 0; right: 0;
   background: #0d0f14; border-top: 1px solid #1a1f2e;
-  z-index: 200; height: 84px; padding-bottom: env(safe-area-inset-bottom, 0);
+  z-index: 200; height: 56px; padding-bottom: env(safe-area-inset-bottom, 0);
 }
 .mobile-tabbar-inner { display: flex; height: 100%; }
 .mobile-tab {
@@ -136,7 +136,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 
 @media (max-width: 768px) {
   .sidebar { display: none; }
-  .main { margin-left: 0 !important; padding-bottom: 110px; }
+  .main { margin-left: 0 !important; padding-bottom: 80px; }
   .main-wrapper { margin-left: 0 !important; }
   .mobile-tabbar { display: flex; }
 }
@@ -4161,7 +4161,7 @@ function saveMobileTabs(tabs) {
   try { localStorage.setItem('mobile_tab_order', JSON.stringify(tabs)); } catch(e) {}
 }
 
-var currentMobileTab = 'dashboard';
+var currentMobileTab = 'home';
 
 
 function loadHomeOverview() {
@@ -4226,33 +4226,25 @@ document.addEventListener('DOMContentLoaded', function() {
 function renderMobileTabBar() {
   var bar = document.getElementById('mobile-tabbar-inner');
   if (!bar) return;
-  var activeTabs = getMobileTabs();
+  var tabs = [
+    { tab: 'home', label: 'Home', svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12L12 3l9 9"/><path d="M5 10v10h14V10"/></svg>' },
+    { tab: 'dashboard', label: 'Scanner', svg: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' },
+  ];
   bar.innerHTML = '';
-  activeTabs.forEach(function(tabId) {
-    var def = MOBILE_ALL_TABS.find(function(t) { return t.tab === tabId; });
-    if (!def) return;
-    var isActive = currentMobileTab === tabId;
-    var color = isActive ? '#22c55e' : '#64748b';
+  tabs.forEach(function(def) {
+    var isActive = currentMobileTab === def.tab;
+    var color = isActive ? (def.tab === 'home' ? '#22c55e' : '#fbbf24') : '#64748b';
     var btn = document.createElement('button');
     btn.className = 'mobile-tab' + (isActive ? ' active' : '');
-    btn.style.cssText = 'flex:1 1 0;min-width:0;color:' + color + ';';
-    btn.onclick = function() { switchMobileTab(tabId); };
-    btn.innerHTML = def.svg + '<span style="font-size:11px;font-weight:700;color:' + color + ';line-height:1;width:100%;text-align:center;display:block;overflow:hidden;text-overflow:ellipsis;">' + def.label + '</span>';
+    btn.style.cssText = 'flex:1 1 0;min-width:0;color:' + color + ';border-bottom:' + (isActive ? '2px solid ' + color : '2px solid transparent') + ';';
+    btn.onclick = function() { switchMobileTab(def.tab); };
+    btn.innerHTML = def.svg + '<span style="font-size:11px;font-weight:700;color:' + color + ';line-height:1;width:100%;text-align:center;display:block;margin-top:4px;">' + def.label + '</span>';
     bar.appendChild(btn);
   });
-  // More button
-  var moreBtn = document.createElement('button');
-  moreBtn.className = 'mobile-tab';
-  moreBtn.style.cssText = 'flex:1 1 0;min-width:0;';
-  moreBtn.onclick = function() { openMobileMore(); };
-  moreBtn.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>' +
-    '<span style="font-size:11px;font-weight:700;line-height:1;width:100%;text-align:center;display:block;">More</span>';
-  bar.appendChild(moreBtn);
 }
 
 function switchMobileTab(tabId) {
   currentMobileTab = tabId;
-  // Click the matching desktop nav button to trigger all existing tab logic
   var btn = document.querySelector('.nav-btn[data-tab="' + tabId + '"]');
   if (btn) btn.click();
   renderMobileTabBar();
