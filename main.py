@@ -3543,8 +3543,8 @@ Return ONLY the JSON object, no markdown, no other text."""
         raw = (response.text or "").strip()
         # Strip code fences
         import re as _re
-        raw = _re.sub(r"^```[a-z]*\n?", "", raw, flags=_re.IGNORECASE)
-        raw = _re.sub(r"\n?```$", "", raw).strip()
+        raw = _re.sub(r"^```[a-zA-Z]*", "", raw).strip()
+        raw = _re.sub(r"```$", "", raw).strip()
         import json
         data = json.loads(raw)
         items = (data.get("items") or [])[:MULTI_ITEM_CAP]
@@ -3804,8 +3804,8 @@ Return ONLY the JSON object, no markdown, no other text."""
         raw = (response.text or "").strip()
         import re as _re
         # Strip code fences
-        raw = _re.sub(r"^```[a-z]*\n?", "", raw, flags=_re.IGNORECASE)
-        raw = _re.sub(r"\n?```$", "", raw).strip()
+        raw = _re.sub(r"^```[a-zA-Z]*", "", raw).strip()
+        raw = _re.sub(r"```$", "", raw).strip()
         # If there's extra text around the JSON, extract just the JSON object
         match = _re.search(r"\{[\s\S]*\}", raw)
         if match:
