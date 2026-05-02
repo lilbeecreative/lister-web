@@ -2156,7 +2156,32 @@ function cyclePhoto(id, dir) {
 
 function toggleSelect(id) {
   if (selected.has(id)) selected.delete(id); else selected.add(id);
-  renderTiles();
+  // Update just this tile visually instead of full re-render
+  var tile = document.getElementById('tile-' + id);
+  if (tile) {
+    var isSel = selected.has(id);
+    tile.classList.toggle('selected', isSel);
+    // Update checkmark
+    var chk = tile.querySelector('.tile-checkmark');
+    if (chk) {
+      if (isSel) {
+        chk.style.background = 'var(--accent)';
+        chk.style.border = 'none';
+        chk.innerHTML = '<span style="color:#fff;font-size:13px;font-weight:700;">✓</span>';
+      } else {
+        chk.style.background = 'rgba(15,17,23,0.7)';
+        chk.style.border = '1.5px solid #4b5563';
+        chk.innerHTML = '';
+      }
+    }
+  }
+  // Update batch summary
+  var totalListed = 0, totalCost = 0;
+  listings.forEach(function(l) { totalListed += (l.price||0); totalCost += (l.cost||0); });
+  var showCost = window._costTrackingEnabled !== false;
+  var batchLine = listings.length + ' items · ' + selected.size + ' selected · $' + totalListed.toFixed(0) + ' listed' + (showCost ? ' · $' + totalCost.toFixed(0) + ' cost' : '');
+  var bs = document.getElementById('batch-summary');
+  if (bs) bs.textContent = batchLine;
   updateSubmitBtn();
 }
 function selectAll()   { listings.forEach(l => selected.add(l.id)); renderTiles(); }
