@@ -2893,9 +2893,30 @@ async function startCamera() {
     if (scanInterval) clearInterval(scanInterval);
     scanInterval = setInterval(scanFrame, 250);
   } catch(e) {
-    console.error('Camera error', e);
-    document.getElementById('scan-status').textContent = 'Camera permission denied. Allow in browser settings or use manual entry.';
+    console.error('Camera error', e.name, e.message);
+    var msg = e.name === 'NotAllowedError' ? 'Permission denied — tap the lock icon in Chrome address bar → Site Settings → Camera → Allow'
+            : e.name === 'NotFoundError' ? 'No camera found on this device'
+            : e.name === 'NotReadableError' ? 'Camera in use by another app — close other camera apps and retry'
+            : e.name === 'OverconstrainedError' ? 'Camera constraint failed — trying again...'
+            : 'Camera error: ' + e.name + ' — ' + e.message;
+    document.getElementById('scan-status').textContent = msg;
     document.getElementById('scan-status').style.color = '#ef4444';
+
+    // If OverconstrainedError (facingMode rejected), retry with no constraints
+    if (e.name === 'OverconstrainedError' || e.name === 'NotFoundError') {
+      try {
+        scanStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        var video = document.getElementById('scan-video');
+        video.srcObject = scanStream;
+        document.getElementById('scan-status').textContent = 'Looking for QR code...';
+        document.getElementById('scan-status').style.color = 'var(--muted)';
+        await loadJsQR();
+        if (scanInterval) clearInterval(scanInterval);
+        scanInterval = setInterval(scanFrame, 250);
+      } catch(e2) {
+        document.getElementById('scan-status').textContent = 'Camera unavailable: ' + e2.message;
+      }
+    }
   }
 }
 
