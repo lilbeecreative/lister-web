@@ -4120,10 +4120,8 @@ If you cannot read a field clearly, use null. For category, make your best guess
             )
         )
         raw = (response.text or "").strip()
-        raw = _re.sub(r"^```[a-z]*
-?", "", raw, flags=_re.IGNORECASE)
-        raw = _re.sub(r"
-?```$", "", raw).strip()
+        raw = _re.sub(r"^```[a-zA-Z]*", "", raw, flags=_re.IGNORECASE)
+        raw = _re.sub(r"```$", "", raw).strip()
         match = _re.search(r"\{[\s\S]*\}", raw)
         if match:
             raw = match.group(0)
