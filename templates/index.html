@@ -2253,8 +2253,39 @@ async function confirmClearBatch() {
   } catch(e) { toast('Failed to clear batch', 'error'); }
 }
 
-function submitSelected() {
-  toast('eBay direct submit coming soon — use eBay CSV for now');
+async function submitSelected() {
+  if (!selected.size) { toast('Select items first', 'error'); return; }
+  var ebayDot = document.getElementById('ebay-status-dot');
+  var isConnected = ebayDot && ebayDot.style.background === 'rgb(34, 197, 94)';
+  if (!isConnected) {
+    if (confirm('eBay not connected. Go to Account to connect your eBay account?')) {
+      document.querySelector('.nav-btn[data-tab="settings"]').click();
+    }
+    return;
+  }
+  var ids = Array.from(selected);
+  var btn = document.getElementById('submit-batch-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
+  try {
+    var r = await fetch('/api/ebay/submit-listings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({listing_ids: ids})
+    });
+    var d = await r.json();
+    if (d.ok) {
+      toast(d.submitted + ' of ' + d.total + ' listings submitted to eBay');
+      selected.clear();
+      await loadListings();
+    } else {
+      toast('Submit failed: ' + (d.detail || 'Unknown error'), 'error');
+    }
+  } catch(e) {
+    toast('Submit error: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; updateSubmitBtn(); }
+  }
 }
 
 async function deleteItem(id) {
