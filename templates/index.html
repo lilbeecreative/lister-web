@@ -2493,6 +2493,15 @@ async function startUploadBatch() {
     if (lotDisplay) lotDisplay.textContent = upLotPrice.toFixed(2);
     lotIndicator.style.display = 'block';
   }
+  // Show lot summary panel
+  var lotSummary = document.getElementById('up-lot-summary');
+  var lotSummaryVal = document.getElementById('up-lot-summary-val');
+  var costPerItem = document.getElementById('up-cost-per-item');
+  if (lotSummary && upLotPrice > 0) {
+    if (lotSummaryVal) lotSummaryVal.textContent = upLotPrice.toFixed(2);
+    lotSummary.style.display = 'block';
+    if (costPerItem) costPerItem.textContent = upLotPrice.toFixed(2);
+  }
 
   await createUpGroup();
 }
