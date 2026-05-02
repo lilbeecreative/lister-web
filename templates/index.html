@@ -1038,6 +1038,20 @@ select.field-input { background: #fff; color: #0f172a; }
         </div>
       </div>
 
+      <!-- eBay OAuth -->
+      <div class="acct-card" style="margin-bottom:14px;">
+        <div class="acct-card-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:30px;height:30px;border-radius:7px;background:#0064D2;display:flex;align-items:center;justify-content:center;font-size:14px;">🏷️</div>
+            <div>
+              <div class="acct-card-title">eBay Account</div>
+              <div id="ebay-oauth-status" style="font-size:11px;color:var(--muted);margin-top:1px;">Checking...</div>
+            </div>
+          </div>
+          <div id="ebay-oauth-actions"></div>
+        </div>
+      </div>
+
       <!-- Shopify -->
       <div class="acct-card" style="margin-bottom:14px;">
         <div class="acct-card-header">
@@ -1637,7 +1651,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     if (tab === 'expenses') { if (typeof loadExpenses === 'function') loadExpenses(); }
     if (tab === 'fastscan') { if (typeof checkMultiScanTier === 'function') checkMultiScanTier(); }
     if (tab === 'auction')   loadAuctionSessions();
-    if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); loadCostTrackingState(); }
+    if (tab === 'settings')  { loadSettings(); loadAccountInfo(); loadShopifyStatus(); loadEbayOAuthStatus(); loadCostTrackingState(); }
     if (tab === 'messages')  { loadUserThread(); }
   });
 });
@@ -1874,6 +1888,36 @@ async function changePlan(plan) {
   } catch(e) {
     toast('Failed: ' + e.message, 'error');
   }
+}
+
+async function loadEbayOAuthStatus() {
+  try {
+    const r = await fetch('/api/ebay/status', {credentials:'include'});
+    const d = await r.json();
+    const statusEl = document.getElementById('ebay-oauth-status');
+    const actionsEl = document.getElementById('ebay-oauth-actions');
+    if (!statusEl || !actionsEl) return;
+    if (d.connected) {
+      statusEl.textContent = 'Connected' + (d.environment ? ' (' + d.environment + ')' : '');
+      statusEl.style.color = '#22c55e';
+      actionsEl.innerHTML = '<button class="btn" style="background:#1a1f2e;border-color:#2d3348;color:#ef4444;font-size:12px;padding:6px 12px;" onclick="disconnectEbayOAuth()">Disconnect</button>';
+      // Update sidebar dot
+      var dot = document.getElementById('ebay-status-dot');
+      if (dot) dot.style.background = '#22c55e';
+    } else {
+      statusEl.textContent = 'Not connected';
+      statusEl.style.color = '#ef4444';
+      actionsEl.innerHTML = '<button class="btn btn-primary" style="background:#0064D2;border-color:#0064D2;font-size:12px;padding:6px 12px;" onclick="connectEbay()">Connect eBay</button>';
+      var dot = document.getElementById('ebay-status-dot');
+      if (dot) dot.style.background = '#ef4444';
+    }
+  } catch(e) { console.error('eBay status error', e); }
+}
+
+async function disconnectEbayOAuth() {
+  if (!confirm('Disconnect your eBay account?')) return;
+  await fetch('/api/ebay/disconnect', {method:'POST', credentials:'include'});
+  loadEbayOAuthStatus();
 }
 
 async function loadShopifyStatus() {
