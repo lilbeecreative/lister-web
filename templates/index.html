@@ -4667,7 +4667,7 @@ function renderMobileTabBar() {
   bar.innerHTML = '';
   tabs.forEach(function(def) {
     var isActive = currentMobileTab === def.tab;
-    var color = isActive ? (def.tab === 'home' ? '#22c55e' : '#fbbf24') : '#64748b';
+    var color = isActive ? (def.tab === 'home' ? '#22c55e' : '#fbbf24') : (def.tab === 'dashboard' ? '#fbbf24' : '#64748b');
     var btn = document.createElement('button');
     btn.className = 'mobile-tab' + (isActive ? ' active' : '');
     btn.style.cssText = 'flex:1 1 0;min-width:0;color:' + color + ';border-bottom:' + (isActive ? '2px solid ' + color : '2px solid transparent') + ';';
