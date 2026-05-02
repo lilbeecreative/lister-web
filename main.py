@@ -4215,9 +4215,7 @@ If you cannot read a field clearly, use null. For category, make your best guess
             except Exception:
                 raw = ""
         raw = _re.sub(r"^```[a-zA-Z]*\n?", "", raw, flags=_re.IGNORECASE)
-?", "", raw, flags=_re.IGNORECASE)
         raw = _re.sub(r"
-?```$", "", raw).strip()
         match = _re.search(r"\{[\s\S]*\}", raw)
         if match:
             raw = match.group(0)
