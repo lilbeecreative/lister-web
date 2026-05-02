@@ -626,7 +626,7 @@ select.field-input { background: #fff; color: #0f172a; }
           </label>
           <input type="file" id="fast-gallery-input" accept="image/*" multiple style="display:none;" onchange="handleScannerUpload(this)">
         </div>
-        <!-- Bulk Upload area (reuses existing upload tab logic) -->
+        <!-- Bulk Upload — navigates to Upload tab, area hidden -->
         <div id="scanner-bulk-upload" style="display:none;">
           <label for="bulk-scanner-input" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--border);border-radius:12px;padding:40px 20px;cursor:pointer;background:var(--card);text-align:center;"
             ondragover="event.preventDefault();this.style.borderColor='#38bdf8'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleScannerUpload({files:event.dataTransfer.files})">
@@ -4340,14 +4340,24 @@ function setScannerMode(mode) {
     }
   });
 
+  // Bulk mode — navigate to Upload tab (it has its own complex state/UI)
+  if (mode === 'bulk') {
+    document.querySelector('.nav-btn[data-tab="upload"]').click();
+    toast('Switched to Bulk Upload mode');
+    return;
+  }
+
   // Multi-item mode — check tier
   if (mode === 'multi') {
-    var limit = parseInt('{{ scan_limit }}') || 25;
-    if (limit < 500) {
+    var scanLimit = {{ scan_limit }};
+    if (scanLimit < 500) {
       setScannerMode('fast');
       toast('Multi-item scan requires Growth+ plan', 'error');
       return;
     }
+    // Navigate to fast scan tab multi-item section
+    document.querySelector('.nav-btn[data-tab="fastscan"]').click();
+    return;
   }
 }
 
