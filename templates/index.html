@@ -4313,6 +4313,90 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+
+// ── SCANNER MODE SWITCHER ──
+var currentScannerMode = 'fast';
+
+function setScannerMode(mode) {
+  currentScannerMode = mode;
+  var modes = ['fast', 'bulk', 'multi'];
+  var colors = { fast: '#fbbf24', bulk: '#38bdf8', multi: '#a78bfa' };
+  var color = colors[mode];
+
+  modes.forEach(function(m) {
+    var btn = document.getElementById('scanner-mode-' + m);
+    var area = document.getElementById('scanner-' + m + '-upload');
+    if (!btn || !area) return;
+    if (m === mode) {
+      btn.style.borderColor = color;
+      btn.style.background = 'rgba(' + (mode==='fast'?'251,191,36':mode==='bulk'?'56,189,248':'167,139,250') + ',0.1)';
+      btn.style.color = color;
+      area.style.display = m === 'bulk' || m === 'multi' ? 'block' : 'grid';
+    } else {
+      btn.style.borderColor = 'var(--border)';
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--muted)';
+      area.style.display = 'none';
+    }
+  });
+
+  // Multi-item mode — check tier
+  if (mode === 'multi') {
+    var limit = parseInt('{{ scan_limit }}') || 25;
+    if (limit < 500) {
+      setScannerMode('fast');
+      toast('Multi-item scan requires Growth+ plan', 'error');
+      return;
+    }
+  }
+}
+
+function handleScannerUpload(input) {
+  var files = input.files || input;
+  if (!files || !files.length) return;
+
+  if (currentScannerMode === 'fast') {
+    // Fast scan — one file at a time, use existing fast scan logic
+    Array.from(files).forEach(function(file) {
+      uploadFastScanFile(file);
+    });
+  } else if (currentScannerMode === 'bulk') {
+    // Bulk — use existing upload logic
+    handleBulkFiles(files);
+  }
+}
+
+function handleMultiScannerUpload(input) {
+  var files = input.files;
+  if (!files || !files.length) return;
+  // Trigger existing multi-scan logic
+  var multiInput = document.getElementById('multi-photo-input');
+  if (multiInput) {
+    // Copy files to existing multi input and trigger
+    var dt = new DataTransfer();
+    Array.from(files).forEach(function(f) { dt.items.add(f); });
+    multiInput.files = dt.files;
+    multiInput.dispatchEvent(new Event('change'));
+  } else {
+    toast('Multi-item scanner not available', 'error');
+  }
+}
+
+// Wire up scanner tab activation
+document.addEventListener('DOMContentLoaded', function() {
+  var scannerBtn = document.querySelector('.nav-btn[data-tab="dashboard"]');
+  if (scannerBtn) {
+    scannerBtn.addEventListener('click', function() {
+      setTimeout(function() { setScannerMode(currentScannerMode); }, 50);
+    });
+  }
+  // Init mode on load if scanner is active
+  if (document.getElementById('tab-dashboard') && 
+      document.getElementById('tab-dashboard').classList.contains('active')) {
+    setScannerMode('fast');
+  }
+});
+
 function renderMobileTabBar() {
   var bar = document.getElementById('mobile-tabbar-inner');
   if (!bar) return;
