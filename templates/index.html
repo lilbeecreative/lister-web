@@ -457,7 +457,103 @@ select.field-input { background: #fff; color: #0f172a; }
 <div class="main">
 
   <!-- DASHBOARD TAB -->
-  <div class="tab-content active" id="tab-dashboard">
+  <div class="tab-content active" id="tab-home">
+    <div style="max-width:1100px;margin:0 auto;">
+
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Welcome back</div>
+          <div id="home-business-name" style="font-size:24px;font-weight:800;color:var(--text);">Loading...</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div id="home-ebay-status" style="background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+            <div class="status-dot" style="background:#64748b;"></div>eBay
+          </div>
+          <div id="home-shopify-status" style="background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+            <div class="status-dot" style="background:#64748b;"></div>Shopify
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:24px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:6px;">Inventory value</div>
+          <div id="home-inventory-value" style="font-size:24px;font-weight:800;color:#22c55e;">$0</div>
+          <div style="font-size:10px;color:var(--muted);">unsold listings</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:6px;">Total items</div>
+          <div id="home-total-items" style="font-size:24px;font-weight:800;color:var(--text);">0</div>
+          <div style="font-size:10px;color:var(--muted);">in inventory</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:6px;">Sold this month</div>
+          <div id="home-sold-mtd" style="font-size:24px;font-weight:800;color:#a78bfa;">$0</div>
+          <div id="home-sold-count" style="font-size:10px;color:var(--muted);">0 items</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:6px;">Spent this month</div>
+          <div id="home-spent-mtd" style="font-size:24px;font-weight:800;color:#fb923c;">$0</div>
+          <div style="font-size:10px;color:var(--muted);">expenses logged</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:10px;">Quick actions</div>
+      <div onclick="document.querySelector('.nav-btn[data-tab=\'dashboard\']').click()" style="background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);border-radius:14px;padding:20px 18px;display:flex;align-items:center;gap:14px;margin-bottom:12px;cursor:pointer;">
+        <div style="width:52px;height:52px;background:rgba(0,0,0,0.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.1;">Start Scanning</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:3px;">List items in seconds</div>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" style="opacity:0.7;"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:24px;">
+        <div onclick="document.querySelector('.nav-btn[data-tab=\'inventory\']').click()" style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+          <div style="width:40px;height:40px;background:rgba(167,139,250,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--text);line-height:1.1;">Inventory</div>
+            <div id="home-inv-count-label" style="font-size:11px;color:#a78bfa;font-weight:700;margin-top:3px;">0 items</div>
+          </div>
+        </div>
+        <div onclick="document.querySelector('.nav-btn[data-tab=\'expenses\']').click()" style="background:rgba(232,255,71,0.08);border:1px solid rgba(232,255,71,0.3);border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+          <div style="width:40px;height:40px;background:rgba(232,255,71,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e8ff47" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--text);line-height:1.1;">Expenses</div>
+            <div id="home-spent-label" style="font-size:11px;color:#e8ff47;font-weight:700;margin-top:3px;">$0 MTD</div>
+          </div>
+        </div>
+        <div onclick="document.querySelector('.nav-btn[data-tab=\'intake\']').click()" style="background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+          <div style="width:40px;height:40px;background:rgba(251,146,60,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2.5"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--text);line-height:1.1;">Intake</div>
+            <div style="font-size:11px;color:#fb923c;font-weight:700;margin-top:3px;">Log purchases</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Scans this period</div>
+          <div id="home-scan-pct" style="font-size:11px;color:var(--muted);font-weight:600;">0/500</div>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+          <div id="home-scan-bar" style="height:100%;background:#22c55e;width:0%;transition:width 0.3s;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-dashboard">
 
     <!-- Top filter bar -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
