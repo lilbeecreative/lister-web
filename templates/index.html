@@ -725,40 +725,39 @@ select.field-input { background: #fff; color: #0f172a; }
 
   <!-- UPLOAD TAB -->
   <div class="tab-content" id="tab-upload">
-    <div id="upload-start">
-      <div style="margin-bottom:24px;">
-        <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px;">Bulk Upload</div>
-        <div style="font-size:13px;color:var(--muted);">Group multiple photos per item — each item scanned separately as its own listing.</div>
-      </div>
+    <div id="upload-start" style="display:flex;align-items:center;justify-content:center;min-height:400px;padding:20px;">
+      <div style="width:100%;max-width:380px;">
+        <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">New Batch</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">Set up your batch before scanning</div>
 
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;margin-bottom:16px;">
-
-        <div>
-          <div class="field-label" style="margin-bottom:6px;">Batch title <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></div>
-          <input id="up-batch-title" type="text" placeholder="e.g. Estate sale lot, Garage sale, May 1 haul..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;" />
-        </div>
-
-        <div>
-          <div class="field-label" style="margin-bottom:6px;">Lot price <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;">(optional — split across all items)</span></div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--muted);font-size:13px;">$</div>
-            <input id="up-lot-price" type="number" min="0" step="0.01" placeholder="0.00" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;" />
+        <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
+          <div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:6px;">Batch name <span style="color:#374151;text-transform:none;letter-spacing:0;font-weight:400;font-size:11px;">optional</span></div>
+            <input id="up-batch-title" type="text" placeholder="e.g. Estate sale, Garage haul..." style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;" />
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:5px;">If set, cost per item = lot price ÷ number of items in batch</div>
-        </div>
 
-        <div>
-          <div class="field-label" style="margin-bottom:6px;">Item condition</div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-primary" id="up-cond-new" onclick="setUpCondition('new')" style="flex:1;padding:10px;">New</button>
-            <button class="btn" id="up-cond-used" onclick="setUpCondition('used')" style="flex:1;padding:10px;">Used</button>
+          <div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:6px;">Lot price <span style="color:#374151;text-transform:none;letter-spacing:0;font-weight:400;font-size:11px;">optional</span></div>
+            <div style="display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+              <div style="padding:12px 14px;font-size:14px;font-weight:700;color:var(--muted);border-right:1px solid var(--border);">$</div>
+              <input id="up-lot-price" type="number" min="0" step="0.01" placeholder="0.00" style="flex:1;background:transparent;border:none;padding:12px 14px;color:var(--text);font-size:13px;font-family:inherit;outline:none;" />
+            </div>
+            <div style="font-size:11px;color:#ef4444;margin-top:5px;font-weight:600;">Cost per item = lot ÷ items scanned</div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:8px;">Default condition</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" id="up-cond-new" onclick="setUpCondition('new')" style="flex:1;padding:12px;border-radius:10px;font-size:13px;font-weight:800;">New</button>
+              <button class="btn" id="up-cond-used" onclick="setUpCondition('used')" style="flex:1;padding:12px;border-radius:10px;font-size:13px;font-weight:700;">Used</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <button onclick="startUploadBatch()" style="width:100%;background:#0891b2;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;padding:15px;cursor:pointer;font-family:inherit;">
-        Start Batch Upload
-      </button>
+        <button onclick="startUploadBatch()" style="width:100%;background:#22c55e;border:none;border-radius:10px;color:#000;font-size:15px;font-weight:800;padding:16px;cursor:pointer;font-family:inherit;">
+          Start Adding Items →
+        </button>
+      </div>
     </div>
     <div id="upload-active" style="display:none;">
       <input type="file" id="upload-file-input" accept="image/*,image/heic" multiple style="display:none;" onchange="handleUploadFiles(this)"/>
