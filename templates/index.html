@@ -4462,14 +4462,18 @@ function setScannerMode(mode) {
     if (area) area.style.display = m === mode ? (m === 'bulk' || m === 'multi' ? 'block' : 'grid') : 'none';
   });
 
-  // Bulk mode — navigate to Upload tab (it has its own complex state/UI)
+  // Bulk mode — switch to upload tab directly
   if (mode === 'bulk') {
-    document.querySelector('.nav-btn[data-tab="upload"]').click();
-    toast('Switched to Bulk Upload mode');
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    var uploadTab = document.getElementById('tab-upload');
+    if (uploadTab) uploadTab.classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    var uploadBtn = document.querySelector('.nav-btn[data-tab="upload"]');
+    if (uploadBtn) uploadBtn.classList.add('active');
     return;
   }
 
-  // Multi-item mode — check tier
+  // Multi-item mode — switch to fastscan tab directly
   if (mode === 'multi') {
     var scanLimit = {{ scan_limit }};
     if (scanLimit < 500) {
@@ -4477,8 +4481,12 @@ function setScannerMode(mode) {
       toast('Multi-item scan requires Growth+ plan', 'error');
       return;
     }
-    // Navigate to fast scan tab multi-item section
-    document.querySelector('.nav-btn[data-tab="fastscan"]').click();
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    var fsTab = document.getElementById('tab-fastscan');
+    if (fsTab) { fsTab.style.removeProperty('display'); fsTab.classList.add('active'); }
+    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    var fsBtn = document.querySelector('.nav-btn[data-tab="fastscan"]');
+    if (fsBtn) fsBtn.classList.add('active');
     return;
   }
 }
