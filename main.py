@@ -3186,11 +3186,8 @@ async def home_overview(request: Request):
         total_items = 0
         for it in inv_items:
             qty = int(it.get("quantity") or 1)
-            sold = int(it.get("sold_count") or 0)
-            unsold = max(0, qty - sold)
-            if unsold > 0:
-                inventory_value += float(it.get("price") or 0) * unsold
-                total_items += unsold
+            inventory_value += float(it.get("price") or 0) * qty
+            total_items += qty
 
         # Sold this month — from inventory table (sold_date set this month)
         try:
