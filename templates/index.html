@@ -4072,13 +4072,13 @@ function renderMobileTabBar() {
     var isActive = currentMobileTab === tabId;
     html += '<button class="mobile-tab' + (isActive?' active':'') + '" onclick="switchMobileTab(\\x27' + tabId + '\\x27)" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;cursor:pointer;color:' + (isActive?'#22c55e':'#64748b') + ';padding:0;height:100%;">' +
       def.svg +
-      '<span style="font-size:9px;font-weight:600;">' + def.label + '</span>' +
+      '<span style="font-size:12px;font-weight:700;">' + def.label + '</span>' +
       '</button>';
   });
   // More button (always last)
   html += '<button class="mobile-tab" onclick="openMobileMore()" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;cursor:pointer;color:#64748b;padding:0;height:100%;">' +
     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>' +
-    '<span style="font-size:9px;font-weight:600;">More</span>' +
+    '<span style="font-size:12px;font-weight:700;">More</span>' +
     '</button>';
   bar.innerHTML = html;
 }
