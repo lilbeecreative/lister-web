@@ -4176,9 +4176,9 @@ async def scan_receipt(request: Request):
         buf = _io.BytesIO()
         img.save(buf, format="JPEG", quality=88)
 
-        import google.generativeai as genai
+        from google import genai as _genai
         import base64
-        genai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY",""))
+        genai_client = _genai.Client(api_key=os.getenv("GEMINI_API_KEY",""))
         img_b64 = base64.b64encode(buf.getvalue()).decode()
 
         prompt = """You are a receipt scanning assistant. Extract the following from this receipt image and return ONLY raw JSON, no other text:
