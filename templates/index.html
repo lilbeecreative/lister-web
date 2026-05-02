@@ -3458,6 +3458,395 @@ function changeIntakePhoto(id) {
   inp.click();
 }
 
+
+// ── EXPENSES ──────────────────────────────────────────────────
+var expPeriod = 'month';
+var expCategory = '';
+var expItems = [];
+var expSummary = {};
+var expTotal = 0;
+var expEditId = null;
+var expChartInstance = null;
+
+var EXP_COLORS = {
+  "Cost of Goods":        "#ef4444",
+  "Shipping & Postage":   "#f97316",
+  "Supplies & Packaging": "#eab308",
+  "Fees & Subscriptions": "#22c55e",
+  "Gas & Travel":         "#3b82f6",
+  "Food & Meals":         "#a855f7",
+  "Software & Tools":     "#06b6d4",
+  "Other":                "#6b7280"
+};
+
+var EXP_EMOJIS = {
+  "Cost of Goods":"🔴","Shipping & Postage":"🟠","Supplies & Packaging":"🟡",
+  "Fees & Subscriptions":"🟢","Gas & Travel":"🔵","Food & Meals":"🟣",
+  "Software & Tools":"🩵","Other":"⚫"
+};
+
+async function loadExpenses() {
+  try {
+    var url = '/api/expenses?period=' + expPeriod;
+    if (expCategory) url += '&category=' + encodeURIComponent(expCategory);
+    var r = await fetch(url, {credentials:'include'});
+    var d = await r.json();
+    expItems = d.items || [];
+    expSummary = d.summary || {};
+    expTotal = d.total || 0;
+    renderExpSummaryCards();
+    renderExpChart();
+    renderExpTable();
+    // Load COGS toggle state
+    try {
+      var br = await fetch('/api/account', {credentials:'include'});
+      var bd = await br.json();
+      var tog = document.getElementById('exp-cogs-toggle');
+      if (tog && bd.cogs_import_enabled) tog.checked = true;
+    } catch(e) {}
+  } catch(e) {
+    console.error('loadExpenses error', e);
+  }
+}
+
+function setExpPeriod(p) {
+  expPeriod = p;
+  document.querySelectorAll('.exp-period-pill').forEach(function(btn) {
+    var isActive = btn.dataset.period === p;
+    btn.style.background = isActive ? 'var(--accent)' : 'transparent';
+    btn.style.color = isActive ? '#fff' : 'var(--muted)';
+    btn.style.fontWeight = isActive ? '500' : 'normal';
+    if (isActive) btn.classList.add('active'); else btn.classList.remove('active');
+  });
+  loadExpenses();
+}
+
+function setExpCategory(cat) {
+  expCategory = cat;
+  loadExpenses();
+}
+
+function renderExpSummaryCards() {
+  var container = document.getElementById('exp-summary-cards');
+  if (!container) return;
+  var stats = document.getElementById('exp-stats');
+  if (stats) stats.textContent = expItems.length + ' expense' + (expItems.length===1?'':'s') + ' · $' + expTotal.toFixed(2) + ' total';
+  var badge = document.getElementById('exp-total-badge');
+  if (badge) badge.textContent = '$' + expTotal.toFixed(2);
+
+  var cats = Object.keys(expSummary).filter(function(c) { return expSummary[c].total > 0; });
+  if (!cats.length) { container.innerHTML = ''; return; }
+  container.innerHTML = cats.map(function(cat) {
+    var s = expSummary[cat];
+    var color = EXP_COLORS[cat] || '#6b7280';
+    var pct = expTotal > 0 ? ((s.total / expTotal) * 100).toFixed(0) : 0;
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;border-left:3px solid ' + color + ';">' +
+      '<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">' + (EXP_EMOJIS[cat]||'') + ' ' + cat + '</div>' +
+      '<div style="font-size:18px;font-weight:800;color:' + color + ';">$' + s.total.toFixed(2) + '</div>' +
+      '<div style="font-size:10px;color:var(--muted);margin-top:2px;">' + s.count + ' item' + (s.count===1?'':'s') + ' · ' + pct + '%</div>' +
+      '</div>';
+  }).join('');
+}
+
+function renderExpChart() {
+  var canvas = document.getElementById('exp-chart');
+  if (!canvas) return;
+  var cats = Object.keys(expSummary).filter(function(c) { return expSummary[c].total > 0; });
+  if (!cats.length) { canvas.style.display = 'none'; return; }
+  canvas.style.display = 'block';
+
+  if (expChartInstance) { expChartInstance.destroy(); expChartInstance = null; }
+
+  // Load Chart.js if needed
+  if (typeof Chart === 'undefined') {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js';
+    s.onload = function() { renderExpChart(); };
+    document.head.appendChild(s);
+    return;
+  }
+
+  var labels = cats;
+  var data = cats.map(function(c) { return expSummary[c].total; });
+  var colors = cats.map(function(c) { return EXP_COLORS[c] || '#6b7280'; });
+
+  expChartInstance = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colors,
+        borderColor: 'var(--bg)',
+        borderWidth: 3,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#94a3b8',
+            font: { size: 12, family: 'Instrument Sans' },
+            padding: 16,
+            usePointStyle: true,
+            generateLabels: function(chart) {
+              return chart.data.labels.map(function(label, i) {
+                return {
+                  text: (EXP_EMOJIS[label]||'') + ' ' + label + '  $' + (chart.data.datasets[0].data[i]||0).toFixed(2),
+                  fillStyle: chart.data.datasets[0].backgroundColor[i],
+                  strokeStyle: chart.data.datasets[0].backgroundColor[i],
+                  pointStyle: 'circle',
+                  index: i
+                };
+              });
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              var pct = expTotal > 0 ? ((ctx.raw / expTotal) * 100).toFixed(1) : 0;
+              return ' $' + ctx.raw.toFixed(2) + ' (' + pct + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderExpTable() {
+  var tbody = document.getElementById('exp-tbody');
+  var empty = document.getElementById('exp-empty');
+  if (!tbody) return;
+  if (!expItems.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  var periodLabels = {day:'Today',week:'This Week',month:'This Month','3month':'Last 3 Months','6month':'Last 6 Months','12month':'Last Year',all:'All Time'};
+
+  tbody.innerHTML = expItems.map(function(it) {
+    var color = EXP_COLORS[it.category] || '#6b7280';
+    var emoji = EXP_EMOJIS[it.category] || '⚫';
+    var isCogs = it.source === 'cogs';
+    return '<tr style="border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'transparent\'">' +
+      '<td style="padding:10px 14px;color:var(--muted);font-size:12px;white-space:nowrap;">' + (it.expense_date||'').replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$2/$3/$1') + '</td>' +
+      '<td style="padding:10px 14px;font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (it.merchant||'—') + (isCogs?'<span style="font-size:9px;color:var(--muted);margin-left:6px;font-weight:400;">COGS</span>':'') + '</td>' +
+      '<td style="padding:10px 14px;"><span style="display:inline-flex;align-items:center;gap:5px;background:' + color + '22;color:' + color + ';font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;">' + emoji + ' ' + (it.category||'Other') + '</span></td>' +
+      '<td style="padding:10px 14px;text-align:right;font-size:15px;font-weight:800;color:' + color + ';">$' + parseFloat(it.amount||0).toFixed(2) + '</td>' +
+      '<td style="padding:10px 14px;font-size:12px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (it.notes||'') + '</td>' +
+      '<td style="padding:10px 14px;text-align:center;">' + (isCogs?'':'<div style="display:flex;gap:4px;justify-content:center;"><button onclick="editExpense(\'' + it.id + '\')" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:12px;" title="Edit">✏️</button><button onclick="deleteExpense(\'' + it.id + '\')" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:12px;" title="Delete">×</button></div>') + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+// ── ADD / EDIT MODAL ──
+function openExpenseModal(prefill) {
+  expEditId = null;
+  document.getElementById('exp-modal-title').textContent = 'Add Expense';
+  document.getElementById('exp-f-amount').value = (prefill && prefill.amount) ? prefill.amount : '';
+  document.getElementById('exp-f-merchant').value = (prefill && prefill.merchant) ? prefill.merchant : '';
+  document.getElementById('exp-f-category').value = (prefill && prefill.category) ? prefill.category : 'Fees & Subscriptions';
+  document.getElementById('exp-f-date').value = (prefill && prefill.expense_date) ? prefill.expense_date : new Date().toISOString().split('T')[0];
+  document.getElementById('exp-f-notes').value = (prefill && prefill.notes) ? prefill.notes : '';
+  document.getElementById('exp-f-error').style.display = 'none';
+  document.getElementById('exp-modal').style.display = 'flex';
+  setTimeout(function() { document.getElementById('exp-f-amount').focus(); }, 100);
+}
+
+function editExpense(id) {
+  var it = expItems.find(function(x) { return x.id === id; });
+  if (!it) return;
+  expEditId = id;
+  document.getElementById('exp-modal-title').textContent = 'Edit Expense';
+  document.getElementById('exp-f-amount').value = it.amount || '';
+  document.getElementById('exp-f-merchant').value = it.merchant || '';
+  document.getElementById('exp-f-category').value = it.category || 'Other';
+  document.getElementById('exp-f-date').value = it.expense_date || '';
+  document.getElementById('exp-f-notes').value = it.notes || '';
+  document.getElementById('exp-f-error').style.display = 'none';
+  document.getElementById('exp-modal').style.display = 'flex';
+}
+
+function closeExpenseModal() {
+  document.getElementById('exp-modal').style.display = 'none';
+  expEditId = null;
+}
+
+async function saveExpense() {
+  var amount = parseFloat(document.getElementById('exp-f-amount').value);
+  if (!amount || amount <= 0) {
+    document.getElementById('exp-f-error').textContent = 'Please enter a valid amount';
+    document.getElementById('exp-f-error').style.display = 'block';
+    return;
+  }
+  var body = {
+    amount: amount,
+    merchant: document.getElementById('exp-f-merchant').value.trim(),
+    category: document.getElementById('exp-f-category').value,
+    expense_date: document.getElementById('exp-f-date').value,
+    notes: document.getElementById('exp-f-notes').value.trim(),
+  };
+  try {
+    if (expEditId) {
+      await fetch('/api/expenses/' + expEditId, {method:'PATCH', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(body)});
+      toast('Expense updated ✓');
+    } else {
+      await fetch('/api/expenses', {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(body)});
+      toast('Expense added ✓');
+    }
+    closeExpenseModal();
+    loadExpenses();
+  } catch(e) {
+    document.getElementById('exp-f-error').textContent = 'Save failed: ' + e.message;
+    document.getElementById('exp-f-error').style.display = 'block';
+  }
+}
+
+async function deleteExpense(id) {
+  if (!confirm('Delete this expense?')) return;
+  try {
+    await fetch('/api/expenses/' + id, {method:'DELETE', credentials:'include'});
+    toast('Deleted');
+    loadExpenses();
+  } catch(e) { toast('Delete failed', 'error'); }
+}
+
+// ── COGS TOGGLE ──
+async function toggleCogsImport() {
+  var enabled = document.getElementById('exp-cogs-toggle').checked;
+  try {
+    await fetch('/api/expenses/toggle-cogs', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body: JSON.stringify({enabled: enabled})
+    });
+    toast(enabled ? 'COGS import enabled — new scan costs will appear here ✓' : 'COGS import disabled');
+  } catch(e) { toast('Toggle failed', 'error'); }
+}
+
+// ── RECEIPT SCANNER ──
+function openReceiptScanner() {
+  document.getElementById('receipt-modal').style.display = 'flex';
+  document.getElementById('receipt-step-upload').style.display = 'block';
+  document.getElementById('receipt-step-scanning').style.display = 'none';
+  document.getElementById('receipt-step-confirm').style.display = 'none';
+  document.getElementById('receipt-step-error').style.display = 'none';
+  document.getElementById('receipt-file-input').value = '';
+}
+
+function closeReceiptScanner() {
+  document.getElementById('receipt-modal').style.display = 'none';
+}
+
+async function scanReceipt(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  document.getElementById('receipt-step-upload').style.display = 'none';
+  document.getElementById('receipt-step-scanning').style.display = 'block';
+  var fd = new FormData();
+  fd.append('file', file);
+  try {
+    var r = await fetch('/api/expenses/scan-receipt', {method:'POST', body: fd, credentials:'include'});
+    if (!r.ok) throw new Error('Scan failed');
+    var d = await r.json();
+    var data = d.data || {};
+    document.getElementById('rec-f-amount').value = data.amount || '';
+    document.getElementById('rec-f-merchant').value = data.merchant || '';
+    document.getElementById('rec-f-category').value = data.category || 'Other';
+    document.getElementById('rec-f-date').value = data.expense_date || new Date().toISOString().split('T')[0];
+    document.getElementById('rec-f-notes').value = data.notes || '';
+    document.getElementById('receipt-step-scanning').style.display = 'none';
+    document.getElementById('receipt-step-confirm').style.display = 'block';
+  } catch(e) {
+    document.getElementById('receipt-step-scanning').style.display = 'none';
+    document.getElementById('receipt-error-msg').textContent = 'Could not read receipt: ' + e.message;
+    document.getElementById('receipt-step-error').style.display = 'block';
+  }
+}
+
+async function confirmReceiptExpense() {
+  var amount = parseFloat(document.getElementById('rec-f-amount').value);
+  if (!amount || amount <= 0) { toast('Please enter a valid amount', 'error'); return; }
+  var body = {
+    amount: amount,
+    merchant: document.getElementById('rec-f-merchant').value.trim(),
+    category: document.getElementById('rec-f-category').value,
+    expense_date: document.getElementById('rec-f-date').value,
+    notes: document.getElementById('rec-f-notes').value.trim(),
+    source: 'receipt'
+  };
+  try {
+    await fetch('/api/expenses', {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(body)});
+    toast('Receipt expense saved ✓');
+    closeReceiptScanner();
+    loadExpenses();
+  } catch(e) { toast('Save failed', 'error'); }
+}
+
+// ── EXPORT ──
+function toggleExpExportMenu() {
+  var m = document.getElementById('exp-export-menu');
+  if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('exp-export-menu');
+  if (menu && !e.target.closest('#exp-export-menu') && !e.target.onclick?.toString().includes('toggleExpExportMenu')) {
+    menu.style.display = 'none';
+  }
+});
+
+function exportExpenses(fmt) {
+  document.getElementById('exp-export-menu').style.display = 'none';
+  if (fmt === 'csv') {
+    window.location.href = '/api/expenses/export?period=' + expPeriod + '&fmt=csv';
+    return;
+  }
+  // PDF — build a printable report in a new window
+  var periodLabels = {day:'Today',week:'This Week',month:'This Month','3month':'Last 3 Months','6month':'Last 6 Months','12month':'Last Year',all:'All Time'};
+  var periodLabel = periodLabels[expPeriod] || expPeriod;
+  var rows = expItems.map(function(it) {
+    var color = EXP_COLORS[it.category] || '#666';
+    return '<tr><td>' + (it.expense_date||'').replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$2/$3/$1') + '</td>' +
+      '<td>' + (it.merchant||'—') + '</td>' +
+      '<td><span style="color:' + color + ';font-weight:700;">' + (it.category||'Other') + '</span></td>' +
+      '<td style="text-align:right;font-weight:700;">$' + parseFloat(it.amount||0).toFixed(2) + '</td>' +
+      '<td style="color:#666;">' + (it.notes||'') + '</td></tr>';
+  }).join('');
+  var catBreakdown = Object.keys(expSummary).filter(function(c){return expSummary[c].total>0;}).map(function(c) {
+    var color = EXP_COLORS[c]||'#666';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee;">' +
+      '<span style="color:' + color + ';font-weight:600;">' + (EXP_EMOJIS[c]||'') + ' ' + c + '</span>' +
+      '<span style="font-weight:800;">$' + expSummary[c].total.toFixed(2) + '</span></div>';
+  }).join('');
+  var win = window.open('','_blank');
+  win.document.write('<!DOCTYPE html><html><head><title>Expense Report — ' + periodLabel + '</title>' +
+    '<style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;color:#111;}h1{font-size:24px;font-weight:900;margin-bottom:4px;}' +
+    '.sub{color:#666;font-size:14px;margin-bottom:24px;}.summary{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}' +
+    '.scard{border:1px solid #ddd;border-radius:8px;padding:16px;}.total{font-size:32px;font-weight:900;color:#111;}' +
+    'table{width:100%;border-collapse:collapse;margin-top:16px;}th{background:#f5f5f5;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#666;}' +
+    'td{padding:10px 12px;border-bottom:1px solid #eee;font-size:13px;}tr:last-child td{border:none;}' +
+    '@media print{button{display:none!important;}}' +
+    '</style></head><body>' +
+    '<h1>💰 Expense Report</h1><div class="sub">' + periodLabel + ' · Generated ' + new Date().toLocaleDateString() + '</div>' +
+    '<div class="summary"><div class="scard"><div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Total Spent</div><div class="total">$' + expTotal.toFixed(2) + '</div><div style="font-size:12px;color:#666;margin-top:4px;">' + expItems.length + ' expenses</div></div>' +
+    '<div class="scard"><div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">By Category</div>' + catBreakdown + '</div></div>' +
+    '<table><thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th style="text-align:right;">Amount</th><th>Notes</th></tr></thead><tbody>' + rows + '</tbody>' +
+    '<tfoot><tr><td colspan="3" style="font-weight:700;padding:12px;">TOTAL</td><td style="text-align:right;font-weight:900;font-size:16px;padding:12px;">$' + expTotal.toFixed(2) + '</td><td></td></tr></tfoot>' +
+    '</table><br><button onclick="window.print()" style="background:#111;color:#fff;border:none;padding:12px 24px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700;">🖨️ Print / Save as PDF</button>' +
+    '</body></html>');
+  win.document.close();
+}
+
 // ── DETAILED ANALYTICS ─────────────────────────────────────
 let detailedPeriod = 'month';
 
