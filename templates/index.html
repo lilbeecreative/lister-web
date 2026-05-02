@@ -4937,19 +4937,19 @@ async function loadDashboardSummary() {
     const r = await fetch('/api/dashboard/summary?period=' + currentPeriod);
     const d = await r.json();
     window._costTrackingEnabled = d.cost_tracking_enabled !== false;
-    document.getElementById('stat-profit').textContent = (d.profit >= 0 ? '+$' : '-$') + Math.abs(d.profit).toFixed(0);
-    document.getElementById('stat-profit').style.color = d.profit >= 0 ? '#22c55e' : '#ef4444';
-    document.getElementById('stat-profit-sub').textContent = '$' + d.total_cost.toFixed(0) + ' cost · $' + d.total_listed.toFixed(0) + ' listed';
-    document.getElementById('stat-items').textContent = d.items;
-    document.getElementById('stat-items-sub').textContent = d.units + ' total units';
+    (document.getElementById('stat-profit')||{}).textContent = (d.profit >= 0 ? '+$' : '-$') + Math.abs(d.profit).toFixed(0);
+    (document.getElementById('stat-profit')||{}).style.color = d.profit >= 0 ? '#22c55e' : '#ef4444';
+    (document.getElementById('stat-profit-sub')||{}).textContent = '$' + d.total_cost.toFixed(0) + ' cost · $' + d.total_listed.toFixed(0) + ' listed';
+    (document.getElementById('stat-items')||{}).textContent = d.items;
+    (document.getElementById('stat-items-sub')||{}).textContent = d.units + ' total units';
     // scan count moved to top toolbar only
     // Hide profit card if cost tracking is off — show listed value instead
     const profitCard = document.getElementById('card-profit');
     if (profitCard && !window._costTrackingEnabled) {
       profitCard.querySelector('div:first-child').textContent = 'Listed Value';
-      document.getElementById('stat-profit').textContent = '$' + d.total_listed.toFixed(0);
-      document.getElementById('stat-profit').style.color = '#f1f5f9';
-      document.getElementById('stat-profit-sub').textContent = d.units + ' units in batch';
+      (document.getElementById('stat-profit')||{}).textContent = '$' + d.total_listed.toFixed(0);
+      (document.getElementById('stat-profit')||{}).style.color = '#f1f5f9';
+      (document.getElementById('stat-profit-sub')||{}).textContent = d.units + ' units in batch';
     }
   } catch(e) { console.error('summary failed', e); }
 }
