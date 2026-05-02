@@ -1262,10 +1262,10 @@ select.field-input { background: #fff; color: #0f172a; }
           <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:700px;">
             <thead>
               <tr style="background:var(--bg);border-bottom:1px solid var(--border);">
-                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:110px;">Date</th>
-                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Merchant</th>
-                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:160px;">Category</th>
-                <th style="padding:10px 14px;text-align:right;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:100px;">Amount</th>
+                <th onclick="sortExpenses('date')" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:110px;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Date <span id="exp-sort-date">↕</span></th>
+                <th onclick="sortExpenses('merchant')" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Merchant <span id="exp-sort-merchant">↕</span></th>
+                <th onclick="sortExpenses('category')" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:160px;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Category <span id="exp-sort-category">↕</span></th>
+                <th onclick="sortExpenses('amount')" style="padding:10px 14px;text-align:right;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:100px;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Amount <span id="exp-sort-amount">↕</span></th>
                 <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Notes</th>
                 <th style="padding:10px 14px;width:60px;"></th>
               </tr>
@@ -4550,6 +4550,36 @@ function showScannerToast(msg, duration) {
   existing._timer = setTimeout(function() {
     existing.style.opacity = '0';
   }, duration);
+}
+
+
+var expSortCol = 'date';
+var expSortDir = -1;
+
+function sortExpenses(col) {
+  if (expSortCol === col) {
+    expSortDir *= -1;
+  } else {
+    expSortCol = col;
+    expSortDir = col === 'amount' ? -1 : 1;
+  }
+  // Update sort indicators
+  ['date','merchant','category','amount'].forEach(function(c) {
+    var el = document.getElementById('exp-sort-' + c);
+    if (el) el.textContent = c === col ? (expSortDir === 1 ? '↑' : '↓') : '↕';
+  });
+  // Sort and re-render
+  expItems.sort(function(a, b) {
+    var av, bv;
+    if (col === 'amount') { av = parseFloat(a.amount)||0; bv = parseFloat(b.amount)||0; }
+    else if (col === 'date') { av = a.expense_date||''; bv = b.expense_date||''; }
+    else if (col === 'merchant') { av = (a.merchant||'').toLowerCase(); bv = (b.merchant||'').toLowerCase(); }
+    else if (col === 'category') { av = (a.category||'').toLowerCase(); bv = (b.category||'').toLowerCase(); }
+    if (av < bv) return -expSortDir;
+    if (av > bv) return expSortDir;
+    return 0;
+  });
+  renderExpTable();
 }
 
 function renderMobileTabBar() {
