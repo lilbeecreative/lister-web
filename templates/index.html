@@ -5019,6 +5019,7 @@ async function loadSavedBatches() {
     const list = document.getElementById('saved-batches-list');
     const empty = document.getElementById('saved-batches-empty');
     const countEl = document.getElementById('saved-batches-trigger-count');
+    if (!list) return;
     list.innerHTML = '';
     if (countEl) countEl.textContent = folders.length ? `(${folders.length})` : '';
     if (!folders.length) { empty.style.display = 'block'; return; }
