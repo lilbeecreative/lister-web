@@ -845,23 +845,8 @@ select.field-input { background: #fff; color: #0f172a; }
     <div id="upload-items-list" style="margin-top:16px;"></div>
   </div>
 
-  <!-- FAST SCAN TAB -->
-  <div class="tab-content" id="tab-fastscan">
-    <div style="padding:1.5rem 0 1rem;text-align:center;">
-      <div style="font-size:2.5rem;margin-bottom:10px;">⚡</div>
-      <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;">Fast Scan</div>
-      <div style="font-size:13px;color:var(--muted);">Select multiple photos — each becomes its own listing.</div>
-    </div>
-    <div class="fastscan-cond">
-      <button class="fastscan-cond-btn" id="fs-cond-new" onclick="setFsCond('new')">✓ New</button>
-      <button class="fastscan-cond-btn" id="fs-cond-used" onclick="setFsCond('used')">Used</button>
-    </div>
-    <div class="fastscan-zone" id="fastscan-zone">
-      <input type="file" id="fastscan-input" accept="image/*,image/heic" multiple onchange="startFastScan(this)">
-      <div class="fastscan-icon">📷</div>
-      <div class="fastscan-title">Select photos from gallery</div>
-      <div class="fastscan-sub">Each photo will be scanned as a separate item</div>
-    </div>
+  <!-- FAST SCAN TAB (hidden — accessed via Scanner mode) -->
+  <div class="tab-content" id="tab-fastscan" style="display:none !important;">
     <div id="fastscan-progress" style="display:none;" class="fastscan-progress">
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">
         <span>Processing</span>
@@ -869,7 +854,8 @@ select.field-input { background: #fff; color: #0f172a; }
       </div>
       <div class="fastscan-progress-bar"><div class="fastscan-progress-fill" id="fs-bar" style="width:0%"></div></div>
     </div>
-    <div class="fastscan-queue" id="fastscan-queue"></div>
+    <div class="fastscan-queue" id="fastscan-queue" style="display:none;"></div>
+    <input type="file" id="fastscan-input" accept="image/*,image/heic" multiple onchange="startFastScan(this)" style="display:none;">
 
     <!-- Multi-Item Photo Scanner -->
     <div class="acct-card" id="multi-scan-card" style="margin-bottom:14px;position:relative;">
@@ -1213,7 +1199,7 @@ select.field-input { background: #fff; color: #0f172a; }
       <!-- Header row -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
         <div>
-          <div style="font-size:22px;font-weight:800;">💰 Expenses</div>
+          <div style="font-size:22px;font-weight:800;color:var(--text);">Expenses</div>
           <div style="font-size:13px;color:var(--muted);margin-top:2px;" id="exp-stats">Loading...</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -1266,12 +1252,21 @@ select.field-input { background: #fff; color: #0f172a; }
       <div id="exp-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:18px;"></div>
 
       <!-- Chart -->
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <div style="font-size:14px;font-weight:700;">Spending by Category</div>
-          <div id="exp-total-badge" style="font-size:18px;font-weight:800;color:#e8ff47;"></div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:center;">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;">Spending by Category</div>
+            <div id="exp-total-badge" style="font-size:20px;font-weight:800;color:var(--text);"></div>
+          </div>
+          <div id="exp-chart-legend" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
-        <canvas id="exp-chart" height="200"></canvas>
+        <div style="position:relative;width:200px;height:200px;">
+          <canvas id="exp-chart" width="200" height="200"></canvas>
+          <div id="exp-chart-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Total</div>
+            <div id="exp-chart-total" style="font-size:18px;font-weight:800;color:var(--text);">$0</div>
+          </div>
+        </div>
       </div>
 
       <!-- Table -->
