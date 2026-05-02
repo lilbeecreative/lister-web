@@ -626,10 +626,10 @@ select.field-input { background: #fff; color: #0f172a; }
       <div id="scanner-upload-area" style="margin-bottom:20px;">
         <!-- Fast Scan: camera + gallery -->
         <div id="scanner-fast-upload" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <label for="fast-camera-input" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #fbbf24;border-radius:12px;padding:24px 10px;cursor:pointer;background:rgba(251,191,36,0.05);text-align:center;">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            <span style="font-size:13px;font-weight:700;color:#fbbf24;">Take Photo</span>
-            <span style="font-size:10px;color:var(--muted);">Opens camera</span>
+          <label for="fast-camera-input" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:none;border-radius:12px;padding:24px 10px;cursor:pointer;background:#fbbf24;text-align:center;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span style="font-size:14px;font-weight:800;color:#000;">Take Photo</span>
+            <span style="font-size:10px;color:rgba(0,0,0,0.6);">Opens camera</span>
           </label>
           <input type="file" id="fast-camera-input" accept="image/*" capture="environment" multiple style="display:none;" onchange="handleScannerUpload(this)">
           <label for="fast-gallery-input" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1.5px dashed var(--border);border-radius:12px;padding:24px 10px;cursor:pointer;background:var(--card);text-align:center;">
