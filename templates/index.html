@@ -473,10 +473,10 @@ select.field-input { background: #fff; color: #0f172a; }
         </div>
         <div style="display:flex;gap:8px;">
           <div id="home-ebay-status" style="background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
-            <div class="status-dot" style="background:#64748b;"></div>eBay
+            <div class="status-dot" id="home-ebay-dot" style="background:#64748b;"></div><span id="home-ebay-label">eBay</span>
           </div>
           <div id="home-shopify-status" style="background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
-            <div class="status-dot" style="background:#64748b;"></div>Shopify
+            <div class="status-dot" id="home-shopify-dot" style="background:#64748b;"></div><span id="home-shopify-label">Shopify</span>
           </div>
         </div>
       </div>
@@ -4187,19 +4187,22 @@ function loadHomeOverview() {
         byId('home-scan-bar').style.background = pct >= 100 ? '#ef4444' : (pct >= 80 ? '#f59e0b' : '#22c55e');
       }
 
-      // Connection status pills
-      var ebayEl = byId('home-ebay-status');
-      if (ebayEl) {
-        var dot = ebayEl.querySelector('.status-dot');
-        if (dot) dot.style.background = d.ebay_connected ? '#22c55e' : '#ef4444';
-        ebayEl.title = d.ebay_connected ? 'eBay connected' : 'eBay not connected';
-      }
-      var shopEl = byId('home-shopify-status');
-      if (shopEl) {
-        var dot2 = shopEl.querySelector('.status-dot');
-        if (dot2) dot2.style.background = d.shopify_connected ? '#22c55e' : '#ef4444';
-        shopEl.title = d.shopify_connected ? 'Shopify connected' : 'Shopify not connected';
-      }
+      // Connection dots — update both Home header and sidebar
+      var eDot = byId('home-ebay-dot');
+      if (eDot) eDot.style.background = d.ebay_connected ? '#22c55e' : '#ef4444';
+      var eLabel = byId('home-ebay-label');
+      if (eLabel) eLabel.textContent = d.ebay_connected ? 'eBay' : 'eBay off';
+
+      var sDot = byId('home-shopify-dot');
+      if (sDot) sDot.style.background = d.shopify_connected ? '#22c55e' : '#ef4444';
+      var sLabel = byId('home-shopify-label');
+      if (sLabel) sLabel.textContent = d.shopify_connected ? 'Shopify' : 'Shopify off';
+
+      // Also sync sidebar bottom dots
+      var sideEbay = byId('ebay-status-dot');
+      if (sideEbay) sideEbay.style.background = d.ebay_connected ? '#22c55e' : '#ef4444';
+      var sideShopify = byId('shopify-status-dot');
+      if (sideShopify) sideShopify.style.background = d.shopify_connected ? '#22c55e' : '#ef4444';
     })
     .catch(function(e) { console.error('home overview load failed', e); });
 }
