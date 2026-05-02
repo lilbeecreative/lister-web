@@ -680,6 +680,151 @@ class UpdateField(BaseModel):
 
 
 
+
+def get_ebay_token(business_id: str) -> str:
+    """Get valid eBay access token, refreshing if needed."""
+    import requests as _req2
+    from datetime import datetime
+    res = supabase.table("ebay_tokens").select("*").eq("business_id", business_id).limit(1).execute()
+    if not res.data:
+        raise Exception("eBay not connected")
+    tok = res.data[0]
+    # Check if expired
+    try:
+        expires_at = datetime.fromisoformat(tok["expires_at"].replace("Z",""))
+        if (expires_at - datetime.utcnow()).total_seconds() < 300:
+            # Refresh token
+            creds = base64.b64encode(f"{EBAY_APP_ID}:{EBAY_CERT_ID}".encode()).decode()
+            r = _req2.post(f"{EBAY_API_BASE}/identity/v1/oauth2/token",
+                headers={"Authorization": f"Basic {creds}", "Content-Type": "application/x-www-form-urlencoded"},
+                data={"grant_type": "refresh_token", "refresh_token": tok["refresh_token"]})
+            data = r.json()
+            if "access_token" in data:
+                from datetime import timedelta
+                new_expires = (datetime.utcnow() + timedelta(seconds=data.get("expires_in", 7200))).isoformat()
+                supabase.table("ebay_tokens").update({
+                    "access_token": data["access_token"],
+                    "expires_at": new_expires
+                }).eq("business_id", business_id).execute()
+                return data["access_token"]
+    except Exception as _e:
+        print(f"Token refresh warning: {_e}")
+    return tok["access_token"]
+
+
+@app.post("/api/ebay/submit-listings")
+async def submit_listings_to_ebay(request: Request):
+    """Submit selected listings to eBay as draft listings using Inventory API."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        listing_ids = body.get("listing_ids", [])
+        if not listing_ids:
+            raise HTTPException(400, "No listing IDs provided")
+
+        token = get_ebay_token(business_id)
+        env = "production" if EBAY_ENV == "production" else "sandbox"
+        api_base = "https://api.ebay.com" if env == "production" else "https://api.sandbox.ebay.com"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Content-Language": "en-US"
+        }
+
+        # Fetch listings from DB
+        res = supabase.table("listings").select("*").in_("id", listing_ids).eq("business_id", business_id).execute()
+        listings_data = res.data or []
+
+        results = []
+        for listing in listings_data:
+            try:
+                sku = f"LISTER-{listing['id'][:8]}"
+                title = (listing.get("title") or "Item")[:80]
+                price = float(listing.get("price") or 9.99)
+                condition = "USED_EXCELLENT" if (listing.get("condition") or "used").lower() == "used" else "NEW"
+                category_id = str(listing.get("ebay_category_id") or "99")
+                description = listing.get("description") or title
+                qty = int(listing.get("quantity") or 1)
+
+                # Get photo URL
+                photo_url = None
+                if listing.get("photo_id"):
+                    photo_res = supabase.storage.from_("part-photos").get_public_url(listing["photo_id"])
+                    photo_url = photo_res
+
+                # 1. Create/update inventory item
+                inv_payload = {
+                    "availability": {"shipToLocationAvailability": {"quantity": qty}},
+                    "condition": condition,
+                    "product": {
+                        "title": title,
+                        "description": description,
+                        "aspects": {},
+                    }
+                }
+                if photo_url:
+                    inv_payload["product"]["imageUrls"] = [photo_url]
+
+                import requests as _req3
+                inv_r = _req3.put(
+                    f"{api_base}/sell/inventory/v1/inventory_item/{sku}",
+                    headers=headers,
+                    json=inv_payload
+                )
+
+                # 2. Create offer
+                offer_payload = {
+                    "sku": sku,
+                    "marketplaceId": "EBAY_US",
+                    "format": "FIXED_PRICE",
+                    "listingDescription": description,
+                    "pricingSummary": {
+                        "price": {"value": str(price), "currency": "USD"}
+                    },
+                    "categoryId": category_id,
+                    "listingPolicies": {}
+                }
+
+                offer_r = _req3.post(
+                    f"{api_base}/sell/inventory/v1/offer",
+                    headers=headers,
+                    json=offer_payload
+                )
+                offer_data = offer_r.json()
+                offer_id = offer_data.get("offerId")
+
+                if offer_id:
+                    # 3. Publish offer
+                    pub_r = _req3.post(
+                        f"{api_base}/sell/inventory/v1/offer/{offer_id}/publish",
+                        headers=headers
+                    )
+                    pub_data = pub_r.json()
+                    ebay_item_id = pub_data.get("listingId")
+                    if ebay_item_id:
+                        supabase.table("listings").update({
+                            "ebay_item_id": ebay_item_id,
+                            "status": "submitted"
+                        }).eq("id", listing["id"]).execute()
+                        results.append({"id": listing["id"], "ok": True, "ebay_id": ebay_item_id})
+                    else:
+                        results.append({"id": listing["id"], "ok": False, "error": str(pub_data)})
+                else:
+                    results.append({"id": listing["id"], "ok": False, "error": str(offer_data)})
+            except Exception as item_err:
+                results.append({"id": listing.get("id","?"), "ok": False, "error": str(item_err)})
+
+        ok_count = sum(1 for r in results if r["ok"])
+        return {"ok": True, "submitted": ok_count, "total": len(results), "results": results}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(500, str(e))
+
 @app.get("/api/export/ebay-csv")
 async def export_ebay_csv():
     import csv, io
