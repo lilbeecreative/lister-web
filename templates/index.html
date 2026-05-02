@@ -2880,13 +2880,28 @@ function closeScanBarcodeModal() {
 async function startCamera() {
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      document.getElementById('scan-status').textContent = 'Camera not supported. Use manual entry below.';
+      document.getElementById('scan-status').textContent = 'Camera API not available. Use manual entry below.';
       document.getElementById('scan-status').style.color = '#ef4444';
       return;
     }
-    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+    // Try rear camera first, fall back to any camera
+    var constraints = [
+      { video: { facingMode: { exact: 'environment' } } },
+      { video: { facingMode: 'environment' } },
+      { video: { facingMode: { ideal: 'environment' } } },
+      { video: true }
+    ];
+    scanStream = null;
+    for (var i = 0; i < constraints.length; i++) {
+      try {
+        scanStream = await navigator.mediaDevices.getUserMedia(constraints[i]);
+        break;
+      } catch(ce) { /* try next */ }
+    }
+    if (!scanStream) throw new Error('No camera available');
     var video = document.getElementById('scan-video');
     video.srcObject = scanStream;
+    await video.play().catch(function(){});
     document.getElementById('scan-status').textContent = 'Looking for QR code...';
     document.getElementById('scan-status').style.color = 'var(--muted)';
     await loadJsQR();
