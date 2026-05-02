@@ -3163,6 +3163,84 @@ async def apply_lot_cost(request: Request):
         raise HTTPException(500, str(e))
 
 
+
+@app.get("/api/home/overview")
+async def home_overview(request: Request):
+    """Single endpoint that returns all metrics for the new Home dashboard."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # Inventory value + count (all unsold, non-archived listings)
+        inv = (supabase.table("listings")
+            .select("price, quantity, sold_count")
+            .eq("business_id", business_id)
+            .neq("status", "archived")
+            .execute())
+        inv_items = inv.data or []
+        inventory_value = 0.0
+        total_items = 0
+        for it in inv_items:
+            qty = int(it.get("quantity") or 1)
+            sold = int(it.get("sold_count") or 0)
+            unsold = max(0, qty - sold)
+            if unsold > 0:
+                inventory_value += float(it.get("price") or 0) * unsold
+                total_items += unsold
+
+        # Sold this month — from inventory table (sold_date set this month)
+        try:
+            sold_res = (supabase.table("inventory")
+                .select("sold_price, sold_date")
+                .eq("business_id", business_id)
+                .gte("sold_date", month_start.date().isoformat())
+                .execute())
+            sold_items = sold_res.data or []
+            sold_mtd = sum(float(s.get("sold_price") or 0) for s in sold_items)
+            sold_count = len(sold_items)
+        except Exception:
+            sold_mtd = 0.0
+            sold_count = 0
+
+        # Spent this month — from expenses table
+        try:
+            exp_res = (supabase.table("expenses")
+                .select("amount")
+                .eq("business_id", business_id)
+                .gte("expense_date", month_start.date().isoformat())
+                .execute())
+            spent_mtd = sum(float(e.get("amount") or 0) for e in (exp_res.data or []))
+        except Exception:
+            spent_mtd = 0.0
+
+        # Scan limits + business name + connection statuses
+        biz = supabase.table("businesses").select(
+            "name, scan_count, scan_limit, ebay_user_id, shopify_shop_domain"
+        ).eq("id", business_id).limit(1).execute()
+        b = biz.data[0] if biz.data else {}
+
+        return {
+            "business_name": b.get("name", ""),
+            "inventory_value": round(inventory_value, 2),
+            "total_items": total_items,
+            "sold_mtd": round(sold_mtd, 2),
+            "sold_count_mtd": sold_count,
+            "spent_mtd": round(spent_mtd, 2),
+            "scan_count": b.get("scan_count", 0),
+            "scan_limit": b.get("scan_limit", 25),
+            "ebay_connected": bool(b.get("ebay_user_id")),
+            "shopify_connected": bool(b.get("shopify_shop_domain")),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
 @app.get("/api/dashboard/summary")
 async def dashboard_summary(request: Request, period: str = "month"):
     """Return profit/cost/listed totals for a time period."""
