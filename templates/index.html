@@ -3034,12 +3034,12 @@ function renderInventoryCard(it) {
     + '<div style="padding:9px 10px;">'
     +   '<div style="font-size:12px;font-weight:600;line-height:1.3;height:32px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + escapeText(it.title || '(untitled)') + '</div>'
     +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">'
-    +     '<span style="font-size:14px;font-weight:700;color:#fff;">$' + (it.price||0).toFixed(2) + '</span>'
+    +     '<span style="font-size:14px;font-weight:700;color:#22c55e;">$' + (it.cost||0).toFixed(2) + '</span>'
     +     (showCost ? '<span style="font-size:11px;color:#94a3b8;">Cost: $' + (it.cost||0).toFixed(2) + '</span>' : '')
     +   '</div>'
     +   '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;">'
     +     '<span>' + (it.general_category || 'Other') + '</span>'
-    +     '<span class="inv-loc-quick" data-id="' + it.id + '" onclick="event.stopPropagation();editLocationInline(this);" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px;">' + (it.storage_location ? '📍 ' + escapeText(it.storage_location) : '+ Add location') + '</span>'
+    +     '<span class="inv-loc-quick" data-id="' + it.id + '" onclick="event.stopPropagation();editLocationInline(this);" style="cursor:pointer;font-weight:700;font-size:10px;color:' + (it.storage_location ? '#94a3b8' : '#f59e0b') + ';">' + (it.storage_location ? '📍 ' + escapeText(it.storage_location) : '+ Add location') + '</span>'
     +   '</div>'
     + '</div>'
     + '</div>';
