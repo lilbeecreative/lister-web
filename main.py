@@ -3183,11 +3183,9 @@ async def home_overview(request: Request):
             .execute())
         inv_items = inv.data or []
         inventory_value = 0.0
-        total_items = 0
+        total_items = len(inv_items)
         for it in inv_items:
-            qty = int(it.get("quantity") or 1)
-            inventory_value += float(it.get("price") or 0) * qty
-            total_items += qty
+            inventory_value += float(it.get("price") or 0)
 
         # Sold this month — from inventory table (sold_date set this month)
         try:
