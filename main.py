@@ -4220,7 +4220,8 @@ If you cannot read a field clearly, use null. For category, make your best guess
             raw = match.group(0)
         if not raw:
             return {"ok": True, "data": {"merchant": "", "amount": None, "expense_date": "", "category": "Other", "notes": "Could not read receipt automatically — please fill in manually"}}
-        data = _json.loads(raw)
+        from json_repair import repair_json
+        data = _json.loads(repair_json(raw))
         return {"ok": True, "data": data}
     except Exception as e:
         import traceback; traceback.print_exc()
