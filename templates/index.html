@@ -518,7 +518,7 @@ select.field-input { background: #fff; color: #0f172a; }
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" style="opacity:0.7;"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div id="home-main-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div style="display:flex;flex-direction:column;gap:12px;">
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -565,7 +565,7 @@ select.field-input { background: #fff; color: #0f172a; }
           </div>
         </div>
 
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;display:flex;flex-direction:column;">
+        <div class="home-right-col" style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;display:flex;flex-direction:column;">
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:14px;">Recent batches</div>
           <div id="home-batches-list" style="display:flex;flex-direction:column;gap:8px;flex:1;">
             <div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;">Loading...</div>
@@ -1244,7 +1244,7 @@ select.field-input { background: #fff; color: #0f172a; }
       <div id="exp-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:18px;"></div>
 
       <!-- Chart -->
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:center;">
+      <div id="exp-chart-container" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:center;">
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
             <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;">Spending by Category</div>
