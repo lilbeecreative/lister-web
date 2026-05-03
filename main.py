@@ -745,7 +745,8 @@ async def submit_listings_to_ebay(request: Request):
         results = []
         for listing in listings_data:
             try:
-                sku = f"LISTER-{str(listing['id'])[:8]}"
+                lid = listing["id"]
+                sku = f"LISTER-{str(lid)[:8]}"
                 title = (listing.get("title") or "Item")[:80]
                 price = float(listing.get("price") or 9.99)
                 condition = "USED_EXCELLENT" if (listing.get("condition") or "used").lower() == "used" else "NEW"
