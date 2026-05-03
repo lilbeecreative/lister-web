@@ -816,6 +816,39 @@ async def submit_listings_to_ebay(request: Request):
         import traceback; traceback.print_exc()
         raise HTTPException(500, str(e))
 
+
+@app.get("/api/ebay/policies")
+async def get_ebay_policies(request: Request):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        import requests as _req
+        token = get_ebay_token(business_id)
+        api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        fp = _req.get(f"{api_base}/sell/account/v1/fulfillment_policy?marketplace_id=EBAY_US", headers=headers)
+        fp_data = fp.json() if fp.ok else {}
+        fulfillment = []
+        for p in (fp_data.get("fulfillmentPolicies") or []):
+            fulfillment.append({"id": p.get("fulfillmentPolicyId"), "name": p.get("name"), "default": False})
+        if fulfillment: fulfillment[0]["default"] = True
+        rp = _req.get(f"{api_base}/sell/account/v1/return_policy?marketplace_id=EBAY_US", headers=headers)
+        rp_data = rp.json() if rp.ok else {}
+        returns = []
+        for p in (rp_data.get("returnPolicies") or []):
+            returns.append({"id": p.get("returnPolicyId"), "name": p.get("name"), "default": False})
+        if returns: returns[0]["default"] = True
+        pp = _req.get(f"{api_base}/sell/account/v1/payment_policy?marketplace_id=EBAY_US", headers=headers)
+        pp_data = pp.json() if pp.ok else {}
+        payments = []
+        for p in (pp_data.get("paymentPolicies") or []):
+            payments.append({"id": p.get("paymentPolicyId"), "name": p.get("name"), "default": False})
+        if payments: payments[0]["default"] = True
+        return {"fulfillment": fulfillment, "returns": returns, "payments": payments}
+    except Exception as e:
+        return {"fulfillment": [], "returns": [], "payments": [], "error": str(e)}
+
 @app.get("/api/export/ebay-csv")
 async def export_ebay_csv():
     import csv, io
