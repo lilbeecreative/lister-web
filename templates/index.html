@@ -5574,9 +5574,10 @@ async function openEbayModal() {
   } catch(e) { console.error('policies', e); }
 
   var ids = Array.from(selected);
+  console.log('eBay modal: selected ids=', ids, 'listings count=', listings.length);
   ebayModalItems = ids.map(function(id) {
-    var l = listings.find(function(x) { return x.id === id; });
-    if (!l) return null;
+    var l = listings.find(function(x) { return x.id === id || String(x.id) === String(id); });
+    if (!l) { console.log('No match for id:', id, typeof id); return null; }
     var loc = l.storage_location || '';
     var sku = 'LISTER-' + String(id).substring(0,8) + (loc ? '-' + loc.replace(/\s+/g,'-').toUpperCase() : '');
     return {
