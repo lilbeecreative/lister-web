@@ -796,28 +796,19 @@ async def submit_listings_to_ebay(request: Request):
                 offer_id = offer_data.get("offerId")
 
                 if offer_id:
-                    # 3. Publish offer
-                    pub_r = _req3.post(
-                        f"{api_base}/sell/inventory/v1/offer/{offer_id}/publish",
-                        headers=headers
-                    )
-                    pub_data = pub_r.json()
-                    ebay_item_id = pub_data.get("listingId")
-                    if ebay_item_id:
-                        supabase.table("listings").update({
-                            "ebay_item_id": ebay_item_id,
-                            "status": "submitted"
-                        }).eq("id", listing["id"]).execute()
-                        results.append({"id": listing["id"], "ok": True, "ebay_id": ebay_item_id})
-                    else:
-                        results.append({"id": listing["id"], "ok": False, "error": str(pub_data)})
+                    # Save offer ID — skip publish, user reviews in Seller Hub
+                    supabase.table("listings").update({
+                        "ebay_item_id": offer_id,
+                        "status": "ebay_draft"
+                    }).eq("id", listing["id"]).execute()
+                    results.append({"id": listing["id"], "ok": True, "offer_id": offer_id, "draft": True})
                 else:
                     results.append({"id": listing["id"], "ok": False, "error": str(offer_data)})
             except Exception as item_err:
                 results.append({"id": listing.get("id","?"), "ok": False, "error": str(item_err)})
 
         ok_count = sum(1 for r in results if r["ok"])
-        return {"ok": True, "submitted": ok_count, "total": len(results), "results": results}
+        return {"ok": True, "submitted": ok_count, "total": len(results), "results": results, "draft": True, "message": "Listings created as drafts in eBay Seller Hub — review and publish there"}
 
     except HTTPException:
         raise

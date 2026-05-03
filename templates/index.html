@@ -2302,7 +2302,7 @@ async function submitSelected() {
     });
     var d = await r.json();
     if (d.ok) {
-      toast(d.submitted + ' of ' + d.total + ' listings submitted to eBay');
+      toast(d.submitted + ' of ' + d.total + ' listings sent to eBay as drafts — review in Seller Hub');
       selected.clear();
       await loadListings();
     } else {
