@@ -762,13 +762,16 @@ async def submit_listings_to_ebay(request: Request):
 
                 print(f"[eBay] Processing item {lid}: title={title!r}, price={price}, sku={sku}")
                 # 1. Create/update inventory item
+                # Build aspects with at minimum a Brand
+                inv_aspects = {"Brand": ["Unbranded"]}
+
                 inv_payload = {
                     "availability": {"shipToLocationAvailability": {"quantity": qty}},
                     "condition": condition,
                     "product": {
                         "title": title,
-                        "description": description,
-                        "aspects": {},
+                        "description": description if len(description) >= 30 else (description + " - Listed via Lister AI"),
+                        "aspects": inv_aspects,
                     }
                 }
                 if photo_url:
