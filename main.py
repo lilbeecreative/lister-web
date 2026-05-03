@@ -691,7 +691,11 @@ def get_ebay_token(business_id: str) -> str:
     tok = res.data[0]
     # Check if expired
     try:
-        expires_at = datetime.fromisoformat(tok["expires_at"].replace("Z",""))
+        expires_str = tok["expires_at"].replace("Z","").replace("+00:00","")
+        # Strip timezone if present
+        if "+" in expires_str:
+            expires_str = expires_str.split("+")[0]
+        expires_at = datetime.fromisoformat(expires_str)
         if (expires_at - datetime.utcnow()).total_seconds() < 300:
             # Refresh token
             creds = base64.b64encode(f"{EBAY_APP_ID}:{EBAY_CERT_ID}".encode()).decode()
@@ -736,6 +740,7 @@ async def submit_listings_to_ebay(request: Request):
         # Fetch listings from DB
         res = supabase.table("listings").select("*").in_("id", listing_ids).eq("business_id", business_id).execute()
         listings_data = res.data or []
+        print(f"[eBay] Found {len(listings_data)} listings in DB for {len(listing_ids)} requested ids")
 
         results = []
         for listing in listings_data:
