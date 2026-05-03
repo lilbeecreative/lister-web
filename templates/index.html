@@ -5608,16 +5608,74 @@ function renderEbayModal() {
     var ready = item.title && item.price > 0;
     var statusColor = ready ? '#22c55e' : '#f59e0b';
     var statusText = ready ? 'Ready' : 'Check';
-    html += '<div style="border-bottom:1px solid #1a1f2e;padding:14px 22px;display:flex;align-items:center;gap:12px;">';
+
+    // Shipping policy options
+    var shipOpts = '';
+    for (var j = 0; j < ebayModalPolicies.fulfillment.length; j++) {
+      var p = ebayModalPolicies.fulfillment[j];
+      var sel = p.id === item.shipping_policy_id ? ' selected' : '';
+      shipOpts += '<option value="' + p.id + '"' + sel + '>' + escapeHtml(p.name) + (p.default ? ' (default)' : '') + '</option>';
+    }
+    if (!shipOpts) shipOpts = '<option value="">No policies found - set up shipping in eBay account</option>';
+
+    // Condition options
+    var condOpts = ['USED_EXCELLENT','USED_VERY_GOOD','USED_GOOD','USED_ACCEPTABLE','NEW','NEW_WITH_TAGS','FOR_PARTS_OR_NOT_WORKING'].map(function(c) {
+      var label = c.replace(/_/g,' ');
+      var sel = c === item.condition ? ' selected' : '';
+      return '<option value="' + c + '"' + sel + '>' + label + '</option>';
+    }).join('');
+
+    html += '<div style="border-bottom:1px solid #1a1f2e;padding:16px 22px;">';
+    // Header row
+    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">';
     html += '<div style="width:8px;height:8px;border-radius:50%;background:' + statusColor + ';flex-shrink:0;"></div>';
     html += '<div style="flex:1;min-width:0;">';
-    html += '<div style="font-size:13px;font-weight:700;color:#f1f5f9;">' + escapeHtml(item.title) + '</div>';
-    html += '<div style="font-size:11px;color:#64748b;margin-top:2px;">$' + Number(item.price).toFixed(2) + ' - SKU: ' + escapeHtml(item.sku) + '</div>';
+    html += '<div style="font-size:14px;font-weight:700;color:#f1f5f9;">Item ' + (i+1) + '</div>';
     html += '</div>';
-    html += '<div style="font-size:11px;color:' + statusColor + ';font-weight:700;">' + statusText + '</div>';
+    html += '<div style="font-size:11px;color:' + statusColor + ';font-weight:700;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);padding:3px 10px;border-radius:20px;">' + statusText + '</div>';
+    html += '</div>';
+
+    // Title
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px;">Title</div>';
+    html += '<input value="' + escapeHtml(item.title) + '" maxlength="80" oninput="updateEbayField(' + i + ',\'title\',this.value)" style="width:100%;background:#1a1f2e;border:1px solid #2d3348;border-radius:8px;padding:8px 12px;color:#f1f5f9;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">';
+    html += '</div>';
+
+    // Price / Qty / Condition
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px;margin-bottom:10px;">';
+    html += '<div><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px;">Price</div>';
+    html += '<input value="' + Number(item.price).toFixed(2) + '" type="number" step="0.01" oninput="updateEbayField(' + i + ',\'price\',parseFloat(this.value))" style="width:100%;background:#1a1f2e;border:1px solid #2d3348;border-radius:8px;padding:8px 12px;color:#22c55e;font-size:13px;font-weight:700;font-family:inherit;outline:none;box-sizing:border-box;"></div>';
+    html += '<div><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px;">Qty</div>';
+    html += '<input value="' + item.quantity + '" type="number" min="1" oninput="updateEbayField(' + i + ',\'quantity\',parseInt(this.value))" style="width:100%;background:#1a1f2e;border:1px solid #2d3348;border-radius:8px;padding:8px 12px;color:#f1f5f9;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;"></div>';
+    html += '<div><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px;">Condition</div>';
+    html += '<select onchange="updateEbayField(' + i + ',\'condition\',this.value)" style="width:100%;background:#1a1f2e;border:1px solid #2d3348;border-radius:8px;padding:8px 10px;color:#f1f5f9;font-size:12px;font-family:inherit;outline:none;cursor:pointer;">' + condOpts + '</select></div>';
+    html += '</div>';
+
+    // Shipping
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px;">Shipping policy</div>';
+    html += '<select onchange="updateEbayField(' + i + ',\'shipping_policy_id\',this.value)" style="width:100%;background:#1a1f2e;border:1px solid #2d3348;border-radius:8px;padding:8px 12px;color:#f1f5f9;font-size:12px;font-family:inherit;outline:none;cursor:pointer;">' + shipOpts + '</select>';
+    html += '</div>';
+
+    // SKU
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px;">SKU <span style="color:#374151;font-weight:400;text-transform:none;">(storage location)</span></div>';
+    html += '<input value="' + escapeHtml(item.sku) + '" oninput="updateEbayField(' + i + ',\'sku\',this.value)" style="width:100%;background:#1a1f2e;border:1px solid #2d3348;border-radius:8px;padding:8px 12px;color:#f1f5f9;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">';
+    html += '</div>';
+
+    // Condition notes
+    html += '<div>';
+    html += '<div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px;">Condition notes <span style="color:#374151;font-weight:400;text-transform:none;">optional</span></div>';
+    html += '<input value="' + escapeHtml(item.condition_notes||'') + '" oninput="updateEbayField(' + i + ',\'condition_notes\',this.value)" placeholder="e.g. Light wear, works perfectly" style="width:100%;background:#1a1f2e;border:1px solid #2d3348;border-radius:8px;padding:8px 12px;color:#f1f5f9;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">';
+    html += '</div>';
+
     html += '</div>';
   }
   container.innerHTML = html;
+}
+
+function updateEbayField(idx, field, value) {
+  if (ebayModalItems[idx]) ebayModalItems[idx][field] = value;
 }
 
 function closeEbayModal() {
