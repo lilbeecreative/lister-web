@@ -729,7 +729,7 @@ select.field-input { background: #fff; color: #0f172a; }
         <div style="position:relative;" id="submit-dropdown-wrap">
           <button class="btn btn-primary" id="submit-batch-btn" style="font-size:12px;padding:7px 14px;display:none;" onclick="toggleSubmitDropdown()">Submit (<span id="submit-count">0</span>) ▾</button>
           <div id="submit-dropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px;min-width:180px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
-            <button onclick="submitSelected();closeSubmitDropdown();" style="display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;color:var(--text);font-size:12px;padding:8px 10px;cursor:pointer;font-family:inherit;text-align:left;border-radius:6px;">
+            <button onclick="openEbayModal();closeSubmitDropdown();" style="display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;color:var(--text);font-size:12px;padding:8px 10px;cursor:pointer;font-family:inherit;text-align:left;border-radius:6px;">
               <span style="display:inline-block;width:7px;height:7px;background:#2563eb;border-radius:50%;"></span>
               Submit to eBay
             </button>
@@ -5548,6 +5548,132 @@ window.addEventListener('DOMContentLoaded', function() {
   setTimeout(refreshUserMailboxBadge, 1000);
 });
 setInterval(refreshUserMailboxBadge, 30000);
+
+// EBAY MODAL FUNCTIONS
+var ebayModalItems = [];
+var ebayModalPolicies = { fulfillment: [], returns: [], payments: [] };
+var ebayModalAspects = {};
+
+async function openEbayModal() {
+  if (!selected.size) { toast('Select items first', 'error'); return; }
+  var ebayDot = document.getElementById('ebay-status-dot');
+  var isConnected = ebayDot && ebayDot.style.background === 'rgb(34, 197, 94)';
+  if (!isConnected) {
+    if (confirm('eBay not connected. Open Account to connect?')) {
+      document.querySelector('.nav-btn[data-tab="settings"]').click();
+    }
+    return;
+  }
+  document.getElementById('ebay-review-modal').style.display = 'block';
+  document.getElementById('ebay-modal-subtitle').textContent = 'Loading ' + selected.size + ' items...';
+  document.getElementById('ebay-modal-items').innerHTML = '<div style="padding:40px;text-align:center;color:#64748b;">Loading...</div>';
+
+  try {
+    var pr = await fetch('/api/ebay/policies', {credentials:'include'});
+    if (pr.ok) ebayModalPolicies = await pr.json();
+  } catch(e) { console.error('policies', e); }
+
+  var ids = Array.from(selected);
+  ebayModalItems = ids.map(function(id) {
+    var l = listings.find(function(x) { return x.id === id; });
+    if (!l) return null;
+    var loc = l.storage_location || '';
+    var sku = 'LISTER-' + String(id).substring(0,8) + (loc ? '-' + loc.replace(/\s+/g,'-').toUpperCase() : '');
+    return {
+      id: id,
+      title: l.title || '',
+      price: l.price || 0,
+      quantity: l.quantity || 1,
+      condition: 'USED_EXCELLENT',
+      category_id: l.ebay_category_id || '',
+      category_path: '',
+      photo_url: '',
+      sku: sku,
+      condition_notes: '',
+      shipping_policy_id: ebayModalPolicies.fulfillment[0] ? ebayModalPolicies.fulfillment[0].id : '',
+      aspects: {}
+    };
+  }).filter(Boolean);
+
+  document.getElementById('ebay-modal-subtitle').textContent = ebayModalItems.length + ' items - review before sending';
+  renderEbayModal();
+}
+
+function renderEbayModal() {
+  var container = document.getElementById('ebay-modal-items');
+  if (!container) return;
+  var html = '';
+  for (var i = 0; i < ebayModalItems.length; i++) {
+    var item = ebayModalItems[i];
+    var ready = item.title && item.price > 0;
+    var statusColor = ready ? '#22c55e' : '#f59e0b';
+    var statusText = ready ? 'Ready' : 'Check';
+    html += '<div style="border-bottom:1px solid #1a1f2e;padding:14px 22px;display:flex;align-items:center;gap:12px;">';
+    html += '<div style="width:8px;height:8px;border-radius:50%;background:' + statusColor + ';flex-shrink:0;"></div>';
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<div style="font-size:13px;font-weight:700;color:#f1f5f9;">' + escapeHtml(item.title) + '</div>';
+    html += '<div style="font-size:11px;color:#64748b;margin-top:2px;">$' + Number(item.price).toFixed(2) + ' - SKU: ' + escapeHtml(item.sku) + '</div>';
+    html += '</div>';
+    html += '<div style="font-size:11px;color:' + statusColor + ';font-weight:700;">' + statusText + '</div>';
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function closeEbayModal() {
+  var modal = document.getElementById('ebay-review-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitEbayDrafts() {
+  var btn = document.getElementById('ebay-send-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+  try {
+    var duration = document.getElementById('ebay-bulk-duration').value;
+    var defaultReturnId = ebayModalPolicies.returns[0] ? ebayModalPolicies.returns[0].id : '';
+    var defaultPaymentId = ebayModalPolicies.payments[0] ? ebayModalPolicies.payments[0].id : '';
+    var payload = {
+      listing_ids: ebayModalItems.map(function(x){return x.id;}),
+      items: ebayModalItems.map(function(item) {
+        return {
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          quantity: item.quantity,
+          condition: item.condition,
+          condition_notes: item.condition_notes,
+          category_id: item.category_id,
+          sku: item.sku,
+          shipping_policy_id: item.shipping_policy_id,
+          return_policy_id: defaultReturnId,
+          payment_policy_id: defaultPaymentId,
+          listing_duration: duration,
+          aspects: item.aspects
+        };
+      })
+    };
+    var r = await fetch('/api/ebay/submit-listings', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    var d = await r.json();
+    if (d.ok) {
+      toast(d.submitted + ' of ' + d.total + ' drafts sent to eBay');
+      closeEbayModal();
+      selected.clear();
+      await loadListings();
+    } else {
+      toast('Submit failed', 'error');
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Send Drafts'; }
+  }
+}
+
 </script>
 
 
@@ -5775,5 +5901,38 @@ setInterval(refreshUserMailboxBadge, 30000);
     </div>
   </div>
 </div>
+
+<!-- EBAY REVIEW MODAL -->
+<div id="ebay-review-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;overflow-y:auto;padding:20px;">
+  <div style="max-width:920px;margin:0 auto;background:#0d0f14;border-radius:14px;overflow:hidden;border:1px solid #1a1f2e;">
+    <div style="background:#090b0f;padding:16px 22px;border-bottom:1px solid #1a1f2e;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:32px;height:32px;background:#0064D2;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;">eB</div>
+        <div>
+          <div style="font-size:17px;font-weight:800;color:#f1f5f9;">eBay Draft Review</div>
+          <div id="ebay-modal-subtitle" style="font-size:11px;color:#64748b;margin-top:1px;">Loading items...</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;background:#0f1420;border:1px solid #1a1f2e;padding:6px 12px;border-radius:8px;">
+          <span style="font-size:11px;color:#64748b;">Duration</span>
+          <select id="ebay-bulk-duration" style="background:transparent;border:none;color:#f1f5f9;font-size:11px;font-family:inherit;outline:none;cursor:pointer;">
+            <option value="GTC">Good Till Cancelled</option>
+            <option value="DAYS_7">7 Days</option>
+            <option value="DAYS_30">30 Days</option>
+          </select>
+        </div>
+        <button onclick="closeEbayModal()" style="background:transparent;border:1px solid #1a1f2e;color:#64748b;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:inherit;">Cancel</button>
+        <button onclick="submitEbayDrafts()" id="ebay-send-btn" style="background:#0064D2;border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Send Drafts</button>
+      </div>
+    </div>
+    <div id="ebay-modal-items" style="max-height:70vh;overflow-y:auto;"></div>
+    <div style="padding:14px 22px;border-top:1px solid #1a1f2e;background:#090b0f;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:12px;color:#64748b;">Sent as drafts in eBay Seller Hub</div>
+      <button onclick="submitEbayDrafts()" style="background:#0064D2;border:none;color:#fff;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Send Drafts to eBay</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
