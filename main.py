@@ -773,6 +773,7 @@ async def submit_listings_to_ebay(request: Request):
                     headers=headers,
                     json=inv_payload
                 )
+                print(f"[eBay] Inventory PUT for {sku}: status={inv_r.status_code}, body={inv_r.text[:500]}")
 
                 # 2. Create offer
                 offer_payload = {
@@ -792,7 +793,8 @@ async def submit_listings_to_ebay(request: Request):
                     headers=headers,
                     json=offer_payload
                 )
-                offer_data = offer_r.json()
+                print(f"[eBay] Offer POST status={offer_r.status_code}, body={offer_r.text[:500]}")
+                offer_data = offer_r.json() if offer_r.text else {}
                 offer_id = offer_data.get("offerId")
 
                 if offer_id:
