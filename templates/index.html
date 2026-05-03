@@ -93,7 +93,40 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
   position: sticky; top: 0; z-index: 150; flex-shrink: 0;
 }
 @media (max-width: 768px) { .mobile-topbar { display: flex; } }
-  #home-main-grid { grid-template-columns: 1fr !important; }
+  /* HOME MOBILE - no scroll, fits screen */
+  #tab-home { overflow: hidden !important; }
+  #tab-home > div { 
+    display: flex; flex-direction: column; 
+    height: calc(100dvh - 130px); 
+    overflow: hidden; gap: 8px !important;
+    margin-bottom: 0 !important;
+  }
+  #home-main-grid { grid-template-columns: 1fr !important; flex: 1; min-height: 0; overflow: hidden; }
+  .home-right-col { display: none !important; }
+  .home-left-col { display: flex !important; flex-direction: column !important; gap: 8px !important; flex: 1; min-height: 0; }
+  #home-start-scan { padding: 14px 16px !important; flex-shrink: 0; }
+  #home-start-scan .scan-title { font-size: 16px !important; }
+  #home-stats-grid { flex-shrink: 0; }
+  #home-stats-grid > div { padding: 10px 12px !important; }
+  #home-stats-grid .stat-num { font-size: 22px !important; }
+  #home-scan-meter { flex-shrink: 0; padding: 10px 12px !important; }
+  #home-quick-grid { flex: 1; min-height: 0; grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  #home-quick-grid > div { padding: 10px 12px !important; border-radius: 12px !important; }
+  #home-quick-grid > div > div:first-child { width: 32px !important; height: 32px !important; margin-bottom: 6px !important; }
+  #home-quick-grid > div > div:first-child svg { width: 16px !important; height: 16px !important; }
+  #home-quick-grid .q-title { font-size: 13px !important; }
+  #home-quick-grid .q-sub { font-size: 10px !important; }
+
+  /* EXPENSES TABLE MOBILE */
+  .exp-table-wrap { overflow-x: hidden !important; }
+  .exp-table-wrap table { min-width: unset !important; }
+  .exp-col-notes { display: none !important; }
+  .exp-col-amount { min-width: unset !important; width: 70px !important; }
+  .exp-col-cat { width: 120px !important; }
+
+  #exp-chart-container { grid-template-columns: 1fr !important; }
+  #exp-summary-cards { grid-template-columns: 1fr 1fr !important; }
+
   .home-right-col { display: none !important; }
   #exp-chart-container { grid-template-columns: 1fr !important; }
 
@@ -510,7 +543,7 @@ select.field-input { background: #fff; color: #0f172a; }
         </div>
       </div>
 
-      <div onclick="document.querySelector('.nav-btn[data-tab=\'dashboard\']').click()" style="background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);border-radius:14px;padding:20px 22px;display:flex;align-items:center;gap:14px;margin-bottom:16px;cursor:pointer;">
+      <div onclick="document.querySelector('.nav-btn[data-tab=\'dashboard\']').click()" style="background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);border-radius:14px;padding:20px 22px;display:flex;align-items:center;gap:14px;margin-bottom:16px;cursor:pointer;" id="home-start-scan">
         <div style="width:50px;height:50px;background:rgba(0,0,0,0.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         </div>
@@ -522,9 +555,9 @@ select.field-input { background: #fff; color: #0f172a; }
       </div>
 
       <div id="home-main-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="home-left-col" style="display:flex;flex-direction:column;gap:12px;">
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div id="home-stats-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;font-weight:700;margin-bottom:6px;">Items listed</div>
               <div id="home-total-items" style="font-size:26px;font-weight:800;color:var(--text);">0</div>
@@ -537,7 +570,7 @@ select.field-input { background: #fff; color: #0f172a; }
             </div>
           </div>
 
-          <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
+          <div id="home-scan-meter" style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">AI scans used</div>
               <div id="home-scan-pct" style="font-size:12px;font-weight:700;color:var(--muted);">0/500</div>
@@ -1274,7 +1307,7 @@ select.field-input { background: #fff; color: #0f172a; }
                 <th onclick="sortExpenses('merchant')" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Merchant <span id="exp-sort-merchant">↕</span></th>
                 <th onclick="sortExpenses('category')" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:160px;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Category <span id="exp-sort-category">↕</span></th>
                 <th onclick="sortExpenses('amount')" style="padding:10px 14px;text-align:right;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:100px;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Amount <span id="exp-sort-amount">↕</span></th>
-                <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Notes</th>
+                <th class="exp-col-notes" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Notes</th>
                 <th style="padding:10px 14px;width:60px;"></th>
               </tr>
             </thead>
