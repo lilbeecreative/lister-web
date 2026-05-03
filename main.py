@@ -759,6 +759,7 @@ async def submit_listings_to_ebay(request: Request):
                     photo_res = supabase.storage.from_("part-photos").get_public_url(listing["photo_id"])
                     photo_url = photo_res
 
+                print(f"[eBay] Processing item {lid}: title={title!r}, price={price}, sku={sku}")
                 # 1. Create/update inventory item
                 inv_payload = {
                     "availability": {"shipToLocationAvailability": {"quantity": qty}},
@@ -815,6 +816,7 @@ async def submit_listings_to_ebay(request: Request):
                 results.append({"id": listing.get("id","?"), "ok": False, "error": str(item_err)})
 
         ok_count = sum(1 for r in results if r["ok"])
+        print(f"[eBay] Final: submitted={ok_count}/{len(results)}, results={results}")
         return {"ok": True, "submitted": ok_count, "total": len(results), "results": results, "draft": True, "message": "Listings created as drafts in eBay Seller Hub — review and publish there"}
 
     except HTTPException:
