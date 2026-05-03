@@ -93,6 +93,9 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
   position: sticky; top: 0; z-index: 150; flex-shrink: 0;
 }
 @media (max-width: 768px) { .mobile-topbar { display: flex; } }
+  #home-main-grid { grid-template-columns: 1fr !important; }
+  .home-right-col { display: none !important; }
+  #exp-chart-container { grid-template-columns: 1fr !important; }
 
 /* ── MOBILE BOTTOM TAB BAR ── */
 .mobile-tabbar {
