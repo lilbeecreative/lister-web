@@ -805,6 +805,15 @@ async def submit_listings_to_ebay(request: Request):
                 print(f"[eBay] Inventory PUT for {sku}: status={inv_r.status_code}, body={inv_r.text[:500]}")
 
                 # 2. Create offer
+                modal = modal_items.get(str(listing["id"]), {}) if 'modal_items' in dir() else {}
+                ship_pol = modal.get("shipping_policy_id")
+                ret_pol = modal.get("return_policy_id")
+                pay_pol = modal.get("payment_policy_id")
+                listing_policies = {}
+                if ship_pol: listing_policies["fulfillmentPolicyId"] = ship_pol
+                if ret_pol: listing_policies["returnPolicyId"] = ret_pol
+                if pay_pol: listing_policies["paymentPolicyId"] = pay_pol
+
                 offer_payload = {
                     "sku": sku,
                     "marketplaceId": "EBAY_US",
@@ -815,7 +824,7 @@ async def submit_listings_to_ebay(request: Request):
                     },
                     "categoryId": category_id,
                     "merchantLocationKey": "default",
-                    "listingPolicies": {}
+                    "listingPolicies": listing_policies
                 }
 
                 offer_r = _req3.post(
