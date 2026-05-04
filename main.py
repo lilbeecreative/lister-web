@@ -806,6 +806,7 @@ async def submit_listings_to_ebay(request: Request):
 
                 # 2. Create offer
                 modal = modal_items.get(str(listing["id"]), {}) if 'modal_items' in dir() else {}
+                print(f"[eBay] Modal data for {listing['id']}: ship={modal.get('shipping_policy_id')}, ret={modal.get('return_policy_id')}, pay={modal.get('payment_policy_id')}")
                 ship_pol = modal.get("shipping_policy_id")
                 ret_pol = modal.get("return_policy_id")
                 pay_pol = modal.get("payment_policy_id")
