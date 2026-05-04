@@ -831,6 +831,26 @@ async def submit_listings_to_ebay(request: Request):
         raise HTTPException(500, str(e))
 
 
+
+@app.get("/api/ebay/whoami")
+async def ebay_whoami(request: Request):
+    """Check which eBay user account is connected."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        import requests as _req
+        token = get_ebay_token(business_id)
+        api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
+        headers = {"Authorization": f"Bearer {token}"}
+        r = _req.get(f"{api_base}/commerce/identity/v1/user", headers=headers)
+        if r.ok:
+            data = r.json()
+            return {"username": data.get("username"), "email": data.get("email"), "account_type": data.get("accountType")}
+        return {"error": r.text[:200]}
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/api/ebay/policies")
 async def get_ebay_policies(request: Request):
     business_id = require_auth(request)
