@@ -809,12 +809,30 @@ async def submit_listings_to_ebay(request: Request):
                 offer_id = offer_data.get("offerId")
 
                 if offer_id:
-                    # Save offer ID — skip publish, user reviews in Seller Hub
-                    supabase.table("listings").update({
-                        "ebay_item_id": offer_id,
-                        "status": "ebay_draft"
-                    }).eq("id", listing["id"]).execute()
-                    results.append({"id": listing["id"], "ok": True, "offer_id": offer_id, "draft": True})
+                    # Publish as scheduled listing 1 year out — appears in Seller Hub as scheduled
+                    from datetime import datetime as _dt, timedelta as _td
+                    scheduled_date = (_dt.utcnow() + _td(days=365)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+                    listing_id = offer_id
+                    try:
+                        pub_r = _req3.post(
+                            f"{api_base}/sell/inventory/v1/offer/{offer_id}/publish",
+                            headers=headers,
+                            json={"scheduledStartDate": scheduled_date}
+                        )
+                        print(f"[eBay] Scheduled publish for {offer_id}: status={pub_r.status_code}, body={pub_r.text[:300]}")
+                        pub_data = pub_r.json() if pub_r.text else {}
+                        listing_id = pub_data.get("listingId") or offer_id
+                    except Exception as _pub_err:
+                        print(f"[eBay] Publish warning: {_pub_err}")
+
+                    try:
+                        supabase.table("listings").update({
+                            "ebay_item_id": listing_id,
+                            "status": "ebay_scheduled"
+                        }).eq("id", listing["id"]).execute()
+                    except Exception as _db_err:
+                        print(f"[eBay] DB update warning: {_db_err}")
+                    results.append({"id": listing["id"], "ok": True, "offer_id": offer_id, "listing_id": listing_id})
                 else:
                     results.append({"id": listing["id"], "ok": False, "error": str(offer_data)})
             except Exception as item_err:
