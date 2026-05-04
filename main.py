@@ -215,6 +215,77 @@ EBAY_API_BASE = "https://api.sandbox.ebay.com" if EBAY_ENV == "sandbox" else "ht
 EBAY_AUTH_BASE = "https://auth.sandbox.ebay.com" if EBAY_ENV == "sandbox" else "https://auth.ebay.com"
 EBAY_SCOPES = "https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account"
 
+# Curated eBay categories for fallback when taxonomy API blocked
+EBAY_CATEGORIES = [
+    {"id": "11450", "name": "Clothing, Shoes & Accessories", "path": "Clothing, Shoes & Accessories"},
+    {"id": "57988", "name": "Men's Clothing", "path": "Clothing > Men's Clothing"},
+    {"id": "15687", "name": "Men's T-Shirts", "path": "Clothing > Men > T-Shirts"},
+    {"id": "57990", "name": "Women's Clothing", "path": "Clothing > Women's Clothing"},
+    {"id": "63861", "name": "Women's Tops", "path": "Clothing > Women > Tops & Blouses"},
+    {"id": "93427", "name": "Athletic Shoes - Men", "path": "Shoes > Men's Athletic Shoes"},
+    {"id": "95672", "name": "Athletic Shoes - Women", "path": "Shoes > Women's Athletic Shoes"},
+    {"id": "11498", "name": "Boots - Men", "path": "Shoes > Men's Boots"},
+    {"id": "53557", "name": "Boots - Women", "path": "Shoes > Women's Boots"},
+    {"id": "57929", "name": "Sneakers - Men", "path": "Shoes > Men > Athletic Sneakers"},
+
+    {"id": "293", "name": "Consumer Electronics", "path": "Consumer Electronics"},
+    {"id": "9355", "name": "Cell Phones & Smartphones", "path": "Cell Phones & Accessories > Cell Phones & Smartphones"},
+    {"id": "175672", "name": "Cell Phone Cases", "path": "Cell Phones & Accessories > Cases & Covers"},
+    {"id": "171485", "name": "Computers & Tablets", "path": "Computers/Tablets & Networking > Computers"},
+    {"id": "11176", "name": "Laptops", "path": "Computers > Laptops & Netbooks"},
+    {"id": "171961", "name": "Tablets", "path": "Computers > Tablets & eReaders"},
+    {"id": "31388", "name": "Headphones", "path": "Consumer Electronics > Audio > Headphones"},
+    {"id": "139973", "name": "Smart Home Devices", "path": "Smart Home & Surveillance"},
+    {"id": "116022", "name": "Lighting & Lamps", "path": "Home & Garden > Lamps, Lighting & Ceiling Fans"},
+
+    {"id": "1", "name": "Collectibles", "path": "Collectibles"},
+    {"id": "11116", "name": "Coins & Paper Money", "path": "Coins & Paper Money"},
+    {"id": "39", "name": "US Coins", "path": "Coins > US"},
+    {"id": "550", "name": "Art", "path": "Art"},
+    {"id": "260", "name": "Stamps", "path": "Stamps"},
+    {"id": "20081", "name": "Antiques", "path": "Antiques"},
+    {"id": "64482", "name": "Sports Mem, Cards & Fan Shop", "path": "Sports Memorabilia"},
+    {"id": "212", "name": "Trading Cards", "path": "Collectibles > Trading Card Games"},
+
+    {"id": "267", "name": "Books", "path": "Books"},
+    {"id": "171228", "name": "Fiction Books", "path": "Books > Fiction"},
+    {"id": "171229", "name": "Non-Fiction Books", "path": "Books > Non-Fiction"},
+    {"id": "11233", "name": "Music CDs", "path": "Music > CDs"},
+    {"id": "11232", "name": "Vinyl Records", "path": "Music > Vinyl"},
+    {"id": "617", "name": "Movies & TV - DVDs", "path": "Movies > DVDs & Blu-ray"},
+
+    {"id": "220", "name": "Toys & Hobbies", "path": "Toys & Hobbies"},
+    {"id": "19006", "name": "Building Toys (LEGO etc)", "path": "Toys > Building Toys"},
+    {"id": "246", "name": "Action Figures", "path": "Toys > Action Figures"},
+    {"id": "1249", "name": "Video Games & Consoles", "path": "Video Games & Consoles"},
+    {"id": "139973", "name": "Video Games", "path": "Video Games"},
+
+    {"id": "11700", "name": "Home & Garden", "path": "Home & Garden"},
+    {"id": "20444", "name": "Kitchen, Dining & Bar", "path": "Home & Garden > Kitchen"},
+    {"id": "159912", "name": "Cookware", "path": "Home & Garden > Kitchen > Cookware"},
+    {"id": "260799", "name": "Furniture", "path": "Home & Garden > Furniture"},
+
+    {"id": "281", "name": "Jewelry & Watches", "path": "Jewelry & Watches"},
+    {"id": "31387", "name": "Watches", "path": "Watches"},
+
+    {"id": "888", "name": "Sporting Goods", "path": "Sporting Goods"},
+    {"id": "33509", "name": "Cycling", "path": "Sporting Goods > Cycling"},
+    {"id": "1513", "name": "Outdoor Sports", "path": "Sporting Goods > Outdoor Sports"},
+    {"id": "29223", "name": "Hunting", "path": "Sporting Goods > Hunting"},
+    {"id": "73", "name": "Hunting Optics", "path": "Sporting Goods > Hunting > Optics"},
+
+    {"id": "26395", "name": "Health & Beauty", "path": "Health & Beauty"},
+    {"id": "26396", "name": "Skin Care", "path": "Health & Beauty > Skin Care"},
+    {"id": "31786", "name": "Makeup", "path": "Health & Beauty > Makeup"},
+
+    {"id": "6028", "name": "Auto Parts", "path": "eBay Motors > Parts & Accessories"},
+    {"id": "6030", "name": "Tools - Auto", "path": "eBay Motors > Tools"},
+
+    {"id": "12576", "name": "Business & Industrial", "path": "Business & Industrial"},
+    {"id": "92074", "name": "Diecast & Toy Vehicles", "path": "Toys > Diecast & Toy Vehicles"}
+]
+
+
 @app.get("/ebay/connect")
 async def ebay_connect(request: Request):
     business_id = require_auth(request)
@@ -1054,9 +1125,20 @@ async def search_ebay_categories(request: Request, q: str = ""):
                     "name": cat.get("categoryName"),
                     "path": " > ".join(path_parts)
                 })
+        # Fallback to curated list if eBay API blocked
+        if not results:
+            ql = q.lower()
+            for cat in EBAY_CATEGORIES:
+                if ql in cat["name"].lower() or ql in cat["path"].lower():
+                    results.append(cat)
+                if len(results) >= 10:
+                    break
         return {"categories": results, "ebay_status": r.status_code}
     except Exception as e:
-        return {"categories": [], "error": str(e)}
+        # On any error fall back to curated list
+        ql = q.lower()
+        results = [cat for cat in EBAY_CATEGORIES if ql in cat["name"].lower() or ql in cat["path"].lower()][:10]
+        return {"categories": results, "error": str(e)}
 
 
 @app.get("/api/ebay/item-aspects")
