@@ -1376,6 +1376,11 @@ async def admin_fetch_ebay_categories(request: Request):
         import traceback; traceback.print_exc()
         return {"error": str(e)}
 
+
+@app.get("/v2", response_class=HTMLResponse)
+async def landing_v2(request: Request):
+    return templates.TemplateResponse("v2_landing.html", {"request": request})
+
 @app.get("/api/ebay/policies")
 async def get_ebay_policies(request: Request):
     business_id = require_auth(request)
