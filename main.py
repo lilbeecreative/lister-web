@@ -764,7 +764,17 @@ async def submit_listings_to_ebay(request: Request):
                 # 1. Create/update inventory item
                 # Build aspects - eBay requires varying specifics per category
                 # Start with basics, will fill required fields from modal aspects later
-                inv_aspects = {"Brand": ["Unbranded"], "Type": ["Other"], "Model": ["Generic"], "MPN": ["Does Not Apply"]}
+                inv_aspects = {
+                    "Brand": ["Unbranded"],
+                    "Type": ["Other"],
+                    "Model": ["Generic"],
+                    "MPN": ["Does Not Apply"],
+                    "Color": ["Multicolor"],
+                    "Size": ["Standard"],
+                    "Material": ["Mixed Materials"],
+                    "Department": ["Unisex Adult"],
+                    "Style": ["Casual"]
+                }
                 # Override with any user-provided aspects from modal
                 user_aspects = modal.get("aspects") if 'modal' in dir() else {}
                 if user_aspects:
