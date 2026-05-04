@@ -1924,16 +1924,43 @@ async def deep_research_full(request: Request):
 
     def identify_item_from_image(images, title):
         if not images:
-            return title
+            return {"description": title, "upc": None, "brand": None, "model": None}
         try:
-            id_prompt = f"You are an auction appraiser. Use BOTH the image AND the listing title equally to identify this item. Title: {title}. Look at the image for: exact model numbers on labels/nameplates, brand logos, condition, visible accessories. Combine both sources and return one precise description. Do not ignore the title — it may contain info not visible in the image."
+            id_prompt = f"""You are an auction appraiser identifying a product for resale. Title hint: {title}
+
+Examine the image carefully and extract structured data. Look for:
+1. UPC/EAN barcode numbers (12-13 digits, often near barcode)
+2. Brand name (logo, label, packaging)
+3. Model number (label/nameplate, often alphanumeric)
+4. Product name/title
+
+Respond ONLY in valid JSON format, no markdown:
+{{
+  "description": "concise product description for listing title (under 80 chars)",
+  "upc": "12-13 digit UPC/EAN if visible, otherwise null",
+  "brand": "brand name if identifiable, otherwise null",
+  "model": "model number if visible, otherwise null"
+}}"""
             parts = [id_prompt] + [{"mime_type": "image/jpeg", "data": img} for img in images[:1]]
-            r = model.generate_content(parts, generation_config={"max_output_tokens": 150})
-            result = r.text.strip().strip('"')
-            return result if result else title
+            r = model.generate_content(parts, generation_config={"max_output_tokens": 300})
+            result = r.text.strip().strip('"').strip()
+            # Strip markdown code blocks if present
+            if result.startswith("```"):
+                result = result.split("```")[1].lstrip("json").strip()
+            import json as _json
+            try:
+                parsed = _json.loads(result)
+                return {
+                    "description": parsed.get("description") or title,
+                    "upc": parsed.get("upc"),
+                    "brand": parsed.get("brand"),
+                    "model": parsed.get("model")
+                }
+            except _json.JSONDecodeError:
+                return {"description": result if result else title, "upc": None, "brand": None, "model": None}
         except Exception as e:
             print(f"Image ID error: {e}")
-            return title
+            return {"description": title, "upc": None, "brand": None, "model": None}
 
     def clean_title(raw_title):
         """Strip address fragments, company boilerplate, and catalog noise from auction titles."""
@@ -2048,10 +2075,14 @@ async def deep_research_full(request: Request):
         if clean != title:
             print(f"Lot {lot} title cleaned: '{title}' → '{clean}'")
 
-        # Step 1: identify exact model from image
-        identified = identify_item_from_image(images, clean)
+        # Step 1: identify exact model from image (returns dict with description/upc/brand/model)
+        id_result = identify_item_from_image(images, clean)
+        identified = id_result.get("description") or clean
+        detected_upc_scan = id_result.get("upc")
+        detected_brand_scan = id_result.get("brand")
+        detected_model_scan = id_result.get("model")
         if identified != clean:
-            print(f"Lot {lot} image ID: {identified}")
+            print(f"Lot {lot} image ID: {identified} (UPC={detected_upc_scan}, brand={detected_brand_scan}, model={detected_model_scan})")
 
         # Step 2: Gemini Search Grounding for real market pricing
         serp_results = []
