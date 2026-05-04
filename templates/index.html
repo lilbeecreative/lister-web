@@ -528,90 +528,151 @@ select.field-input { background: #fff; color: #0f172a; }
   <div class="tab-content active" id="tab-home">
     <div style="max-width:1100px;margin:0 auto;">
 
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-        <div>
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Welcome back</div>
-          <div id="home-business-name" style="font-size:24px;font-weight:800;color:var(--text);">Loading...</div>
+      <!-- ROBOT STATUS HEADER -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:14px 18px;background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.15);border-radius:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#22c55e,#06b6d4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(34,197,94,0.5);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="5"/><circle cx="12" cy="2" r="1" fill="white" stroke="none"/><rect x="5" y="6" width="14" height="12" rx="2"/><circle cx="9" cy="11" r="1.4" fill="white" stroke="none"/><circle cx="15" cy="11" r="1.4" fill="white" stroke="none"/><line x1="3" y1="11" x2="5" y2="11"/><line x1="19" y1="11" x2="21" y2="11"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/></svg>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:7px;">
+              <div class="status-dot" style="background:#22c55e;box-shadow:0 0 10px #22c55e;animation:home-pulse 1.5s infinite;"></div>
+              <span style="font-size:11px;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">Robot online</span>
+            </div>
+            <div id="home-business-name" style="font-size:18px;font-weight:700;letter-spacing:-0.01em;margin-top:1px;">Loading...</div>
+          </div>
         </div>
         <div style="display:flex;gap:8px;">
-          <div id="home-ebay-status" style="background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
-            <div class="status-dot" id="home-ebay-dot" style="background:#64748b;"></div><span id="home-ebay-label">eBay</span>
+          <div id="home-ebay-status" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:7px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);color:#4ade80;">
+            <div class="status-dot" id="home-ebay-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e;"></div>
+            <span id="home-ebay-label">eBay</span>
           </div>
-          <div id="home-shopify-status" style="background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
-            <div class="status-dot" id="home-shopify-dot" style="background:#64748b;"></div><span id="home-shopify-label">Shopify</span>
+          <div id="home-shopify-status" style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:7px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);color:#4ade80;">
+            <div class="status-dot" id="home-shopify-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e;"></div>
+            <span id="home-shopify-label">Shopify</span>
           </div>
         </div>
       </div>
 
-      <div onclick="document.querySelector('.nav-btn[data-tab=\'dashboard\']').click()" style="background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);border-radius:14px;padding:20px 22px;display:flex;align-items:center;gap:14px;margin-bottom:16px;cursor:pointer;" id="home-start-scan">
-        <div style="width:50px;height:50px;background:rgba(0,0,0,0.25);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <!-- SCAN HERO FULL WIDTH -->
+      <div onclick="document.querySelector('.nav-btn[data-tab='dashboard']').click()" id="home-start-scan" style="background:linear-gradient(135deg,#0f3d1f,#0a2a1a);border:1px solid rgba(34,197,94,0.3);border-radius:14px;padding:26px 28px;margin-bottom:14px;position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+        <div style="position:absolute;top:-60px;right:-60px;width:240px;height:240px;background:radial-gradient(circle,rgba(34,197,94,0.2),transparent 60%);pointer-events:none;"></div>
+        <div style="position:absolute;bottom:-60px;left:-60px;width:180px;height:180px;background:radial-gradient(circle,rgba(6,182,212,0.1),transparent 60%);pointer-events:none;"></div>
+        <div style="position:absolute;inset:0;overflow:hidden;border-radius:14px;pointer-events:none;">
+          <div style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(34,197,94,0.5),transparent);animation:home-scanline 3s linear infinite;"></div>
         </div>
-        <div style="flex:1;">
-          <div style="font-size:18px;font-weight:800;color:#fff;">Start Scanning</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;">Take a photo — AI handles the rest</div>
+        <div style="position:relative;z-index:2;">
+          <div style="font-size:11px;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+            <div class="status-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e;width:6px;height:6px;"></div>
+            Robot ready
+          </div>
+          <div style="font-size:26px;font-weight:700;letter-spacing:-0.02em;line-height:1.1;margin-bottom:6px;">Start scanning inventory</div>
+          <div style="font-size:13px;color:#94a3b8;">Snap a photo — robot identifies, prices, and lists for you.</div>
         </div>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" style="opacity:0.7;"><polyline points="9 18 15 12 9 6"/></svg>
+        <div style="display:flex;gap:10px;position:relative;z-index:2;flex-shrink:0;margin-left:24px;">
+          <div style="padding:11px 20px;border-radius:9px;font-size:13px;font-weight:600;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;box-shadow:0 4px 18px rgba(34,197,94,0.4);display:flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Fast Scan
+          </div>
+          <div style="padding:11px 20px;border-radius:9px;font-size:13px;font-weight:600;background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Bulk Upload
+          </div>
+          <div style="padding:11px 20px;border-radius:9px;font-size:13px;font-weight:600;background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Multi-Item
+          </div>
+        </div>
       </div>
 
-      <div id="home-main-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="home-left-col" style="display:flex;flex-direction:column;gap:12px;">
-
-          <div id="home-stats-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;font-weight:700;margin-bottom:6px;">Items listed</div>
-              <div id="home-total-items" style="font-size:26px;font-weight:800;color:var(--text);">0</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:1px;">in inventory</div>
-            </div>
-            <div style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
-              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;font-weight:700;margin-bottom:6px;">Scans left</div>
-              <div id="home-scans-left" style="font-size:26px;font-weight:800;color:#fbbf24;">0</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:1px;">this period</div>
-            </div>
+      <!-- STATS ROW -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:6px;">Items in inventory</div>
+            <div id="home-total-items" style="font-size:36px;font-weight:700;line-height:1;letter-spacing:-0.02em;color:#4ade80;">0</div>
+            <div id="home-inv-count-label" style="font-size:12px;color:#64748b;margin-top:6px;">in stock</div>
           </div>
-
-          <div id="home-scan-meter" style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">AI scans used</div>
-              <div id="home-scan-pct" style="font-size:12px;font-weight:700;color:var(--muted);">0/500</div>
-            </div>
-            <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:6px;">
-              <div id="home-scan-bar" style="height:100%;background:#fbbf24;width:0%;transition:width 0.3s;border-radius:4px;"></div>
-            </div>
-            <div id="home-scan-remaining" style="font-size:11px;color:var(--muted);">0 scans remaining this period</div>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div onclick="document.querySelector('.nav-btn[data-tab=\'inventory\']').click()" style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:11px;padding:12px;cursor:pointer;display:flex;align-items:center;gap:10px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-              <div><div style="font-size:12px;font-weight:700;color:var(--text);">Inventory</div><div id="home-inv-count-label" style="font-size:10px;color:#a78bfa;">0 items</div></div>
-            </div>
-            <div onclick="document.querySelector('.nav-btn[data-tab=\'expenses\']').click()" style="background:rgba(232,255,71,0.06);border:1px solid rgba(232,255,71,0.2);border-radius:11px;padding:12px;cursor:pointer;display:flex;align-items:center;gap:10px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8ff47" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              <div><div style="font-size:12px;font-weight:700;color:var(--text);">Expenses</div><div style="font-size:10px;color:#e8ff47;">Track costs</div></div>
-            </div>
-            <div onclick="document.querySelector('.nav-btn[data-tab=\'intake\']').click()" style="background:rgba(251,146,60,0.06);border:1px solid rgba(251,146,60,0.2);border-radius:11px;padding:12px;cursor:pointer;display:flex;align-items:center;gap:10px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
-              <div><div style="font-size:12px;font-weight:700;color:var(--text);">Intake</div><div style="font-size:10px;color:#fb923c;">Log lots</div></div>
-            </div>
-            <div onclick="document.querySelector('.nav-btn[data-tab=\'messages\']').click()" style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:11px;padding:12px;cursor:pointer;display:flex;align-items:center;gap:10px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              <div><div style="font-size:12px;font-weight:700;color:var(--text);">Messages</div><div id="home-msg-label" style="font-size:10px;color:#38bdf8;">Support</div></div>
-            </div>
+          <div style="width:44px;height:44px;border-radius:11px;background:rgba(34,197,94,0.1);color:#4ade80;display:flex;align-items:center;justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           </div>
         </div>
-
-        <div class="home-right-col" style="background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px;display:flex;flex-direction:column;">
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:14px;">Recent batches</div>
-          <div id="home-batches-list" style="display:flex;flex-direction:column;gap:8px;flex:1;">
-            <div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;">Loading...</div>
+        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:6px;">Scans remaining</div>
+            <div id="home-scans-left" style="font-size:36px;font-weight:700;line-height:1;letter-spacing:-0.02em;color:#22d3ee;">0</div>
+            <div style="font-size:12px;color:#64748b;margin-top:6px;">this period</div>
           </div>
-          <button onclick="document.querySelector('.nav-btn[data-tab=\'dashboard\']').click()" style="width:100%;margin-top:12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;padding:8px;cursor:pointer;font-family:inherit;">View scanner →</button>
+          <div style="width:44px;height:44px;border-radius:11px;background:rgba(6,182,212,0.1);color:#22d3ee;display:flex;align-items:center;justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
         </div>
+      </div>
+
+      <!-- SCAN PROGRESS -->
+      <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px 24px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;">AI scan usage this period</span>
+          <span id="home-scan-pct" style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;">0/500</span>
+        </div>
+        <div style="height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;">
+          <div id="home-scan-bar" style="height:100%;background:linear-gradient(90deg,#22c55e,#06b6d4);border-radius:4px;width:0%;transition:width 0.5s;"></div>
+        </div>
+        <div id="home-scan-remaining" style="font-size:11px;color:#64748b;margin-top:6px;">0 scans remaining</div>
+      </div>
+
+      <!-- BOTTOM TILES + ACTIVITY -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1.6fr;gap:14px;">
+
+        <div onclick="document.querySelector('.nav-btn[data-tab='inventory']').click()" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(34,197,94,0.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+          <div style="width:36px;height:36px;border-radius:9px;background:rgba(6,182,212,0.12);color:#22d3ee;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Inventory</div>
+          <div id="home-inv-tile-label" style="font-size:12px;color:#64748b;">View items</div>
+        </div>
+
+        <div onclick="document.querySelector('.nav-btn[data-tab='expenses']').click()" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(34,197,94,0.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+          <div style="width:36px;height:36px;border-radius:9px;background:rgba(34,197,94,0.12);color:#4ade80;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Expenses</div>
+          <div style="font-size:12px;color:#64748b;">Track costs</div>
+        </div>
+
+        <div onclick="document.querySelector('.nav-btn[data-tab='messages']').click()" style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(34,197,94,0.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'">
+          <div style="width:36px;height:36px;border-radius:9px;background:rgba(168,85,247,0.12);color:#c084fc;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Messages</div>
+          <div id="home-msg-label" style="font-size:12px;color:#64748b;">Support</div>
+        </div>
+
+        <!-- ACTIVITY FEED (uses existing home-batches-list) -->
+        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:18px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;">Recent batches</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:10px;color:#4ade80;font-weight:600;">
+              <div class="status-dot" style="width:5px;height:5px;background:#22c55e;box-shadow:0 0 6px #22c55e;border-radius:50%;display:inline-block;"></div>
+              Live
+            </span>
+          </div>
+          <div id="home-batches-list" style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:12px;color:var(--muted);text-align:center;padding:16px;">Loading...</div>
+          </div>
+          <button onclick="document.querySelector('.nav-btn[data-tab='dashboard']').click()" style="width:100%;margin-top:12px;background:transparent;border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#64748b;font-size:11px;padding:8px;cursor:pointer;font-family:inherit;">View scanner &rarr;</button>
+        </div>
+
       </div>
 
     </div>
+
+    <style>
+      @keyframes home-pulse { 0%,100%{opacity:1;}50%{opacity:0.4;} }
+      @keyframes home-scanline { 0%{transform:translateY(-100%);}100%{transform:translateY(5000%);} }
+    </style>
   </div>
+
 
   <div class="tab-content" id="tab-dashboard">
 
