@@ -896,6 +896,62 @@ async def ebay_whoami(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
+
+@app.post("/api/ebay/setup-location")
+async def setup_ebay_location(request: Request):
+    """Create a default merchant location on eBay (required for listings)."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        body = await request.json()
+        import requests as _req
+        token = get_ebay_token(business_id)
+        api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Content-Language": "en-US"}
+
+        location_payload = {
+            "location": {
+                "address": {
+                    "addressLine1": body.get("address", "123 Main St"),
+                    "city": body.get("city", "San Francisco"),
+                    "stateOrProvince": body.get("state", "CA"),
+                    "postalCode": body.get("zip", "94102"),
+                    "country": "US"
+                }
+            },
+            "locationInstructions": "Items ship from this location",
+            "name": body.get("name", "Default Warehouse"),
+            "merchantLocationStatus": "ENABLED",
+            "locationTypes": ["WAREHOUSE"]
+        }
+
+        r = _req.post(
+            f"{api_base}/sell/inventory/v1/location/default",
+            headers=headers,
+            json=location_payload
+        )
+        return {"status": r.status_code, "body": r.text[:500]}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/ebay/locations")
+async def get_ebay_locations(request: Request):
+    """List existing merchant locations."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        import requests as _req
+        token = get_ebay_token(business_id)
+        api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
+        headers = {"Authorization": f"Bearer {token}"}
+        r = _req.get(f"{api_base}/sell/inventory/v1/location", headers=headers)
+        return r.json() if r.ok else {"status": r.status_code, "body": r.text[:500]}
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/api/ebay/policies")
 async def get_ebay_policies(request: Request):
     business_id = require_auth(request)
