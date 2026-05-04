@@ -725,6 +725,9 @@ async def submit_listings_to_ebay(request: Request):
     try:
         body = await request.json()
         listing_ids = body.get("listing_ids", [])
+        modal_items = {str(item.get("id")): item for item in body.get("items", [])}
+        print(f"[eBay] Submit: {len(listing_ids)} ids, {len(modal_items)} modal items")
+        print(f"[eBay] First modal item: {body.get('items', [{}])[0] if body.get('items') else 'EMPTY'}")
         if not listing_ids:
             raise HTTPException(400, "No listing IDs provided")
 
