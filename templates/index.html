@@ -1321,47 +1321,29 @@ select.field-input { background: #fff; color: #0f172a; }
       <!-- Chart container (hidden, replaced by main-grid above) -->
       <div id="exp-chart-container" style="display:none;"></div>
 
-      <!-- Summary cards -->
-      <div id="exp-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:18px;"></div>
-
-      <!-- Chart -->
-      <div id="exp-chart-container" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px;display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:center;">
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;">Spending by Category</div>
-            <div id="exp-total-badge" style="font-size:20px;font-weight:800;color:var(--text);"></div>
-          </div>
-          <div id="exp-chart-legend" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <!-- Transactions panel -->
+      <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+        <div style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">
+          <span style="font-size:13px;font-weight:600;color:var(--text);">Recent transactions</span>
+          <span style="font-size:11px;color:var(--muted);" id="exp-txn-count">0 transactions</span>
         </div>
-        <div style="position:relative;width:200px;height:200px;">
-          <canvas id="exp-chart" width="200" height="200"></canvas>
-          <div id="exp-chart-center" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
-            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Total</div>
-            <div id="exp-chart-total" style="font-size:18px;font-weight:800;color:var(--text);">$0</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Table -->
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
         <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:700px;">
             <thead>
-              <tr style="background:var(--bg);border-bottom:1px solid var(--border);">
-                <th onclick="sortExpenses('date')" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:110px;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Date <span id="exp-sort-date">↕</span></th>
-                <th onclick="sortExpenses('merchant')" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Merchant <span id="exp-sort-merchant">↕</span></th>
-                <th onclick="sortExpenses('category')" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:160px;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Category <span id="exp-sort-category">↕</span></th>
-                <th onclick="sortExpenses('amount')" style="padding:10px 14px;text-align:right;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;width:100px;cursor:pointer;user-select:none;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Amount <span id="exp-sort-amount">↕</span></th>
-                <th class="exp-col-notes" style="padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Notes</th>
-                <th style="padding:10px 14px;width:60px;"></th>
+              <tr style="background:rgba(0,0,0,0.15);">
+                <th onclick="sortExpenses('merchant')" style="padding:10px 20px;text-align:left;font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);">Merchant <span id="exp-sort-merchant">↕</span></th>
+                <th onclick="sortExpenses('date')" style="padding:10px 20px;text-align:left;font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;width:120px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);">Date <span id="exp-sort-date">↕</span></th>
+                <th onclick="sortExpenses('category')" style="padding:10px 20px;text-align:left;font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;width:170px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);">Category <span id="exp-sort-category">↕</span></th>
+                <th onclick="sortExpenses('amount')" style="padding:10px 20px;text-align:right;font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;width:110px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);">Amount <span id="exp-sort-amount">↕</span></th>
+                <th style="padding:10px 20px;width:50px;border-bottom:1px solid var(--border);"></th>
               </tr>
             </thead>
             <tbody id="exp-tbody"></tbody>
           </table>
         </div>
         <div id="exp-empty" style="padding:60px 24px;text-align:center;display:none;">
-          <div style="font-size:42px;margin-bottom:10px;">💰</div>
-          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">No expenses yet</div>
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 10 12 15 7 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text);">No expenses yet</div>
           <div style="font-size:12px;color:var(--muted);">Add an expense or scan a receipt to get started</div>
         </div>
       </div>
@@ -4304,6 +4286,8 @@ function renderExpChart() {
 function renderExpTable() {
   var tbody = document.getElementById('exp-tbody');
   var empty = document.getElementById('exp-empty');
+  var countEl = document.getElementById('exp-txn-count');
+  if (countEl) countEl.textContent = expItems.length + ' transaction' + (expItems.length===1?'':'s');
   if (!tbody) return;
   if (!expItems.length) {
     tbody.innerHTML = '';
@@ -4311,19 +4295,28 @@ function renderExpTable() {
     return;
   }
   if (empty) empty.style.display = 'none';
-  var periodLabels = {day:'Today',week:'This Week',month:'This Month','3month':'Last 3 Months','6month':'Last 6 Months','12month':'Last Year',all:'All Time'};
 
   tbody.innerHTML = expItems.map(function(it) {
-    var color = EXP_COLORS[it.category] || '#6b7280';
-    var emoji = EXP_EMOJIS[it.category] || '⚫';
+    var color = EXP_COLORS[it.category] || '#94a3b8';
     var isCogs = it.source === 'cogs';
-    return '<tr style="border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'transparent\'">' +
-      '<td style="padding:10px 14px;color:var(--muted);font-size:12px;white-space:nowrap;">' + (it.expense_date||'').replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$2/$3/$1') + '</td>' +
-      '<td style="padding:10px 14px;font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (it.merchant||'—') + (isCogs?'<span style="font-size:9px;color:var(--muted);margin-left:6px;font-weight:400;">COGS</span>':'') + '</td>' +
-      '<td style="padding:10px 14px;"><span style="display:inline-flex;align-items:center;gap:5px;background:' + color + '22;color:' + color + ';font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;">' + emoji + ' ' + (it.category||'Other') + '</span></td>' +
-      '<td style="padding:10px 14px;text-align:right;font-size:15px;font-weight:800;color:' + color + ';">$' + parseFloat(it.amount||0).toFixed(2) + '</td>' +
-      '<td style="padding:10px 14px;font-size:12px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (it.notes||'') + '</td>' +
-      '<td style="padding:10px 14px;text-align:center;">' + (isCogs?'':'<div style="display:flex;gap:4px;justify-content:center;"><button onclick="editExpense(\'' + it.id + '\')" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:12px;" title="Edit">✏️</button><button onclick="deleteExpense(\'' + it.id + '\')" style="background:transparent;border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:12px;" title="Delete">×</button></div>') + '</td>' +
+    var merchant = it.merchant || '—';
+    var initial = (merchant.charAt(0) || '?').toUpperCase();
+    var dateStr = (it.expense_date||'').replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$2/$3/$1');
+    return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.1s;" onmouseover="this.style.background=\'rgba(255,255,255,0.02)\'" onmouseout="this.style.background=\'transparent\'">' +
+      '<td style="padding:12px 20px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<div style="width:32px;height:32px;border-radius:8px;background:' + color + '20;color:' + color + ';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">' + initial + '</div>' +
+          '<div><div style="font-weight:500;color:var(--text);">' + merchant + '</div>' + (it.notes ? '<div style="font-size:11px;color:var(--muted);margin-top:2px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + it.notes + '</div>' : '') + '</div>' +
+        '</div>' +
+      '</td>' +
+      '<td style="padding:12px 20px;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;">' + dateStr + '</td>' +
+      '<td style="padding:12px 20px;">' +
+        '<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:500;background:rgba(255,255,255,0.04);color:var(--text);">' +
+          '<span style="width:6px;height:6px;border-radius:50%;background:' + color + ';"></span>' + (it.category||'Other') +
+        '</span>' +
+      '</td>' +
+      '<td style="padding:12px 20px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text);">$' + parseFloat(it.amount||0).toFixed(2) + '</td>' +
+      '<td style="padding:12px 20px;text-align:center;">' + (isCogs ? '<span style="font-size:10px;color:var(--muted);">COGS</span>' : '<button onclick="editExpense(\'' + it.id + '\')" style="background:transparent;border:none;color:#475569;cursor:pointer;font-size:14px;padding:4px 8px;" onmouseover="this.style.color=\'#94a3b8\'" onmouseout="this.style.color=\'#475569\'" title="Edit">⋯</button>') + '</td>' +
       '</tr>';
   }).join('');
 }
