@@ -4946,15 +4946,19 @@ async def scan_receipt(request: Request):
         genai_client = _genai.Client(api_key=os.getenv("GEMINI_API_KEY",""))
         img_b64 = base64.b64encode(buf.getvalue()).decode()
 
-        prompt = """You are a receipt scanning assistant. Extract the following from this receipt image and return ONLY raw JSON, no other text:
-{
-  "merchant": "store or vendor name",
-  "amount": <total amount as number, no currency symbol>,
-  "expense_date": "YYYY-MM-DD",
-  "category": "one of: Cost of Goods, Shipping & Postage, Supplies & Packaging, Fees & Subscriptions, Gas & Travel, Food & Meals, Software & Tools, Other",
-  "notes": "brief description of what was purchased"
-}
-If you cannot read a field clearly, use null. For category, make your best guess based on the merchant and items."""
+        prompt = """You are an expert receipt OCR assistant. Examine this receipt image carefully and extract structured data.
+
+CRITICAL EXTRACTION RULES:
+1. MERCHANT: The store/vendor name at the top of receipt
+2. AMOUNT: The TOTAL paid. Look for TOTAL, AMOUNT DUE, GRAND TOTAL, or largest dollar amount near bottom. Number only, no dollar sign.
+3. EXPENSE_DATE: Date in YYYY-MM-DD format
+4. CATEGORY: Pick ONE from: Cost of Goods, Shipping and Postage, Supplies and Packaging, Fees and Subscriptions, Gas and Travel, Food and Meals, Software and Tools, Other
+5. NOTES: 1-sentence description of what was purchased
+
+Return ONLY raw JSON, no markdown:
+{"merchant":"...","amount":12.34,"expense_date":"2025-01-15","category":"Cost of Goods","notes":"..."}
+
+If a field is unreadable, use null. Try your best to extract every field first."""
 
         from google.genai import types as _gtypes
         response = genai_client.models.generate_content(
@@ -4966,7 +4970,7 @@ If you cannot read a field clearly, use null. For category, make your best guess
                 ])
             ],
             config=_gtypes.GenerateContentConfig(
-                max_output_tokens=300,
+                max_output_tokens=500,
                 temperature=0.0,
             )
         )
