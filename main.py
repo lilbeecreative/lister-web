@@ -832,13 +832,32 @@ def detect_model_from_title(title, brand=None):
     if not title:
         return None
     import re
-    # Look for common model patterns: alphanumeric like "MX Master 3S", "DBAL-D2", "B75571"
-    # Pattern: 2-15 char tokens with letters AND numbers
     matches = re.findall(r'\b[A-Z]+[-]?[0-9A-Z]{2,15}\b', title)
     for m in matches:
         if any(c.isdigit() for c in m) and any(c.isalpha() for c in m):
             return m
     return None
+
+def detect_upc_from_text(text):
+    """Detect UPC/EAN/ISBN from a text string. Returns first valid match or None."""
+    if not text:
+        return None
+    import re
+    # UPC-A is 12 digits, EAN-13 is 13 digits, ISBN-13 is 13 digits, EAN-8 is 8 digits
+    # Find runs of 8, 12, or 13 digits (with optional spaces/dashes between)
+    candidates = re.findall(r'\b\d{8,14}\b', text)
+    for c in candidates:
+        if len(c) in (8, 12, 13, 14):
+            return c
+    return None
+
+def detect_isbn_from_text(text):
+    """Detect ISBN-10 or ISBN-13 specifically (often used for books)."""
+    if not text:
+        return None
+    import re
+    matches = re.findall(r'\b(?:97[89])?\d{9}[\dX]\b', text)
+    return matches[0] if matches else None
 
 
 @app.post("/api/ebay/submit-listings")
@@ -938,19 +957,23 @@ async def submit_listings_to_ebay(request: Request):
 
                 # If aspects empty (e.g. permission denied), use detected + generic defaults
                 if not inv_aspects:
+                    full_text = (title or "") + " " + (description or "")
                     detected_brand = detect_brand_from_title(title)
                     detected_model = detect_model_from_title(title, detected_brand)
+                    detected_upc = detect_upc_from_text(full_text)
                     inv_aspects = {
                         "Brand": [detected_brand or "Unbranded"],
                         "Type": ["Other"],
                         "Model": [detected_model or "Generic"],
                         "MPN": [detected_model or "Does Not Apply"],
+                        "UPC": [detected_upc] if detected_upc else ["Does Not Apply"],
+                        "EAN": [detected_upc] if detected_upc and len(detected_upc) == 13 else ["Does Not Apply"],
                         "Color": ["Multicolor"], "Size": ["Standard"],
                         "Size Type": ["Regular"], "Material": ["Mixed Materials"],
                         "Department": ["Unisex Adult"], "Style": ["Casual"], "Theme": ["General"],
                         "Movie/TV Title": ["N/A"], "Genre": ["Other"], "Format": ["Standard"]
                     }
-                    print(f"[eBay] Auto-detected: brand={detected_brand}, model={detected_model}")
+                    print(f"[eBay] Auto-detected: brand={detected_brand}, model={detected_model}, upc={detected_upc}")
 
                 # Override with any user-provided aspects from modal
                 user_aspects = modal.get("aspects") if 'modal' in dir() else {}
