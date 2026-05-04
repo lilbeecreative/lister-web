@@ -903,7 +903,7 @@ async def submit_listings_to_ebay(request: Request):
                 if offer_id:
                     # Publish as scheduled listing 1 year out — appears in Seller Hub as scheduled
                     from datetime import datetime as _dt, timedelta as _td
-                    scheduled_date = (_dt.utcnow() + _td(days=365)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+                    scheduled_date = (_dt.utcnow() + _td(days=20)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
                     listing_id = offer_id
                     try:
                         pub_r = _req3.post(
