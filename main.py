@@ -213,7 +213,7 @@ EBAY_RUNAME = os.getenv("EBAY_RUNAME", "")
 EBAY_ENV = os.getenv("EBAY_ENV", "sandbox")
 EBAY_API_BASE = "https://api.sandbox.ebay.com" if EBAY_ENV == "sandbox" else "https://api.ebay.com"
 EBAY_AUTH_BASE = "https://auth.sandbox.ebay.com" if EBAY_ENV == "sandbox" else "https://auth.ebay.com"
-EBAY_SCOPES = "https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account https://api.ebay.com/oauth/api_scope/commerce.taxonomy.readonly"
+EBAY_SCOPES = "https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account"
 
 @app.get("/ebay/connect")
 async def ebay_connect(request: Request):
@@ -808,7 +808,17 @@ async def submit_listings_to_ebay(request: Request):
                     print(f"[eBay] Auto-aspects for {category_id}: {inv_aspects}")
                 except Exception as _asp_err:
                     print(f"[eBay] Aspect fetch failed: {_asp_err}")
-                    inv_aspects = {"Brand": ["Unbranded"], "Type": ["Other"]}
+
+                # If aspects empty (e.g. permission denied), use generic defaults
+                if not inv_aspects:
+                    inv_aspects = {
+                        "Brand": ["Unbranded"], "Type": ["Other"], "Model": ["Generic"],
+                        "MPN": ["Does Not Apply"], "Color": ["Multicolor"], "Size": ["Standard"],
+                        "Size Type": ["Regular"], "Material": ["Mixed Materials"],
+                        "Department": ["Unisex Adult"], "Style": ["Casual"], "Theme": ["General"],
+                        "Movie/TV Title": ["N/A"], "Genre": ["Other"], "Format": ["Standard"]
+                    }
+                    print(f"[eBay] Using generic fallback aspects")
 
                 # Override with any user-provided aspects from modal
                 user_aspects = modal.get("aspects") if 'modal' in dir() else {}
