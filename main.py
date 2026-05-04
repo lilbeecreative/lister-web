@@ -844,10 +844,11 @@ async def ebay_whoami(request: Request):
         api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
         headers = {"Authorization": f"Bearer {token}"}
         r = _req.get(f"{api_base}/commerce/identity/v1/user", headers=headers)
-        if r.ok:
-            data = r.json()
-            return {"username": data.get("username"), "email": data.get("email"), "account_type": data.get("accountType")}
-        return {"error": r.text[:200]}
+        return {
+            "status": r.status_code,
+            "body": r.text[:500],
+            "token_preview": token[:30] + "..." if token else "no token"
+        }
     except Exception as e:
         return {"error": str(e)}
 
