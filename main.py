@@ -762,19 +762,44 @@ async def submit_listings_to_ebay(request: Request):
 
                 print(f"[eBay] Processing item {lid}: title={title!r}, price={price}, sku={sku}")
                 # 1. Create/update inventory item
-                # Build aspects - eBay requires varying specifics per category
-                # Start with basics, will fill required fields from modal aspects later
-                inv_aspects = {
-                    "Brand": ["Unbranded"],
-                    "Type": ["Other"],
-                    "Model": ["Generic"],
-                    "MPN": ["Does Not Apply"],
-                    "Color": ["Multicolor"],
-                    "Size": ["Standard"],
-                    "Material": ["Mixed Materials"],
-                    "Department": ["Unisex Adult"],
-                    "Style": ["Casual"]
-                }
+                # Fetch required aspects for this category from eBay
+                inv_aspects = {}
+                try:
+                    asp_r = _req3.get(
+                        f"{api_base}/commerce/taxonomy/v1/category_tree/0/get_item_aspects_for_category?category_id={category_id}",
+                        headers=headers
+                    )
+                    if asp_r.ok:
+                        asp_data = asp_r.json()
+                        for asp in asp_data.get("aspects", []):
+                            asp_name = asp.get("localizedAspectName")
+                            constraint = asp.get("aspectConstraint", {})
+                            usage = constraint.get("aspectUsage", "OPTIONAL")
+                            mode = constraint.get("aspectMode", "FREE_TEXT")
+                            if usage in ("REQUIRED", "RECOMMENDED"):
+                                # Try to extract from title
+                                title_lower = title.lower()
+                                values = asp.get("aspectValues", [])
+                                matched_value = None
+                                for v in values[:50]:
+                                    val_text = v.get("localizedValue", "")
+                                    if val_text and val_text.lower() in title_lower:
+                                        matched_value = val_text
+                                        break
+                                # If no match found, use first value or N/A
+                                if matched_value:
+                                    inv_aspects[asp_name] = [matched_value]
+                                elif mode == "SELECTION_ONLY" and values:
+                                    inv_aspects[asp_name] = [values[0].get("localizedValue", "N/A")]
+                                else:
+                                    inv_aspects[asp_name] = ["N/A"] if usage == "REQUIRED" else None
+                                if inv_aspects.get(asp_name) is None:
+                                    del inv_aspects[asp_name]
+                    print(f"[eBay] Auto-aspects for {category_id}: {inv_aspects}")
+                except Exception as _asp_err:
+                    print(f"[eBay] Aspect fetch failed: {_asp_err}")
+                    inv_aspects = {"Brand": ["Unbranded"], "Type": ["Other"]}
+
                 # Override with any user-provided aspects from modal
                 user_aspects = modal.get("aspects") if 'modal' in dir() else {}
                 if user_aspects:
