@@ -570,6 +570,7 @@ function renderItems(items){
       '<div class="search-btns">'+
       '<button class="search-btn" data-url="'+gUrl+'" data-target="_blank">Search Google</button>'+
       '<button class="search-btn" data-url="'+eUrl+'" data-target="_blank">eBay sold</button>'+
+      '<button class="search-btn report-btn" data-id="'+item.id+'">⚠ Report</button>'+
       '</div>'+
       '<div class="field-row">'+
       '<div class="price-wrap"><div class="field-lbl">Price</div><input class="price-input" type="number" step="0.01" value="'+price+'" data-id="'+item.id+'" data-field="price"></div>'+
@@ -590,6 +591,8 @@ function renderItems(items){
       loadDashboard();
     });
   });
+
+  
 
   grid.querySelectorAll('.title-input').forEach(function(inp){
     inp.addEventListener('blur',function(){saveField(this.getAttribute('data-id'),this.getAttribute('data-field'),this.value);});
@@ -629,6 +632,8 @@ async function saveField(id,field,value){
 setBatchCond('new');
 loadDashboard();
 
+
 </script>
+
 </body>
 </html>

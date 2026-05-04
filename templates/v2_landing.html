@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoboReseller — Built for resellers. Run by robots.</title>
+<meta name="description" content="The AI-powered listing tool for serious resellers. Snap, price, and push to eBay or Shopify in under a minute. Track inventory, costs, and profits — all in one place.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f1f5f9; background: #0a0c12; -webkit-font-smoothing: antialiased; }
+
+  .nav { display: flex; justify-content: space-between; align-items: center; padding: 18px 28px; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; z-index: 10; max-width: 1200px; margin: 0 auto; }
+  .logo { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 21px; letter-spacing: -0.01em; cursor: pointer; }
+  .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, #22c55e, #06b6d4); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(34,197,94,0.4); }
+  .logo-name { color: #f1f5f9; }
+  .logo-name .robo { color: #22c55e; }
+  .nav-links { display: flex; gap: 28px; font-size: 15px; color: #94a3b8; }
+  .nav-links a { color: inherit; text-decoration: none; cursor: pointer; transition: color 0.15s; }
+  .nav-links a:hover { color: #f1f5f9; }
+  .nav-cta { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 10px 20px; border-radius: 8px; font-size: 15px; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(34,197,94,0.3); transition: transform 0.15s; }
+  .nav-cta:hover { transform: translateY(-1px); }
+
+  .hero { padding: 72px 28px 48px; text-align: center; position: relative; overflow: hidden; max-width: 1200px; margin: 0 auto; }
+  .hero-glow { position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 800px; height: 600px; background: radial-gradient(circle, rgba(34,197,94,0.15), transparent 60%); pointer-events: none; }
+  .hero-glow2 { position: absolute; top: 100px; right: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(6,182,212,0.12), transparent 60%); pointer-events: none; }
+  .hero-content { position: relative; z-index: 2; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(34,197,94,0.1); padding: 8px 18px; border-radius: 999px; font-size: 15px; color: #4ade80; margin-bottom: 24px; border: 1px solid rgba(34,197,94,0.25); }
+  .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .hero h1 { font-size: 84px; line-height: 1.05; font-weight: 700; margin: 0 0 18px; letter-spacing: -0.03em; background: linear-gradient(135deg, #fff 30%, #94a3b8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero h1 .accent { background: linear-gradient(135deg, #22c55e, #06b6d4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 22px; line-height: 1.6; color: #94a3b8; max-width: 540px; margin: 0 auto 32px; }
+  .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 16px 32px; border-radius: 10px; font-size: 17px; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 8px 30px rgba(34,197,94,0.35); transition: transform 0.15s; }
+  .btn-primary:hover { transform: translateY(-2px); }
+  .btn-secondary { background: rgba(255,255,255,0.06); color: #f1f5f9; padding: 16px 32px; border-radius: 10px; font-size: 17px; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: background 0.15s; }
+  .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+  .app-mockup { margin: 56px auto 0; max-width: 900px; position: relative; z-index: 2; }
+  .app-frame { background: #0a0c12; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(34,197,94,0.08); }
+  .app-titlebar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .app-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .app-dot.r { background: #ef4444; } .app-dot.y { background: #f59e0b; } .app-dot.g { background: #22c55e; }
+  .app-url { margin-left: 12px; font-size: 11px; color: #475569; font-family: monospace; }
+
+  .app-body { display: grid; grid-template-columns: 170px 1fr; min-height: 420px; }
+  .app-sidebar { background: #0a0c12; border-right: 1px solid rgba(255,255,255,0.05); padding: 16px 12px; }
+  .app-sidebar-logo { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; padding: 0 4px; margin-bottom: 24px; }
+  .mini-mark { width: 22px; height: 22px; border-radius: 5px; background: linear-gradient(135deg, #22c55e, #06b6d4); display: flex; align-items: center; justify-content: center; }
+  .robo-text { color: #22c55e; }
+  .app-nav-item { display: flex; align-items: center; gap: 9px; padding: 7px 8px; font-size: 12px; color: #64748b; border-radius: 6px; margin-bottom: 2px; }
+  .app-nav-item.active { color: #fbbf24; background: rgba(251,191,36,0.08); }
+  .app-nav-icon { width: 14px; height: 14px; opacity: 0.7; }
+
+  .app-main { padding: 18px; background: #0d1018; }
+  .app-mode-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .mode-card { padding: 10px 12px; border-radius: 8px; font-size: 11px; }
+  .mode-card.fast { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); }
+  .mode-card.bulk { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); }
+  .mode-card.multi { background: rgba(168,85,247,0.06); border: 1px solid rgba(168,85,247,0.2); }
+  .mode-name { font-weight: 600; font-size: 11px; margin-bottom: 2px; }
+  .mode-card.fast .mode-name { color: #fbbf24; }
+  .mode-card.bulk .mode-name { color: #60a5fa; }
+  .mode-card.multi .mode-name { color: #c084fc; }
+  .mode-sub { font-size: 9px; color: #64748b; }
+
+  .app-photo-row { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .photo-btn { background: linear-gradient(180deg, #facc15, #f59e0b); color: #422006; padding: 24px 12px; border-radius: 8px; text-align: center; font-weight: 700; font-size: 12px; }
+  .photo-btn-sub { font-size: 9px; color: #78350f; opacity: 0.7; margin-top: 2px; font-weight: 500; }
+  .gallery-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 24px 12px; border-radius: 8px; text-align: center; font-size: 11px; color: #94a3b8; }
+
+  .app-batch-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .app-batch-title { font-size: 12px; font-weight: 700; }
+  .app-batch-meta { font-size: 9px; color: #64748b; }
+
+  .app-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; }
+  .app-tile { background: #0a0c12; border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; position: relative; }
+  .app-tile-num { font-size: 8px; color: #fff; padding: 2px 5px; background: rgba(0,0,0,0.7); border-radius: 3px; position: absolute; top: 4px; left: 4px; z-index: 2; }
+  .verified { position: absolute; bottom: 28px; left: 4px; background: rgba(34,197,94,0.9); color: white; font-size: 7px; padding: 2px 5px; border-radius: 3px; font-weight: 600; z-index: 2; }
+  .app-tile-img { aspect-ratio: 1; position: relative; }
+
+  .tile-led { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #581c87 100%); }
+  .tile-led::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 20%, #ec4899 25%, #f59e0b 35%, #22c55e 45%, #06b6d4 55%, #6366f1 65%, transparent 75%); opacity: 0.6; filter: blur(8px); }
+  .tile-led::after { content: ''; position: absolute; inset: 30%; background: white; opacity: 0.1; border-radius: 50%; filter: blur(20px); }
+  .tile-shirt-dark { background: radial-gradient(ellipse at center, #475569 0%, #1e293b 60%, #0f172a 100%); }
+  .tile-shirt-dark::before { content: ''; position: absolute; left: 30%; right: 30%; top: 25%; bottom: 25%; background: linear-gradient(135deg, #94a3b8, #64748b); clip-path: polygon(20% 0, 80% 0, 100% 25%, 90% 100%, 10% 100%, 0 25%); opacity: 0.3; }
+  .tile-shirt-white { background: linear-gradient(135deg, #f8fafc, #e2e8f0); }
+  .tile-shirt-white::before { content: ''; position: absolute; left: 35%; right: 35%; top: 30%; height: 30%; background: radial-gradient(ellipse, #dc2626 0%, #fbbf24 40%, transparent 70%); border-radius: 50%; }
+  .tile-lego { background: linear-gradient(135deg, #fbbf24, #ea580c); }
+  .tile-lego::before { content: ''; position: absolute; inset: 25%; background: radial-gradient(circle at 30% 30%, #1e3a8a 8%, transparent 12%), radial-gradient(circle at 70% 30%, #15803d 8%, transparent 12%), radial-gradient(circle at 30% 70%, #be123c 8%, transparent 12%), radial-gradient(circle at 70% 70%, #facc15 8%, transparent 12%); }
+  .tile-lego::after { content: 'LEGO'; position: absolute; bottom: 8px; right: 8px; font-size: 8px; font-weight: 900; color: #be123c; background: white; padding: 1px 4px; border-radius: 2px; }
+  .tile-shoe { background: linear-gradient(135deg, #1f2937 0%, #374151 50%, #1f2937 100%); }
+  .tile-shoe::before { content: ''; position: absolute; left: 10%; right: 10%; top: 40%; height: 35%; background: linear-gradient(180deg, #6b7280, #1f2937); border-radius: 50% 30% 20% 50% / 60% 40% 40% 60%; }
+  .tile-shoe::after { content: ''; position: absolute; left: 15%; right: 15%; bottom: 22%; height: 8px; background: white; border-radius: 4px; }
+  .tile-disney { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+  .tile-disney::before { content: ''; position: absolute; left: 25%; right: 25%; top: 30%; bottom: 30%; background: radial-gradient(circle at 50% 30%, #fed7aa, #c2410c); border-radius: 50%; }
+  .tile-disney::after { content: 'LION KING'; position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 7px; font-weight: 900; color: #7c2d12; letter-spacing: 0.05em; }
+  .tile-yeezy { background: linear-gradient(135deg, #292524 0%, #44403c 50%, #292524 100%); }
+  .tile-yeezy::before { content: ''; position: absolute; left: 8%; right: 8%; top: 35%; height: 40%; background: linear-gradient(180deg, #a8a29e 0%, #78716c 30%, #44403c 100%); border-radius: 60% 40% 30% 50% / 60% 50% 40% 50%; }
+  .tile-yeezy::after { content: ''; position: absolute; left: 15%; right: 15%; bottom: 25%; height: 6px; background: #fafaf9; border-radius: 3px; }
+  .tile-watch { background: radial-gradient(ellipse at center, #1e293b, #0f172a); }
+  .tile-watch::before { content: ''; position: absolute; inset: 22%; background: radial-gradient(circle, #f1f5f9 0%, #cbd5e1 40%, #475569 50%, #1e293b 100%); border-radius: 50%; }
+  .tile-watch::after { content: '12'; position: absolute; top: 28%; left: 0; right: 0; text-align: center; font-size: 8px; font-weight: 700; color: #0f172a; }
+
+  .app-tile-price { font-size: 13px; font-weight: 700; padding: 4px 6px 0; color: #22c55e; }
+  .app-tile-meta { font-size: 8px; color: #64748b; padding: 0 6px 6px; line-height: 1.3; }
+
+  .stats { display: flex; justify-content: center; gap: 56px; padding: 32px 28px; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); }
+  .stat strong { display: block; font-size: 42px; font-weight: 700; line-height: 1; background: linear-gradient(135deg, #22c55e, #06b6d4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px; }
+  .stat span { font-size: 14px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .section { padding: 80px 28px; max-width: 1200px; margin: 0 auto; }
+  .section-header { text-align: center; max-width: 540px; margin: 0 auto 48px; }
+  .section-tag { display: inline-block; font-size: 14px; color: #22c55e; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px; font-weight: 600; }
+  .section-tag.amber { color: #fbbf24; }
+  .section-tag.blue { color: #60a5fa; }
+  .section-tag.purple { color: #c084fc; }
+  .section-tag.pink { color: #f472b6; }
+  .section-header h2 { font-size: 52px; font-weight: 700; margin: 0 0 14px; letter-spacing: -0.02em; line-height: 1.15; }
+  .section-header p { font-size: 19px; color: #94a3b8; line-height: 1.6; margin: 0; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; max-width: 900px; margin: 0 auto; }
+  .split.flip .split-mockup { order: 2; }
+  .split-text h3 { font-size: 40px; font-weight: 700; margin: 0 0 14px; letter-spacing: -0.02em; line-height: 1.15; }
+  .split-text > p { font-size: 18px; color: #94a3b8; line-height: 1.6; margin: 0 0 20px; }
+  .split-features { list-style: none; padding: 0; margin: 0; }
+  .split-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 16px; color: #cbd5e1; line-height: 1.5; margin-bottom: 10px; }
+  .split-features li svg { flex-shrink: 0; margin-top: 3px; }
+
+  .mini-mockup { background: #0a0c12; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .mini-titlebar { display: flex; gap: 5px; padding: 8px 12px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .mini-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .mini-body { padding: 16px; }
+
+  .inv-row { display: grid; grid-template-columns: 32px 1fr auto auto; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); align-items: center; font-size: 11px; }
+  .inv-thumb { width: 32px; height: 32px; border-radius: 5px; position: relative; overflow: hidden; }
+  .inv-thumb.shoe { background: linear-gradient(135deg, #1f2937, #44403c); }
+  .inv-thumb.shoe::after { content: ''; position: absolute; left: 5%; right: 5%; top: 45%; height: 35%; background: linear-gradient(180deg, #a8a29e, #44403c); border-radius: 60% 40% 30% 50% / 60% 50% 40% 50%; }
+  .inv-thumb.led { background: linear-gradient(135deg, #1e1b4b, #581c87); }
+  .inv-thumb.led::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #ec4899 30%, #06b6d4 60%, #22c55e 90%); opacity: 0.5; filter: blur(3px); }
+  .inv-thumb.lego { background: linear-gradient(135deg, #fbbf24, #ea580c); }
+  .inv-thumb.lego::after { content: ''; position: absolute; inset: 25%; background: radial-gradient(circle at 30% 30%, #1e3a8a 25%, transparent 30%), radial-gradient(circle at 70% 70%, #be123c 25%, transparent 30%); }
+  .inv-thumb.tshirt { background: linear-gradient(135deg, #475569, #0f172a); }
+  .inv-thumb.tshirt::after { content: ''; position: absolute; left: 25%; right: 25%; top: 25%; bottom: 25%; background: linear-gradient(135deg, #94a3b8, #64748b); clip-path: polygon(20% 0, 80% 0, 100% 25%, 90% 100%, 10% 100%, 0 25%); opacity: 0.3; }
+  .inv-name { color: #f1f5f9; font-weight: 500; font-size: 11px; line-height: 1.3; }
+  .inv-loc { font-size: 9px; color: #fbbf24; margin-top: 1px; }
+  .inv-price { color: #22c55e; font-weight: 700; font-size: 12px; }
+  .inv-qty { color: #64748b; font-size: 10px; }
+
+  .cost-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+  .cost-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .cost-title { font-size: 12px; font-weight: 600; }
+  .cost-amt { font-size: 14px; font-weight: 700; color: #ef4444; }
+  .cost-bar { height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+  .cost-bar-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #06b6d4); border-radius: 2px; }
+  .cost-meta { font-size: 9px; color: #64748b; display: flex; justify-content: space-between; }
+  .receipt-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 11px; }
+  .receipt-cat { background: rgba(34,197,94,0.1); color: #4ade80; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 600; }
+  .receipt-amt { color: #f1f5f9; font-weight: 600; font-size: 11px; }
+
+  .label-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .label { background: white; padding: 10px; border-radius: 6px; text-align: center; }
+  .label-code { font-family: monospace; font-size: 8px; color: #000; font-weight: 700; }
+  .label-name { font-size: 8px; color: #475569; margin-top: 2px; line-height: 1.2; }
+
+  .features { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; max-width: 900px; margin: 0 auto; }
+  .feature { background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 22px; transition: border-color 0.2s; }
+  .feature:hover { border-color: rgba(34,197,94,0.3); }
+  .feature-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; font-size: 16px; }
+  .feature-icon.amber { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.05)); color: #fbbf24; }
+  .feature-icon.blue { background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(6,182,212,0.05)); color: #22d3ee; }
+  .feature-icon.purple { background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(168,85,247,0.05)); color: #a78bfa; }
+  .feature h3 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+  .feature p { font-size: 16px; line-height: 1.55; color: #94a3b8; margin: 0; }
+
+  .platforms-bar { padding: 32px 28px; background: linear-gradient(90deg, rgba(34,197,94,0.04), rgba(6,182,212,0.04), rgba(168,85,247,0.04)); border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: center; align-items: center; gap: 32px; flex-wrap: wrap; }
+  .platforms-label { font-size: 14px; color: #64748b; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
+  .platform { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; color: #f1f5f9; }
+  .platform-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .pi-ebay { background: linear-gradient(135deg, #ef4444, #f59e0b); color: white; }
+  .pi-shop { background: linear-gradient(135deg, #95bf47, #5e8e3e); color: white; }
+  .pi-csv { background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; }
+
+  .pricing { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; max-width: 900px; margin: 0 auto; }
+  .tier { background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px 24px; position: relative; }
+  .tier-pop { border: 2px solid #22c55e; box-shadow: 0 20px 60px rgba(34,197,94,0.15); }
+  .tier-pop::before { content: 'MOST POPULAR'; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #22c55e, #16a34a); color: white; font-size: 10px; font-weight: 700; padding: 4px 14px; border-radius: 999px; letter-spacing: 0.08em; box-shadow: 0 6px 18px rgba(34,197,94,0.4); }
+  .tier h3 { font-size: 16px; font-weight: 600; margin: 0 0 8px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
+  .tier-price { font-size: 56px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+  .tier-price small { font-size: 17px; color: #64748b; font-weight: 400; }
+  .tier-price-free { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 6px; color: #22c55e; }
+  .tier-desc { font-size: 15px; color: #94a3b8; margin: 0 0 20px; }
+  .tier-features { font-size: 15px; line-height: 1.9; color: #cbd5e1; list-style: none; padding: 0; margin: 0 0 22px; }
+  .tier-features li { display: flex; align-items: flex-start; gap: 8px; }
+  .tier-features li::before { content: ""; flex-shrink: 0; width: 14px; height: 14px; border-radius: 50%; background: rgba(34,197,94,0.2); margin-top: 4px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='3.5,8 7,11 12.5,5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 12px; }
+  .tier-cta { width: 100%; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; transition: transform 0.15s; }
+  .tier-cta:hover { transform: translateY(-1px); }
+
+  .enterprise { max-width: 900px; margin: 24px auto 0; background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(6,182,212,0.08)); border: 1px solid rgba(168,85,247,0.25); border-radius: 16px; padding: 32px 36px; display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; }
+  .enterprise-tag { display: inline-block; font-size: 10px; color: #c084fc; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; margin-bottom: 8px; }
+  .enterprise h3 { font-size: 30px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .enterprise p { font-size: 17px; color: #cbd5e1; margin: 0; line-height: 1.55; }
+  .enterprise-cta { background: linear-gradient(135deg, #a855f7, #7c3aed); color: white; padding: 16px 28px; border-radius: 10px; font-size: 16px; font-weight: 600; border: none; cursor: pointer; box-shadow: 0 8px 24px rgba(168,85,247,0.35); white-space: nowrap; transition: transform 0.15s; }
+  .enterprise-cta:hover { transform: translateY(-1px); }
+
+  .final-cta { padding: 100px 28px; text-align: center; position: relative; overflow: hidden; }
+  .final-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 1000px; height: 600px; background: radial-gradient(ellipse, rgba(34,197,94,0.15), rgba(6,182,212,0.08), transparent 60%); pointer-events: none; }
+  .final-content { position: relative; z-index: 2; }
+  .final-cta h2 { font-size: 64px; font-weight: 700; margin: 0 0 16px; letter-spacing: -0.02em; line-height: 1.1; }
+  .final-cta h2 .accent { background: linear-gradient(135deg, #22c55e, #06b6d4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .final-cta p { font-size: 20px; color: #94a3b8; margin: 0 0 28px; max-width: 460px; margin-left: auto; margin-right: auto; }
+
+  .footer { padding: 28px; text-align: center; font-size: 12px; color: #475569; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .footer-brand { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #94a3b8; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 50px; }
+    .hero p { font-size: 15px; }
+    .features { grid-template-columns: 1fr; }
+    .pricing { grid-template-columns: 1fr; }
+    .stats { gap: 24px; padding: 24px; }
+    .stat strong { font-size: 22px; }
+    .nav-links { display: none; }
+    .split { grid-template-columns: 1fr; gap: 24px; }
+    .split.flip .split-mockup { order: 0; }
+    .app-body { grid-template-columns: 1fr; }
+    .app-sidebar { display: none; }
+    .enterprise { grid-template-columns: 1fr; text-align: center; }
+    .section { padding: 56px 20px; }
+    .section-header h2 { font-size: 26px; }
+    .split-text h3 { font-size: 22px; }
+    .final-cta h2 { font-size: 30px; }
+    .app-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="2" x2="12" y2="5"/>
+        <circle cx="12" cy="2" r="1" fill="white" stroke="none"/>
+        <rect x="5" y="6" width="14" height="12" rx="2"/>
+        <circle cx="9" cy="11" r="1.4" fill="white" stroke="none"/>
+        <circle cx="15" cy="11" r="1.4" fill="white" stroke="none"/>
+        <line x1="3" y1="11" x2="5" y2="11"/>
+        <line x1="19" y1="11" x2="21" y2="11"/>
+        <line x1="9" y1="20" x2="9" y2="22"/>
+        <line x1="15" y1="20" x2="15" y2="22"/>
+      </svg>
+    </div>
+    <span class="logo-name"><span class="robo">Robo</span>Reseller</span>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/login">Sign in</a>
+  </div>
+  <button class="nav-cta" onclick="window.location='/signup'">Start free</button>
+</div>
+
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-content">
+    <div class="pill"><span class="pill-dot"></span> Built for resellers who move volume</div>
+    <h1>Built for resellers.<br/><span class="accent">Run by robots.</span></h1>
+    <p>Snap a photo, get the price, push to eBay or Shopify. Your AI co-pilot scans, identifies, prices, and lists — while you focus on sourcing the next score.</p>
+    <div class="cta-row">
+      <button class="btn-primary" onclick="window.location='/signup'">Start 7-day trial &rarr;</button>
+      <button class="btn-secondary">&#9654; Watch demo</button>
+    </div>
+
+    <div class="app-mockup">
+      <div class="app-frame">
+        <div class="app-titlebar">
+          <div class="app-dot r"></div><div class="app-dot y"></div><div class="app-dot g"></div>
+          <span class="app-url">app.roboreseller.ai/scanner</span>
+        </div>
+        <div class="app-body">
+          <div class="app-sidebar">
+            <div class="app-sidebar-logo">
+              <div class="mini-mark">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+                  <rect x="5" y="6" width="14" height="12" rx="2"/>
+                  <circle cx="9" cy="11" r="1.4" fill="white" stroke="none"/>
+                  <circle cx="15" cy="11" r="1.4" fill="white" stroke="none"/>
+                </svg>
+              </div>
+              <span><span class="robo-text">Robo</span>Reseller</span>
+            </div>
+            <div class="app-nav-item"><svg class="app-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Home</div>
+            <div class="app-nav-item active"><svg class="app-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Scanner</div>
+            <div class="app-nav-item"><svg class="app-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Expenses</div>
+            <div class="app-nav-item"><svg class="app-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Inventory</div>
+            <div class="app-nav-item"><svg class="app-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Account</div>
+          </div>
+
+          <div class="app-main">
+            <div class="app-mode-row">
+              <div class="mode-card fast"><div class="mode-name">&#9889; Fast Scan</div><div class="mode-sub">One photo per item</div></div>
+              <div class="mode-card bulk"><div class="mode-name">&uarr; Bulk Upload</div><div class="mode-sub">Multiple per item</div></div>
+              <div class="mode-card multi"><div class="mode-name">&#9638; Multi-Item</div><div class="mode-sub">AI detects many</div></div>
+            </div>
+
+            <div class="app-photo-row">
+              <div class="photo-btn">&#128247; Take Photo<div class="photo-btn-sub">Opens camera</div></div>
+              <div class="gallery-btn">&#128444;<br/>Gallery</div>
+            </div>
+
+            <div class="app-batch-header">
+              <span class="app-batch-title">Current Batch</span>
+              <span class="app-batch-meta">26 items &middot; $5,163 listed</span>
+            </div>
+
+            <div class="app-grid">
+              <div class="app-tile"><span class="app-tile-num">#1</span><div class="app-tile-img tile-led"></div><span class="verified">&check; Verified</span><div class="app-tile-price">$93.55</div><div class="app-tile-meta">Govee LED Strip</div></div>
+              <div class="app-tile"><span class="app-tile-num">#2</span><div class="app-tile-img tile-shirt-dark"></div><span class="verified">&check; Verified</span><div class="app-tile-price">$1,700</div><div class="app-tile-meta">Vintage Nirvana Tee</div></div>
+              <div class="app-tile"><span class="app-tile-num">#3</span><div class="app-tile-img tile-shirt-white"></div><span class="verified">&check; Verified</span><div class="app-tile-price">$19.00</div><div class="app-tile-meta">Rolling Stones</div></div>
+              <div class="app-tile"><span class="app-tile-num">#4</span><div class="app-tile-img tile-yeezy"></div><span class="verified">&check; Verified</span><div class="app-tile-price">$297</div><div class="app-tile-meta">Yeezy 700</div></div>
+              <div class="app-tile"><span class="app-tile-num">#5</span><div class="app-tile-img tile-disney"></div><span class="verified">&check; Verified</span><div class="app-tile-price">$24</div><div class="app-tile-meta">Lion King VHS</div></div>
+              <div class="app-tile"><span class="app-tile-num">#6</span><div class="app-tile-img tile-lego"></div><span class="verified">&check; Verified</span><div class="app-tile-price">$15</div><div class="app-tile-meta">LEGO 31136</div></div>
+              <div class="app-tile"><span class="app-tile-num">#7</span><div class="app-tile-img tile-shoe"></div><span class="verified">&check; Verified</span><div class="app-tile-price">$150</div><div class="app-tile-meta">Nike Air Max</div></div>
+              <div class="app-tile"><span class="app-tile-num">#8</span><div class="app-tile-img tile-watch"></div><span class="verified">&check; Verified</span><div class="app-tile-price">$1,200</div><div class="app-tile-meta">Vintage Rolex</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><strong>&lt;1m</strong><span>Per listing</span></div>
+  <div class="stat"><strong>10x</strong><span>Faster than manual</span></div>
+  <div class="stat"><strong>24/7</strong><span>AI assistance</span></div>
+  <div class="stat"><strong>1-click</strong><span>To eBay or Shopify</span></div>
+</div>
+
+<div class="section" id="features">
+  <div class="section-header">
+    <span class="section-tag amber">Scan</span>
+    <h2>The robot scans, identifies, prices.<br/>You sip coffee.</h2>
+    <p>Three scan modes for any kind of inventory. Real eBay sold comps. Real prices. No more guessing.</p>
+  </div>
+
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon amber">&#9889;</div>
+      <h3>Fast Scan</h3>
+      <p>One photo per item. Perfect for fast processing through high-volume inventory. AI auto-fills brand, model, condition.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon blue">&#128228;</div>
+      <h3>Bulk Upload</h3>
+      <p>Multiple photos per item for listings that need detail. Front, back, tags, condition shots &mdash; all attached automatically.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon purple">&#9638;</div>
+      <h3>Multi-Item Detect</h3>
+      <p>One photo of many items. AI separates each one into its own listing. Ideal for shelves, racks, and group lots.</p>
+    </div>
+  </div>
+</div>
+
+<div style="background: rgba(255,255,255,0.01);">
+  <div class="section">
+    <div class="split flip">
+      <div class="split-text">
+        <span class="section-tag">Cost tracking</span>
+        <h3>Know your real margin.</h3>
+        <p>Stop guessing what you paid. RoboReseller tracks every cent &mdash; from the lot you bought at 3 AM to the platform fees deducted at sale.</p>
+        <ul class="split-features">
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Lot cost splitter.</strong> Bought a $200 lot with 30 items? The robot auto-splits cost across each.</span></li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Receipt OCR.</strong> Snap a receipt &mdash; auto-categorized into mileage, supplies, COGS.</span></li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Per-item COGS.</strong> See exact cost basis on every listing &mdash; never second-guess profit again.</span></li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Tax-ready exports.</strong> One click for Schedule C, one click for QuickBooks.</span></li>
+        </ul>
+      </div>
+      <div class="split-mockup">
+        <div class="mini-mockup">
+          <div class="mini-titlebar"><div class="mini-dot" style="background:#ef4444"></div><div class="mini-dot" style="background:#f59e0b"></div><div class="mini-dot" style="background:#22c55e"></div><span style="font-size:10px;color:#64748b;margin-left:8px;">Expenses &middot; This month</span></div>
+          <div class="mini-body">
+            <div class="cost-card">
+              <div class="cost-header"><span class="cost-title">Estate Lot #12</span><span class="cost-amt">$340.00</span></div>
+              <div class="cost-bar"><div class="cost-bar-fill" style="width:80%"></div></div>
+              <div class="cost-meta"><span>32 items split</span><span style="color:#22c55e">$10.62 / item</span></div>
+            </div>
+            <div class="receipt-row"><span style="color:#cbd5e1">Wholesale receipt</span><span style="display:flex;gap:6px;align-items:center;"><span class="receipt-cat">COGS</span><span class="receipt-amt">$87.50</span></span></div>
+            <div class="receipt-row"><span style="color:#cbd5e1">USPS shipping</span><span style="display:flex;gap:6px;align-items:center;"><span class="receipt-cat" style="background:rgba(6,182,212,0.1);color:#22d3ee;">SHIPPING</span><span class="receipt-amt">$42.18</span></span></div>
+            <div class="receipt-row" style="border:0;"><span style="color:#cbd5e1">Bubble mailers</span><span style="display:flex;gap:6px;align-items:center;"><span class="receipt-cat" style="background:rgba(168,85,247,0.1);color:#c084fc;">SUPPLIES</span><span class="receipt-amt">$24.99</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="split">
+    <div class="split-mockup">
+      <div class="mini-mockup">
+        <div class="mini-titlebar"><div class="mini-dot" style="background:#ef4444"></div><div class="mini-dot" style="background:#f59e0b"></div><div class="mini-dot" style="background:#22c55e"></div><span style="font-size:10px;color:#64748b;margin-left:8px;">Inventory &middot; 247 items</span></div>
+        <div class="mini-body">
+          <div class="inv-row"><div class="inv-thumb shoe"></div><div><div class="inv-name">Yeezy Boost 700</div><div class="inv-loc">&#128205; Shelf B-12</div></div><div class="inv-price">$297</div><div class="inv-qty">&times;1</div></div>
+          <div class="inv-row"><div class="inv-thumb led"></div><div><div class="inv-name">Govee LED Strip</div><div class="inv-loc">&#128205; Bin C-04</div></div><div class="inv-price">$93</div><div class="inv-qty">&times;3</div></div>
+          <div class="inv-row"><div class="inv-thumb lego"></div><div><div class="inv-name">LEGO Creator 31136</div><div class="inv-loc">&#128205; Shelf A-08</div></div><div class="inv-price">$15</div><div class="inv-qty">&times;2</div></div>
+          <div class="inv-row" style="border:0;"><div class="inv-thumb tshirt"></div><div><div class="inv-name">Vintage Nirvana Tee</div><div class="inv-loc">&#128205; Closet Hanging</div></div><div class="inv-price">$1,700</div><div class="inv-qty">&times;1</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="split-text">
+      <span class="section-tag blue">Inventory</span>
+      <h3>Find anything in seconds.</h3>
+      <p>Storage locations, batch organization, smart search. Stop tearing apart your warehouse looking for the item that just sold.</p>
+      <ul class="split-features">
+        <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Storage locations.</strong> Tag every item with shelf, bin, closet, or custom location.</span></li>
+        <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Smart search.</strong> Find by title, SKU, brand, location, or batch &mdash; across thousands of items.</span></li>
+        <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Batch organization.</strong> Group by source, supplier, or session. Save batches as named folders.</span></li>
+        <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Sale sync.</strong> Auto-mark items sold when eBay or Shopify orders come in. No double-listing.</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div style="background: rgba(255,255,255,0.01);">
+  <div class="section">
+    <div class="split flip">
+      <div class="split-text">
+        <span class="section-tag purple">Barcodes &amp; labels</span>
+        <h3>Print-ready labels for every item.</h3>
+        <p>Every listing gets a unique QR + SKU code. Print sheets of labels, stick them on items, scan to find. Inventory operations like a real warehouse.</p>
+        <ul class="split-features">
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Auto-generated SKUs.</strong> RR-12345-SHELF-B12 format. Includes location.</span></li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Print sheets.</strong> Avery-compatible label templates. Print 30 at a time.</span></li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Scan to find.</strong> Phone camera reads QR, opens listing. Mark sold or relocated in 2 taps.</span></li>
+          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span><strong style="color:#fff">Pick lists.</strong> When orders come in, get a sorted pick list by location.</span></li>
+        </ul>
+      </div>
+      <div class="split-mockup">
+        <div class="mini-mockup" style="background:#f8fafc;border-color:#e2e8f0;">
+          <div class="mini-titlebar" style="background:#f1f5f9;border-color:#e2e8f0;"><div class="mini-dot" style="background:#ef4444"></div><div class="mini-dot" style="background:#f59e0b"></div><div class="mini-dot" style="background:#22c55e"></div><span style="font-size:10px;color:#64748b;margin-left:8px;">Print labels &middot; Avery 5163</span></div>
+          <div class="mini-body" style="background:white;">
+            <div class="label-grid">
+              <div class="label" style="border:1px dashed #cbd5e1;">
+                <svg width="50" height="50" viewBox="0 0 50 50" style="margin: 0 auto 6px; display:block;"><rect x="0" y="0" width="50" height="50" fill="white"/><rect x="2" y="2" width="46" height="46" fill="black"/><rect x="4" y="4" width="42" height="42" fill="white"/><g fill="black"><rect x="6" y="6" width="10" height="10"/><rect x="34" y="6" width="10" height="10"/><rect x="6" y="34" width="10" height="10"/><rect x="20" y="6" width="2" height="2"/><rect x="24" y="6" width="2" height="2"/><rect x="28" y="6" width="2" height="2"/><rect x="20" y="10" width="4" height="2"/><rect x="26" y="10" width="2" height="2"/><rect x="20" y="14" width="2" height="2"/><rect x="24" y="14" width="2" height="4"/><rect x="28" y="14" width="2" height="2"/><rect x="6" y="20" width="2" height="2"/><rect x="10" y="20" width="2" height="4"/><rect x="14" y="20" width="2" height="2"/><rect x="20" y="20" width="6" height="2"/><rect x="28" y="20" width="2" height="2"/><rect x="32" y="20" width="2" height="2"/><rect x="36" y="20" width="2" height="4"/><rect x="40" y="20" width="4" height="2"/><rect x="6" y="26" width="2" height="2"/><rect x="12" y="26" width="2" height="2"/><rect x="16" y="26" width="2" height="2"/><rect x="20" y="26" width="2" height="4"/><rect x="26" y="26" width="2" height="2"/><rect x="30" y="26" width="4" height="2"/><rect x="36" y="26" width="2" height="2"/><rect x="40" y="26" width="2" height="2"/><rect x="20" y="32" width="2" height="2"/><rect x="24" y="32" width="2" height="2"/><rect x="28" y="32" width="2" height="2"/><rect x="32" y="32" width="2" height="4"/><rect x="20" y="38" width="6" height="2"/><rect x="28" y="38" width="2" height="2"/><rect x="32" y="38" width="2" height="2"/><rect x="40" y="34" width="2" height="2"/><rect x="38" y="38" width="6" height="2"/></g></svg>
+                <div class="label-code">RR-115</div>
+                <div class="label-name">Yeezy Boost 700<br/>Shelf B-12</div>
+              </div>
+              <div class="label" style="border:1px dashed #cbd5e1;">
+                <svg width="50" height="50" viewBox="0 0 50 50" style="margin: 0 auto 6px; display:block;"><rect x="0" y="0" width="50" height="50" fill="white"/><rect x="2" y="2" width="46" height="46" fill="black"/><rect x="4" y="4" width="42" height="42" fill="white"/><g fill="black"><rect x="6" y="6" width="10" height="10"/><rect x="34" y="6" width="10" height="10"/><rect x="6" y="34" width="10" height="10"/><rect x="20" y="6" width="2" height="2"/><rect x="26" y="6" width="2" height="2"/><rect x="30" y="6" width="2" height="4"/><rect x="22" y="10" width="2" height="2"/><rect x="28" y="10" width="2" height="2"/><rect x="20" y="14" width="6" height="2"/><rect x="30" y="14" width="2" height="2"/><rect x="6" y="20" width="6" height="2"/><rect x="14" y="20" width="2" height="2"/><rect x="18" y="20" width="2" height="6"/><rect x="22" y="20" width="2" height="2"/><rect x="26" y="20" width="4" height="2"/><rect x="34" y="20" width="2" height="2"/><rect x="40" y="20" width="2" height="2"/><rect x="6" y="26" width="2" height="2"/><rect x="10" y="26" width="2" height="2"/><rect x="22" y="26" width="2" height="2"/><rect x="28" y="26" width="2" height="4"/><rect x="34" y="26" width="4" height="2"/><rect x="42" y="26" width="2" height="2"/><rect x="20" y="32" width="2" height="2"/><rect x="26" y="32" width="2" height="2"/><rect x="32" y="32" width="2" height="2"/><rect x="36" y="32" width="2" height="4"/><rect x="22" y="38" width="2" height="2"/><rect x="28" y="38" width="4" height="2"/><rect x="36" y="38" width="2" height="2"/><rect x="42" y="38" width="2" height="2"/></g></svg>
+                <div class="label-code">RR-118</div>
+                <div class="label-name">Vintage Nirvana<br/>Closet</div>
+              </div>
+              <div class="label" style="border:1px dashed #cbd5e1;">
+                <svg width="50" height="50" viewBox="0 0 50 50" style="margin: 0 auto 6px; display:block;"><rect x="0" y="0" width="50" height="50" fill="white"/><rect x="2" y="2" width="46" height="46" fill="black"/><rect x="4" y="4" width="42" height="42" fill="white"/><g fill="black"><rect x="6" y="6" width="10" height="10"/><rect x="34" y="6" width="10" height="10"/><rect x="6" y="34" width="10" height="10"/><rect x="20" y="6" width="6" height="2"/><rect x="28" y="6" width="2" height="4"/><rect x="20" y="10" width="2" height="2"/><rect x="24" y="10" width="4" height="2"/><rect x="22" y="14" width="2" height="2"/><rect x="26" y="14" width="2" height="2"/><rect x="30" y="14" width="2" height="2"/><rect x="6" y="20" width="2" height="6"/><rect x="12" y="20" width="2" height="2"/><rect x="16" y="20" width="2" height="2"/><rect x="20" y="20" width="2" height="2"/><rect x="26" y="20" width="2" height="2"/><rect x="30" y="20" width="6" height="2"/><rect x="40" y="20" width="2" height="4"/><rect x="22" y="26" width="6" height="2"/><rect x="32" y="26" width="2" height="2"/><rect x="36" y="26" width="2" height="2"/><rect x="20" y="32" width="2" height="4"/><rect x="26" y="32" width="2" height="2"/><rect x="30" y="32" width="2" height="2"/><rect x="34" y="32" width="2" height="2"/><rect x="22" y="38" width="2" height="2"/><rect x="26" y="38" width="6" height="2"/><rect x="34" y="38" width="2" height="2"/></g></svg>
+                <div class="label-code">RR-121</div>
+                <div class="label-name">Govee LED<br/>Bin C-04</div>
+              </div>
+              <div class="label" style="border:1px dashed #cbd5e1;">
+                <svg width="50" height="50" viewBox="0 0 50 50" style="margin: 0 auto 6px; display:block;"><rect x="0" y="0" width="50" height="50" fill="white"/><rect x="2" y="2" width="46" height="46" fill="black"/><rect x="4" y="4" width="42" height="42" fill="white"/><g fill="black"><rect x="6" y="6" width="10" height="10"/><rect x="34" y="6" width="10" height="10"/><rect x="6" y="34" width="10" height="10"/><rect x="20" y="6" width="2" height="6"/><rect x="24" y="6" width="6" height="2"/><rect x="22" y="10" width="2" height="2"/><rect x="26" y="10" width="2" height="2"/><rect x="22" y="14" width="2" height="2"/><rect x="28" y="14" width="2" height="2"/><rect x="6" y="20" width="2" height="2"/><rect x="10" y="20" width="4" height="2"/><rect x="20" y="20" width="2" height="2"/><rect x="24" y="20" width="2" height="2"/><rect x="28" y="20" width="2" height="4"/><rect x="32" y="20" width="2" height="2"/><rect x="40" y="20" width="2" height="2"/><rect x="6" y="26" width="2" height="2"/><rect x="12" y="26" width="4" height="2"/><rect x="20" y="26" width="6" height="2"/><rect x="28" y="26" width="2" height="2"/><rect x="34" y="26" width="2" height="2"/><rect x="20" y="32" width="2" height="4"/><rect x="26" y="32" width="2" height="2"/><rect x="30" y="32" width="4" height="2"/><rect x="22" y="38" width="6" height="2"/><rect x="30" y="38" width="2" height="2"/><rect x="34" y="38" width="2" height="2"/></g></svg>
+                <div class="label-code">RR-116</div>
+                <div class="label-name">LEGO 31136<br/>Shelf A-08</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="platforms-bar">
+  <span class="platforms-label">Push to</span>
+  <div class="platform"><div class="platform-icon pi-ebay">eB</div> eBay</div>
+  <div class="platform"><div class="platform-icon pi-shop">Sh</div> Shopify</div>
+  <div class="platform"><div class="platform-icon pi-csv">CSV</div> CSV export</div>
+</div>
+
+<div class="section" id="pricing">
+  <div class="section-header">
+    <span class="section-tag pink">Pricing</span>
+    <h2>Fair pricing that scales with you.</h2>
+    <p>Try any plan free for 7 days. No credit card up front. Cancel any time.</p>
+  </div>
+
+  <div class="pricing">
+    <div class="tier">
+      <h3>Pro</h3>
+      <div class="tier-price">$99<small>/mo</small></div>
+      <p class="tier-desc">For serious resellers</p>
+      <ul class="tier-features">
+        <li>500 scans / month</li>
+        <li>eBay + Shopify push</li>
+        <li>Bulk + Multi-Item modes</li>
+        <li>Receipt OCR</li>
+        <li>Barcode labels</li>
+        <li>Cost tracking</li>
+      </ul>
+      <button class="tier-cta btn-secondary" onclick="window.location='/signup'">Start 7-day trial</button>
+    </div>
+
+    <div class="tier tier-pop">
+      <h3>High Volume</h3>
+      <div class="tier-price">$199<small>/mo</small></div>
+      <p class="tier-desc">For full-time operators</p>
+      <ul class="tier-features">
+        <li>2,000 scans / month</li>
+        <li>Everything in Pro</li>
+        <li>Multi-user accounts</li>
+        <li>Priority support</li>
+        <li>Advanced analytics</li>
+      </ul>
+      <button class="tier-cta btn-primary" onclick="window.location='/signup'">Start 7-day trial</button>
+    </div>
+
+    <div class="tier">
+      <h3>Enterprise</h3>
+      <div class="tier-price" style="font-size:36px;">Custom</div>
+      <p class="tier-desc">For teams and businesses</p>
+      <ul class="tier-features">
+        <li>Unlimited scans</li>
+        <li>White-label option</li>
+        <li>Custom integrations</li>
+        <li>Dedicated infrastructure</li>
+        <li>SLA + dedicated support</li>
+      </ul>
+      <button class="tier-cta btn-secondary" onclick="window.location='mailto:sales@roboreseller.ai'">Contact sales</button>
+    </div>
+  </div>
+</div>
+
+<div class="final-cta">
+  <div class="final-glow"></div>
+  <div class="final-content">
+    <h2>Hire your <span class="accent">reseller robot</span> today.</h2>
+    <p>7 days free. No credit card required. Real listings live in under a minute.</p>
+    <button class="btn-primary" style="font-size: 19px; padding: 18px 38px;" onclick="window.location='/signup'">Start 7-day trial &rarr;</button>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-brand">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round">
+      <rect x="5" y="6" width="14" height="12" rx="2"/>
+      <circle cx="9" cy="11" r="1.4" fill="#22c55e" stroke="none"/>
+      <circle cx="15" cy="11" r="1.4" fill="#22c55e" stroke="none"/>
+    </svg>
+    <span>RoboReseller.ai</span>
+  </div>
+  <span style="color:#475569;">Built for resellers. Run by robots.</span>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PI Command Center</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060608;
+  --surface: #0d0f14;
+  --card: #111418;
+  --border: #1a1f2e;
+  --accent: #e8ff47;
+  --blue: #3b82f6;
+  --red: #ef4444;
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --text: #f0f2f5;
+  --muted: #5a6478;
+  --muted2: #8892a4;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Instrument Sans',sans-serif; min-height:100vh; padding:32px 24px 80px; }
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+}
+.container { max-width:1200px; margin:0 auto; position:relative; z-index:1; }
+
+/* Header */
+.header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:40px; }
+.header-left {}
+.logo { font-family:'Bebas Neue',sans-serif; font-size:36px; letter-spacing:0.06em; line-height:1; }
+.logo span { color:var(--accent); }
+.tagline { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.15em; margin-top:6px; }
+.live-badge { display:flex; align-items:center; gap:8px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); border-radius:20px; padding:6px 14px; font-family:'DM Mono',monospace; font-size:11px; color:var(--green); }
+.live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+.last-updated { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); margin-top:4px; text-align:right; }
+
+/* Quick Access */
+.section-label { font-family:'DM Mono',monospace; font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:0.2em; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+.section-label::before { content:''; width:24px; height:1px; background:var(--accent); }
+
+.tools-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:40px; }
+.tool-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px; padding:24px;
+  text-decoration:none; color:var(--text); display:block; position:relative; overflow:hidden;
+  transition:border-color 0.2s, transform 0.2s;
+}
+.tool-card:hover { transform:translateY(-2px); }
+.tool-card.green:hover { border-color:rgba(34,197,94,0.4); }
+.tool-card.blue:hover { border-color:rgba(59,130,246,0.4); }
+.tool-card.amber:hover { border-color:rgba(245,158,11,0.4); }
+.tool-card::before { content:''; position:absolute; inset:0; opacity:0; transition:opacity 0.2s; }
+.tool-card.green::before { background:radial-gradient(circle at top left, rgba(34,197,94,0.06), transparent 60%); }
+.tool-card.blue::before { background:radial-gradient(circle at top left, rgba(59,130,246,0.06), transparent 60%); }
+.tool-card.amber::before { background:radial-gradient(circle at top left, rgba(245,158,11,0.06), transparent 60%); }
+.tool-card:hover::before { opacity:1; }
+.tool-icon { font-size:28px; margin-bottom:14px; }
+.tool-name { font-size:17px; font-weight:700; margin-bottom:4px; }
+.tool-desc { font-size:12px; color:var(--muted2); line-height:1.5; }
+.tool-url { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); margin-top:12px; display:flex; align-items:center; gap:6px; }
+.tool-url::before { content:'→'; color:var(--accent); }
+.tool-arrow { position:absolute; top:20px; right:20px; color:var(--muted); font-size:18px; }
+
+/* Stats row */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:40px; }
+.stat-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px 16px; }
+.stat-val { font-family:'Bebas Neue',sans-serif; font-size:44px; line-height:1; margin-bottom:4px; }
+.stat-val.green { color:var(--green); }
+.stat-val.blue { color:var(--blue); }
+.stat-val.amber { color:var(--amber); }
+.stat-val.accent { color:var(--accent); }
+.stat-lbl { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; }
+
+/* Main grid */
+.main-grid { display:grid; grid-template-columns:1fr 380px; gap:16px; }
+
+/* Business table */
+.panel { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+.panel-header { background:var(--surface); border-bottom:1px solid var(--border); padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
+.panel-title { font-size:14px; font-weight:700; }
+.panel-count { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); }
+table { width:100%; border-collapse:collapse; }
+th { padding:10px 16px; text-align:left; font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.1em; font-family:'DM Mono',monospace; border-bottom:1px solid var(--border); }
+td { padding:12px 16px; font-size:13px; border-bottom:1px solid rgba(26,31,46,0.6); }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(255,255,255,0.02); }
+.scan-bar { display:flex; align-items:center; gap:8px; }
+.scan-track { width:60px; height:4px; background:var(--border); border-radius:2px; flex-shrink:0; }
+.scan-fill { height:100%; border-radius:2px; }
+.pill { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; font-family:'DM Mono',monospace; }
+.pill.active { background:rgba(34,197,94,0.15); color:var(--green); }
+.pill.inactive { background:rgba(90,100,120,0.15); color:var(--muted); }
+.pill.limited { background:rgba(239,68,68,0.15); color:var(--red); }
+.pill.admin { background:rgba(245,158,11,0.15); color:var(--amber); }
+.empty-row { text-align:center; padding:32px; color:var(--muted); font-size:13px; }
+
+/* Right panel */
+.right-col { display:flex; flex-direction:column; gap:16px; }
+
+/* Error log */
+.log-body { padding:16px; max-height:280px; overflow-y:auto; }
+.log-entry { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid rgba(26,31,46,0.6); font-size:12px; }
+.log-entry:last-child { border-bottom:none; }
+.log-time { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); white-space:nowrap; flex-shrink:0; margin-top:1px; }
+.log-msg { color:var(--muted2); line-height:1.5; }
+.log-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.log-dot.error { background:var(--red); }
+.log-dot.warn { background:var(--amber); }
+.log-dot.info { background:var(--green); }
+.log-dot.user { background:var(--blue); }
+.log-empty { text-align:center; padding:24px; color:var(--muted); font-size:12px; font-family:'DM Mono',monospace; }
+
+/* Scan donut */
+.donut-wrap { padding:20px; display:flex; flex-direction:column; align-items:center; }
+.donut-svg { width:140px; height:140px; margin-bottom:16px; }
+.donut-legend { width:100%; display:flex; flex-direction:column; gap:8px; }
+.donut-item { display:flex; justify-content:space-between; align-items:center; font-size:12px; }
+.donut-item-left { display:flex; align-items:center; gap:8px; }
+.donut-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.donut-name { color:var(--muted2); }
+.donut-val { font-family:'DM Mono',monospace; font-size:11px; color:var(--text); font-weight:600; }
+
+.refresh-btn { background:var(--surface); border:1px solid var(--border); color:var(--muted2); padding:6px 14px; border-radius:6px; font-size:12px; cursor:pointer; font-family:'DM Mono',monospace; transition:all 0.2s; }
+.refresh-btn:hover { border-color:var(--accent); color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">Precision<span>Industrial</span></div>
+      <div class="tagline">Internal Command Center · Lister AI Platform</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="live-badge"><div class="live-dot"></div> Live</div>
+      <div class="last-updated" id="last-updated">Updating...</div>
+    </div>
+  </div>
+
+  <!-- Tools -->
+  <div class="section-label">Quick Access</div>
+  <div class="tools-grid">
+    <a href="https://app.reselljunkie.com" target="_blank" class="tool-card green">
+      <div class="tool-arrow">↗</div>
+      <div class="tool-icon">🏭</div>
+      <div class="tool-name">Lister Dashboard</div>
+      <div class="tool-desc">Production scanner — upload parts, manage listings, export to eBay</div>
+      <div class="tool-url">app.reselljunkie.com</div>
+    </a>
+    <a href="https://app.reselljunkie.com/auction" target="_blank" class="tool-card blue">
+      <div class="tool-arrow">↗</div>
+      <div class="tool-icon">🔨</div>
+      <div class="tool-name">Auction Scanner</div>
+      <div class="tool-desc">Upload auction PDFs, research lots, deep pricing analysis</div>
+      <div class="tool-url">app.reselljunkie.com/auction</div>
+    </a>
+    <a href="https://lister-web-dev-production.up.railway.app/admin" target="_blank" class="tool-card amber">
+      <div class="tool-arrow">↗</div>
+      <div class="tool-icon">⚙️</div>
+      <div class="tool-name">Admin Dashboard</div>
+      <div class="tool-desc">Manage business accounts, adjust scan limits, monitor usage</div>
+      <div class="tool-url">app.reselljunkie.com/admin</div>
+    </a>
+  </div>
+
+  <!-- Stats -->
+  <div class="section-label">Platform Overview</div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-val green" id="s-businesses">—</div><div class="stat-lbl">Businesses</div></div>
+    <div class="stat-card"><div class="stat-val blue" id="s-listings">—</div><div class="stat-lbl">Total Listings</div></div>
+    <div class="stat-card"><div class="stat-val accent" id="s-scans-used">—</div><div class="stat-lbl">Scans Used</div></div>
+    <div class="stat-card"><div class="stat-val amber" id="s-active">—</div><div class="stat-lbl">Active This Week</div></div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- Business table -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Registered Businesses</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span class="panel-count" id="biz-count">Loading...</span>
+          <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Business</th>
+            <th>Scans</th>
+            <th>Listings</th>
+            <th>Joined</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="biz-tbody">
+          <tr><td colspan="5" class="empty-row">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Right column -->
+    <div class="right-col">
+
+      <!-- Activity log -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Activity Log</div>
+          <span class="panel-count" id="log-count">0 events</span>
+        </div>
+        <div class="log-body" id="log-body">
+          <div class="log-empty">No recent activity</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['#e8ff47','#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899'];
+let logEntries = [];
+
+function addLog(type, msg) {
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  logEntries.unshift({type, msg, time});
+  if (logEntries.length > 50) logEntries.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const body = document.getElementById('log-body');
+  document.getElementById('log-count').textContent = logEntries.length + ' events';
+  if (!logEntries.length) {
+    body.innerHTML = '<div class="log-empty">No recent activity</div>';
+    return;
+  }
+  body.innerHTML = logEntries.map(e => `
+    <div class="log-entry">
+      <div class="log-dot ${e.type}"></div>
+      <div class="log-time">${e.time}</div>
+      <div class="log-msg">${esc(e.msg)}</div>
+    </div>
+  `).join('');
+}
+
+async function loadData() {
+  try {
+    const r = await fetch('/api/admin/businesses');
+    if (!r.ok) throw new Error('API returned ' + r.status);
+    const data = await r.json();
+    const businesses = data.businesses || [];
+    const now = Date.now();
+    const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+
+    // Stats
+    const totalListings = businesses.reduce((a,b) => a + (b.listing_count||0), 0);
+    const totalScansUsed = businesses.reduce((a,b) => a + (b.scan_count||0), 0);
+    const totalScansLimit = businesses.reduce((a,b) => a + (b.scan_limit||0), 0);
+    const totalRemaining = totalScansLimit - totalScansUsed;
+    const activeCount = businesses.filter(b => b.last_active && new Date(b.last_active).getTime() > oneWeekAgo).length;
+    const adminScans = businesses.filter(b => b.is_admin).reduce((a,b) => a + (b.scan_count||0), 0);
+    const clientScans = businesses.filter(b => !b.is_admin).reduce((a,b) => a + (b.scan_count||0), 0);
+
+    document.getElementById('s-businesses').textContent = businesses.length;
+    document.getElementById('s-listings').textContent = totalListings;
+    document.getElementById('s-scans-used').textContent = totalScansUsed;
+    document.getElementById('s-active').textContent = activeCount;
+    document.getElementById('biz-count').textContent = businesses.length + ' registered';
+
+    // Render business table
+    const tbody = document.getElementById('biz-tbody');
+    if (!businesses.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-row">No businesses yet</td></tr>';
+    } else {
+      tbody.innerHTML = businesses.map(b => {
+        const scanCount = b.scan_count || 0;
+        const scanLimit = b.scan_limit || 25;
+        const pct = Math.min(100, Math.round(scanCount / scanLimit * 100));
+        const fillColor = pct >= 100 ? '#ef4444' : pct >= 80 ? '#f59e0b' : '#22c55e';
+        const joined = b.created_at ? new Date(b.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+        const isActive = b.last_active && new Date(b.last_active).getTime() > oneWeekAgo;
+        const statusPill = pct >= 100
+          ? '<span class="pill limited">Limit Reached</span>'
+          : isActive ? '<span class="pill active">Active</span>' : '<span class="pill inactive">Inactive</span>';
+        return `<tr>
+          <td>
+            <div style="font-weight:600;font-size:13px;">${esc(b.name)}</div>
+            <div style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">${esc(b.email)}</div>
+            ${b.is_admin ? '<span class="pill admin" style="margin-top:2px;display:inline-block;">Admin</span>' : ''}
+          </td>
+          <td>
+            <div class="scan-bar">
+              <div class="scan-track"><div class="scan-fill" style="width:${pct}%;background:${fillColor};"></div></div>
+              <span style="font-size:11px;font-family:'DM Mono',monospace;white-space:nowrap;">${scanCount}/${scanLimit}</span>
+            </div>
+          </td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px;">${b.listing_count || 0}</td>
+          <td style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">${joined}</td>
+          <td>${statusPill}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // Log limit-reached businesses
+    businesses.filter(b => (b.scan_count||0) >= (b.scan_limit||25) && !b.is_admin)
+      .forEach(b => addLog('warn', `Scan limit reached: ${b.name}`));
+
+    document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    if (!logEntries.length) addLog('info', 'Dashboard loaded — ' + businesses.length + ' businesses registered');
+
+  } catch(e) {
+    addLog('error', 'Failed to load data: ' + e.message);
+    document.getElementById('last-updated').textContent = 'Error — retrying...';
+  }
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+loadData();
+setInterval(loadData, 30000);
+</script>
+</body>
+</html>
