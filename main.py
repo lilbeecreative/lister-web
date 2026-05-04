@@ -776,9 +776,12 @@ async def submit_listings_to_ebay(request: Request):
                         f"{api_base}/commerce/taxonomy/v1/category_tree/0/get_item_aspects_for_category?category_id={category_id}",
                         headers=headers
                     )
+                    print(f"[eBay] Aspect API status={asp_r.status_code}, body={asp_r.text[:300]}")
                     if asp_r.ok:
                         asp_data = asp_r.json()
-                        for asp in asp_data.get("aspects", []):
+                        all_aspects = asp_data.get("aspects", [])
+                        print(f"[eBay] Found {len(all_aspects)} aspects from API")
+                        for asp in all_aspects:
                             asp_name = asp.get("localizedAspectName")
                             constraint = asp.get("aspectConstraint", {})
                             usage = constraint.get("aspectUsage", "OPTIONAL")
