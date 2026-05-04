@@ -766,8 +766,9 @@ async def submit_listings_to_ebay(request: Request):
                 # Start with basics, will fill required fields from modal aspects later
                 inv_aspects = {"Brand": ["Unbranded"], "Type": ["Other"], "Model": ["Generic"], "MPN": ["Does Not Apply"]}
                 # Override with any user-provided aspects from modal
-                if aspects:
-                    for k, v in aspects.items():
+                user_aspects = modal.get("aspects") if 'modal' in dir() else {}
+                if user_aspects:
+                    for k, v in user_aspects.items():
                         if v:
                             inv_aspects[k] = [str(v)] if not isinstance(v, list) else v
 
