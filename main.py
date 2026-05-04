@@ -843,11 +843,17 @@ async def ebay_whoami(request: Request):
         token = get_ebay_token(business_id)
         api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
         headers = {"Authorization": f"Bearer {token}"}
-        r = _req.get(f"{api_base}/commerce/identity/v1/user", headers=headers)
+        # Check fulfillment policies to see seller info
+        r = _req.get(f"{api_base}/sell/account/v1/fulfillment_policy?marketplace_id=EBAY_US", headers=headers)
+        # Also check inventory items count
+        r2 = _req.get(f"{api_base}/sell/inventory/v1/inventory_item?limit=1", headers=headers)
+        inv_data = r2.json() if r2.ok else {}
         return {
-            "status": r.status_code,
-            "body": r.text[:500],
-            "token_preview": token[:30] + "..." if token else "no token"
+            "policies_status": r.status_code,
+            "policies_count": len(r.json().get("fulfillmentPolicies", [])) if r.ok else 0,
+            "inventory_status": r2.status_code,
+            "inventory_total": inv_data.get("total", 0),
+            "inventory_items": [{"sku": i.get("sku"), "title": i.get("product",{}).get("title","")} for i in inv_data.get("inventoryItems", [])[:5]]
         }
     except Exception as e:
         return {"error": str(e)}
