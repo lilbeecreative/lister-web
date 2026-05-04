@@ -860,6 +860,9 @@ async def submit_listings_to_ebay(request: Request):
                 if ret_pol: listing_policies["returnPolicyId"] = ret_pol
                 if pay_pol: listing_policies["paymentPolicyId"] = pay_pol
 
+                from datetime import datetime as _dt_o, timedelta as _td_o
+                _sched = (_dt_o.utcnow() + _td_o(days=20)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
                 offer_payload = {
                     "sku": sku,
                     "marketplaceId": "EBAY_US",
@@ -870,7 +873,8 @@ async def submit_listings_to_ebay(request: Request):
                     },
                     "categoryId": category_id,
                     "merchantLocationKey": "default",
-                    "listingPolicies": listing_policies
+                    "listingPolicies": listing_policies,
+                    "listingStartDate": _sched
                 }
 
                 offer_r = _req3.post(
