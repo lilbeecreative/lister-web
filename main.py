@@ -215,6 +215,17 @@ EBAY_API_BASE = "https://api.sandbox.ebay.com" if EBAY_ENV == "sandbox" else "ht
 EBAY_AUTH_BASE = "https://auth.sandbox.ebay.com" if EBAY_ENV == "sandbox" else "https://auth.ebay.com"
 EBAY_SCOPES = "https://api.ebay.com/oauth/api_scope/sell.inventory https://api.ebay.com/oauth/api_scope/sell.account"
 
+# Load full eBay category list at startup
+import json as _json_cats
+EBAY_FULL_CATEGORIES = []
+try:
+    with open("ebay_categories.json") as _f:
+        EBAY_FULL_CATEGORIES = _json_cats.load(_f)
+    print(f"Loaded {len(EBAY_FULL_CATEGORIES)} eBay categories")
+except Exception as _e:
+    print(f"Could not load ebay_categories.json: {_e}")
+
+
 # Curated eBay categories for fallback when taxonomy API blocked
 EBAY_CATEGORIES = [
     {"id": "11450", "name": "Clothing, Shoes & Accessories", "path": "Clothing, Shoes & Accessories"},
@@ -1125,19 +1136,31 @@ async def search_ebay_categories(request: Request, q: str = ""):
                     "name": cat.get("categoryName"),
                     "path": " > ".join(path_parts)
                 })
-        # Fallback to curated list if eBay API blocked
+        # Fallback to full list (taxonomy API often blocked)
         if not results:
             ql = q.lower()
-            for cat in EBAY_CATEGORIES:
-                if ql in cat["name"].lower() or ql in cat["path"].lower():
-                    results.append(cat)
-                if len(results) >= 10:
-                    break
+            ranked = []
+            for cat in EBAY_FULL_CATEGORIES:
+                name_l = cat["name"].lower()
+                path_l = cat["path"].lower()
+                if ql in name_l:
+                    score = 100 - len(name_l)  # exact name matches rank highest
+                    ranked.append((score, cat))
+                elif ql in path_l:
+                    ranked.append((50, cat))
+            ranked.sort(key=lambda x: -x[0])
+            results = [c for _, c in ranked[:15]]
         return {"categories": results, "ebay_status": r.status_code}
     except Exception as e:
-        # On any error fall back to curated list
         ql = q.lower()
-        results = [cat for cat in EBAY_CATEGORIES if ql in cat["name"].lower() or ql in cat["path"].lower()][:10]
+        ranked = []
+        for cat in EBAY_FULL_CATEGORIES:
+            if ql in cat["name"].lower():
+                ranked.append((100 - len(cat["name"]), cat))
+            elif ql in cat["path"].lower():
+                ranked.append((50, cat))
+        ranked.sort(key=lambda x: -x[0])
+        results = [c for _, c in ranked[:15]]
         return {"categories": results, "error": str(e)}
 
 
