@@ -1244,6 +1244,42 @@ async def get_item_aspects(request: Request, category_id: str = ""):
 
     return {"aspects": aspects[:18], "ebay_status": ebay_status, "fallback": not bool(ebay_status and ebay_status == 200)}
 
+
+@app.get("/api/admin/fetch-ebay-categories")
+async def admin_fetch_ebay_categories(request: Request):
+    """One-time admin endpoint to fetch full eBay category tree and save to file."""
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        import requests as _req, json as _json
+        token = get_ebay_token(business_id)
+        api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
+        headers = {"Authorization": f"Bearer {token}", "Accept-Encoding": "gzip"}
+        r = _req.get(f"{api_base}/commerce/taxonomy/v1/category_tree/0", headers=headers)
+        if not r.ok:
+            return {"error": f"eBay returned {r.status_code}", "body": r.text[:500]}
+        data = r.json()
+        categories = []
+        def walk(node, parent_path=""):
+            cat = node.get("category", {})
+            cat_id = cat.get("categoryId")
+            cat_name = cat.get("categoryName", "")
+            path = (parent_path + " > " + cat_name) if parent_path else cat_name
+            is_leaf = node.get("leafCategoryTreeNode", False) or not node.get("childCategoryTreeNodes")
+            if cat_id and is_leaf:
+                categories.append({"id": cat_id, "name": cat_name, "path": path.lstrip(" >")})
+            for child in node.get("childCategoryTreeNodes", []) or []:
+                walk(child, path)
+        walk(data.get("rootCategoryNode", {}))
+        # Save to file in container
+        with open("ebay_categories.json", "w") as f:
+            _json.dump(categories, f)
+        return {"ok": True, "count": len(categories), "first_few": categories[:5]}
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return {"error": str(e)}
+
 @app.get("/api/ebay/policies")
 async def get_ebay_policies(request: Request):
     business_id = require_auth(request)
