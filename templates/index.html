@@ -1224,57 +1224,102 @@ select.field-input { background: #fff; color: #0f172a; }
   <div class="tab-content" id="tab-expenses">
     <div style="max-width:1100px;margin:0 auto;font-family:'Instrument Sans',sans-serif;">
 
-      <!-- Header row -->
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <!-- New header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:14px;">
         <div>
-          <div style="font-size:22px;font-weight:800;color:var(--text);">Expenses</div>
-          <div style="font-size:13px;color:var(--muted);margin-top:2px;" id="exp-stats">Loading...</div>
+          <div style="font-size:24px;font-weight:700;color:var(--text);letter-spacing:-0.02em;">Expenses</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;" id="exp-stats">Loading...</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <!-- COGS toggle -->
-          <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;background:var(--card);border:1px solid var(--border);padding:7px 12px;border-radius:8px;">
-            <input type="checkbox" id="exp-cogs-toggle" onchange="toggleCogsImport()" style="width:14px;height:14px;accent-color:#ef4444;cursor:pointer;">
-            Import COGS from scans
-          </label>
-          <!-- Add expense -->
-          <button class="btn btn-primary" style="font-size:13px;padding:8px 14px;background:#e8ff47;color:#000;border-color:#e8ff47;" onclick="openExpenseModal()">+ Add Expense</button>
-          <!-- Scan receipt -->
-          <button class="btn" style="font-size:13px;padding:8px 14px;" onclick="openReceiptScanner()">📷 Scan Receipt</button>
-          <!-- Export -->
+          <button class="btn" style="font-size:13px;padding:8px 14px;display:flex;align-items:center;gap:6px;" onclick="openReceiptScanner()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Scan receipt
+          </button>
+          <button onclick="openExpenseModal()" style="font-size:13px;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;font-weight:600;font-family:inherit;display:flex;align-items:center;gap:6px;box-shadow:0 4px 14px rgba(34,197,94,0.25);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add expense
+          </button>
           <div style="position:relative;">
-            <button class="btn" style="font-size:13px;padding:8px 14px;" onclick="toggleExpExportMenu()">⬇ Export</button>
+            <button class="btn" style="font-size:13px;padding:8px 14px;" onclick="toggleExpExportMenu()">Export</button>
             <div id="exp-export-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--card);border:1px solid var(--border);border-radius:8px;z-index:50;min-width:160px;overflow:hidden;">
-              <button onclick="exportExpenses('csv')" style="display:block;width:100%;padding:10px 14px;background:transparent;border:none;color:var(--text);font-size:13px;text-align:left;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">📊 CSV / Excel</button>
-              <button onclick="exportExpenses('pdf')" style="display:block;width:100%;padding:10px 14px;background:transparent;border:none;color:var(--text);font-size:13px;text-align:left;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">📄 PDF Report</button>
+              <button onclick="exportExpenses('csv')" style="display:block;width:100%;padding:10px 14px;background:transparent;border:none;color:var(--text);font-size:13px;text-align:left;cursor:pointer;font-family:inherit;">CSV / Excel</button>
+              <button onclick="exportExpenses('pdf')" style="display:block;width:100%;padding:10px 14px;background:transparent;border:none;color:var(--text);font-size:13px;text-align:left;cursor:pointer;font-family:inherit;">PDF Report</button>
+            </div>
+          </div>
+          <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);cursor:pointer;padding:7px 10px;border-radius:7px;background:var(--card);border:1px solid var(--border);">
+            <input type="checkbox" id="exp-cogs-toggle" onchange="toggleCogsImport()" style="width:13px;height:13px;accent-color:#22c55e;cursor:pointer;">
+            Auto-import COGS
+          </label>
+        </div>
+      </div>
+
+      <!-- Period tabs (clean, no extra filters) -->
+      <div style="margin-bottom:20px;">
+        <div style="display:inline-flex;gap:2px;background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:9px;padding:3px;">
+          <button class="exp-period-pill" data-period="day" onclick="setExpPeriod('day')" style="font-size:12px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;font-weight:500;">Day</button>
+          <button class="exp-period-pill" data-period="week" onclick="setExpPeriod('week')" style="font-size:12px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;font-weight:500;">Week</button>
+          <button class="exp-period-pill active" data-period="month" onclick="setExpPeriod('month')" style="font-size:12px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;background:rgba(34,197,94,0.15);color:#4ade80;font-family:inherit;font-weight:500;">Month</button>
+          <button class="exp-period-pill" data-period="3month" onclick="setExpPeriod('3month')" style="font-size:12px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;font-weight:500;">3M</button>
+          <button class="exp-period-pill" data-period="6month" onclick="setExpPeriod('6month')" style="font-size:12px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;font-weight:500;">6M</button>
+          <button class="exp-period-pill" data-period="12month" onclick="setExpPeriod('12month')" style="font-size:12px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;font-weight:500;">12M</button>
+          <button class="exp-period-pill" data-period="all" onclick="setExpPeriod('all')" style="font-size:12px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;font-weight:500;">All</button>
+        </div>
+      </div>
+
+      <!-- Hero row: total + quick stats -->
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:20px;" id="exp-hero-row">
+        <div style="background:linear-gradient(135deg,rgba(34,197,94,0.08),rgba(6,182,212,0.05));border:1px solid rgba(34,197,94,0.2);border-radius:14px;padding:24px;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-50px;right:-50px;width:200px;height:200px;background:radial-gradient(circle,rgba(34,197,94,0.18),transparent 60%);pointer-events:none;"></div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:8px;position:relative;" id="exp-hero-period">Total spend</div>
+          <div style="font-size:42px;font-weight:700;line-height:1;letter-spacing:-0.03em;position:relative;" id="exp-hero-total">$0.00</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:14px;position:relative;" id="exp-hero-meta">0 transactions</div>
+        </div>
+        <div style="display:grid;grid-template-rows:1fr 1fr;gap:8px;">
+          <div style="background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Cost of goods</div>
+              <div style="font-size:18px;font-weight:700;margin-top:2px;" id="exp-hero-cogs">$0.00</div>
+            </div>
+            <div style="width:28px;height:28px;border-radius:7px;background:rgba(239,68,68,0.12);color:#f87171;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">$</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Tax-deductible</div>
+              <div style="font-size:18px;font-weight:700;margin-top:2px;" id="exp-hero-deduct">$0.00</div>
+            </div>
+            <div style="width:28px;height:28px;border-radius:7px;background:rgba(168,85,247,0.12);color:#c084fc;display:flex;align-items:center;justify-content:center;font-size:13px;">✓</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main grid: categories + donut -->
+      <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-bottom:20px;" id="exp-main-grid">
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;padding:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <span style="font-size:13px;font-weight:600;color:var(--text);">Spending by category</span>
+            <span style="font-size:11px;color:var(--muted);" id="exp-cat-count">0 categories</span>
+          </div>
+          <div id="exp-cat-list"></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;padding:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <span style="font-size:13px;font-weight:600;color:var(--text);">Distribution</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;padding:8px 0;position:relative;">
+            <canvas id="exp-chart" width="200" height="200"></canvas>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600;">Total</div>
+              <div id="exp-chart-total" style="font-size:22px;font-weight:700;letter-spacing:-0.01em;color:var(--text);">$0</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Period pills -->
-      <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
-        <div style="display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:3px;flex-wrap:wrap;">
-          <button class="exp-period-pill active" data-period="month" onclick="setExpPeriod('month')" style="font-size:12px;padding:6px 12px;border-radius:5px;border:none;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;font-weight:500;">Month</button>
-          <button class="exp-period-pill" data-period="day" onclick="setExpPeriod('day')" style="font-size:12px;padding:6px 12px;border-radius:5px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;">Day</button>
-          <button class="exp-period-pill" data-period="week" onclick="setExpPeriod('week')" style="font-size:12px;padding:6px 12px;border-radius:5px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;">Week</button>
-          <button class="exp-period-pill" data-period="3month" onclick="setExpPeriod('3month')" style="font-size:12px;padding:6px 12px;border-radius:5px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;">3M</button>
-          <button class="exp-period-pill" data-period="6month" onclick="setExpPeriod('6month')" style="font-size:12px;padding:6px 12px;border-radius:5px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;">6M</button>
-          <button class="exp-period-pill" data-period="12month" onclick="setExpPeriod('12month')" style="font-size:12px;padding:6px 12px;border-radius:5px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;">12M</button>
-          <button class="exp-period-pill" data-period="all" onclick="setExpPeriod('all')" style="font-size:12px;padding:6px 12px;border-radius:5px;border:none;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit;">All</button>
-        </div>
-        <!-- Category filter -->
-        <select id="exp-cat-filter" onchange="setExpCategory(this.value)" style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:7px 10px;cursor:pointer;font-family:inherit;outline:none;">
-          <option value="">All Categories</option>
-          <option value="Cost of Goods">🔴 Cost of Goods</option>
-          <option value="Shipping & Postage">🟠 Shipping & Postage</option>
-          <option value="Supplies & Packaging">🟡 Supplies & Packaging</option>
-          <option value="Fees & Subscriptions">🟢 Fees & Subscriptions</option>
-          <option value="Gas & Travel">🔵 Gas & Travel</option>
-          <option value="Food & Meals">🟣 Food & Meals</option>
-          <option value="Software & Tools">🩵 Software & Tools</option>
-          <option value="Other">⚫ Other</option>
-        </select>
-      </div>
+      <!-- Summary cards (hidden, kept for backwards-compat) -->
+      <div id="exp-summary-cards" style="display:none;"></div>
+
+      <!-- Chart container (hidden, replaced by main-grid above) -->
+      <div id="exp-chart-container" style="display:none;"></div>
 
       <!-- Summary cards -->
       <div id="exp-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:18px;"></div>
@@ -4122,25 +4167,65 @@ function setExpCategory(cat) {
 }
 
 function renderExpSummaryCards() {
-  var container = document.getElementById('exp-summary-cards');
-  if (!container) return;
-  var stats = document.getElementById('exp-stats');
-  if (stats) stats.textContent = expItems.length + ' expense' + (expItems.length===1?'':'s') + ' · $' + expTotal.toFixed(2) + ' total';
-  var badge = document.getElementById('exp-total-badge');
-  if (badge) badge.textContent = '$' + expTotal.toFixed(2);
+  // New layout: hero card + quick stats + category list
+  var periodLabels = {day:'Today',week:'This week',month:'This month','3month':'Last 3 months','6month':'Last 6 months','12month':'Last 12 months',all:'All time'};
 
+  // Hero card
+  var heroPeriod = document.getElementById('exp-hero-period');
+  if (heroPeriod) heroPeriod.textContent = 'Total spend · ' + (periodLabels[expPeriod] || 'This month');
+  var heroTotal = document.getElementById('exp-hero-total');
+  if (heroTotal) heroTotal.textContent = '$' + expTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  var heroMeta = document.getElementById('exp-hero-meta');
+  if (heroMeta) {
+    var avg = expItems.length ? (expTotal / expItems.length) : 0;
+    heroMeta.innerHTML = '<strong style="color:var(--text);font-weight:600;">' + expItems.length + '</strong> transactions · <strong style="color:var(--text);font-weight:600;">$' + avg.toFixed(2) + '</strong> avg';
+  }
+
+  // Quick stats
+  var cogsTotal = (expSummary['Cost of Goods'] && expSummary['Cost of Goods'].total) || 0;
+  var heroCogs = document.getElementById('exp-hero-cogs');
+  if (heroCogs) heroCogs.textContent = '$' + cogsTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  // Tax-deductible: everything except "Other" (heuristic — Other is often personal/unknown)
+  var deductTotal = 0;
+  Object.keys(expSummary).forEach(function(cat) {
+    if (cat !== 'Other') deductTotal += (expSummary[cat].total || 0);
+  });
+  var heroDeduct = document.getElementById('exp-hero-deduct');
+  if (heroDeduct) heroDeduct.textContent = '$' + deductTotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  // Stats line under title
+  var stats = document.getElementById('exp-stats');
+  if (stats) stats.textContent = expItems.length + ' expense' + (expItems.length===1?'':'s') + ' · ' + (periodLabels[expPeriod] || 'This month').toLowerCase();
+
+  // Category breakdown list
+  var listEl = document.getElementById('exp-cat-list');
+  if (!listEl) return;
   var cats = Object.keys(expSummary).filter(function(c) { return expSummary[c].total > 0; });
-  if (!cats.length) { container.innerHTML = ''; return; }
-  container.innerHTML = cats.map(function(cat) {
+  cats.sort(function(a,b) { return expSummary[b].total - expSummary[a].total; });
+  var catCount = document.getElementById('exp-cat-count');
+  if (catCount) catCount.textContent = cats.length + ' categor' + (cats.length===1?'y':'ies');
+
+  if (!cats.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;">No expenses yet for this period</div>';
+    return;
+  }
+
+  listEl.innerHTML = '<ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">' + cats.map(function(cat) {
     var s = expSummary[cat];
-    var color = EXP_COLORS[cat] || '#6b7280';
-    var pct = expTotal > 0 ? ((s.total / expTotal) * 100).toFixed(0) : 0;
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;border-left:3px solid ' + color + ';">' +
-      '<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">' + (EXP_EMOJIS[cat]||'') + ' ' + cat + '</div>' +
-      '<div style="font-size:18px;font-weight:800;color:' + color + ';">$' + s.total.toFixed(2) + '</div>' +
-      '<div style="font-size:10px;color:var(--muted);margin-top:2px;">' + s.count + ' item' + (s.count===1?'':'s') + ' · ' + pct + '%</div>' +
-      '</div>';
-  }).join('');
+    var color = EXP_COLORS[cat] || '#94a3b8';
+    var pct = expTotal > 0 ? ((s.total / expTotal) * 100) : 0;
+    return '<li>' +
+      '<div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;">' +
+        '<span style="width:10px;height:10px;border-radius:50%;background:' + color + ';"></span>' +
+        '<span style="font-size:13px;color:var(--text);font-weight:500;">' + cat + '</span>' +
+        '<span><span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;">$' + s.total.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}) + '</span><span style="font-size:11px;color:var(--muted);margin-left:6px;">' + pct.toFixed(1) + '%</span></span>' +
+      '</div>' +
+      '<div style="height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;margin-top:6px;">' +
+        '<div style="height:100%;background:' + color + ';width:' + Math.max(pct, 0.5) + '%;border-radius:2px;transition:width 0.4s;"></div>' +
+      '</div>' +
+    '</li>';
+  }).join('') + '</ul>';
 }
 
 function renderExpChart() {
