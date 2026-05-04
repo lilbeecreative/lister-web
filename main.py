@@ -774,8 +774,9 @@ async def submit_listings_to_ebay(request: Request):
                         "aspects": inv_aspects,
                     }
                 }
-                if photo_url:
+                if photo_url and photo_url.startswith("https://"):
                     inv_payload["product"]["imageUrls"] = [photo_url]
+                print(f"[eBay] Payload for {sku}: {inv_payload}")
 
                 import requests as _req3
                 inv_r = _req3.put(
