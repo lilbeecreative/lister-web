@@ -808,6 +808,24 @@ async def submit_listings_to_ebay(request: Request):
                 offer_data = offer_r.json() if offer_r.text else {}
                 offer_id = offer_data.get("offerId")
 
+                # If offer already exists, find it and update
+                if not offer_id and offer_r.status_code == 400:
+                    errors = offer_data.get("errors", [])
+                    for err in errors:
+                        if err.get("errorId") == 25002:
+                            for param in err.get("parameters", []):
+                                if param.get("name") == "offerId":
+                                    offer_id = param.get("value")
+                                    print(f"[eBay] Reusing existing offer {offer_id}")
+                                    # Update existing offer
+                                    upd_r = _req3.put(
+                                        f"{api_base}/sell/inventory/v1/offer/{offer_id}",
+                                        headers=headers,
+                                        json=offer_payload
+                                    )
+                                    print(f"[eBay] Offer UPDATE status={upd_r.status_code}")
+                                    break
+
                 if offer_id:
                     # Publish as scheduled listing 1 year out — appears in Seller Hub as scheduled
                     from datetime import datetime as _dt, timedelta as _td
