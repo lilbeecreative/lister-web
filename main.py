@@ -1377,8 +1377,8 @@ async def admin_fetch_ebay_categories(request: Request):
         return {"error": str(e)}
 
 
-@app.get("/v2", response_class=HTMLResponse)
-async def landing_v2(request: Request):
+@app.get("/landing2", response_class=HTMLResponse)
+async def landing2(request: Request):
     return templates.TemplateResponse("v2_landing.html", {"request": request})
 
 @app.get("/api/ebay/policies")
