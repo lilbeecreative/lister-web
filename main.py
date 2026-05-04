@@ -751,6 +751,7 @@ async def submit_listings_to_ebay(request: Request):
                 price = float(listing.get("price") or 9.99)
                 condition = "USED_EXCELLENT" if (listing.get("condition") or "used").lower() == "used" else "NEW"
                 category_id = str(listing.get("ebay_category_id") or "99")
+                print(f"[eBay] Using category_id={category_id} for {listing.get('id')}")
                 description = listing.get("description") or title
                 qty = int(listing.get("quantity") or 1)
 
