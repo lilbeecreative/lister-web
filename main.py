@@ -765,6 +765,9 @@ async def submit_listings_to_ebay(request: Request):
                     photo_url = photo_res
 
                 print(f"[eBay] Processing item {lid}: title={title!r}, price={price}, sku={sku}")
+                # Import requests early
+                import requests as _req3
+
                 # 1. Create/update inventory item
                 # Fetch required aspects for this category from eBay
                 inv_aspects = {}
