@@ -1148,13 +1148,69 @@ async def get_item_aspects(request: Request, category_id: str = ""):
         raise HTTPException(401, "Not authenticated")
     if not category_id:
         return {"aspects": []}
+
+    # Category-aware fallback specifics (used when eBay taxonomy API blocked)
+    CATEGORY_ASPECTS = {
+        # Clothing/T-shirts
+        "15687": ["Brand", "Size", "Color", "Type", "Material", "Sleeve Length", "Size Type", "Fit", "Department", "Style", "Theme"],
+        "57988": ["Brand", "Size", "Color", "Type", "Material", "Department", "Size Type", "Style"],
+        "57990": ["Brand", "Size", "Color", "Type", "Material", "Department", "Size Type", "Style"],
+        "63861": ["Brand", "Size", "Color", "Type", "Material", "Department", "Style"],
+        # Shoes
+        "93427": ["Brand", "US Shoe Size", "Color", "Type", "Style", "Material", "Department", "Model", "Pattern"],
+        "95672": ["Brand", "US Shoe Size", "Color", "Type", "Style", "Material", "Department", "Model"],
+        "11498": ["Brand", "US Shoe Size", "Color", "Style", "Material", "Department", "Type"],
+        "53557": ["Brand", "US Shoe Size", "Color", "Style", "Material", "Department", "Type"],
+        "57929": ["Brand", "US Shoe Size", "Color", "Style", "Material", "Department", "Model", "Type"],
+        # Electronics
+        "9355": ["Brand", "Model", "Storage Capacity", "Color", "Network", "Operating System", "Connectivity"],
+        "171485": ["Brand", "Model", "Type", "Processor", "RAM Size", "Storage Type", "Operating System"],
+        "11176": ["Brand", "Model", "Type", "Processor", "RAM Size", "Storage", "Screen Size", "Operating System"],
+        "171961": ["Brand", "Model", "Storage", "Screen Size", "Operating System", "Connectivity", "Color"],
+        "31388": ["Brand", "Model", "Type", "Connectivity", "Color", "Form Factor"],
+        "139973": ["Brand", "Model", "Type", "Compatible Brand", "Connectivity", "Color"],
+        "116022": ["Brand", "Type", "Color", "Style", "Material", "Power Source", "Voltage", "Smart Home Protocol", "Features"],
+        # Collectibles
+        "11116": ["Year", "Country/Region of Manufacture", "Composition", "Denomination", "Type", "Grade"],
+        "39": ["Year", "Composition", "Denomination", "Mint Mark", "Type", "Grade", "Strike Type"],
+        "550": ["Type", "Subject", "Original/Reproduction", "Year of Production", "Material", "Style"],
+        "260": ["Country/Region of Manufacture", "Year of Issue", "Quality", "Topic", "Denomination"],
+        "20081": ["Type", "Material", "Original/Reproduction", "Period", "Maker", "Region of Origin"],
+        "64482": ["Sport", "Player", "Year", "Team", "Manufacturer", "Card Condition", "Product"],
+        "212": ["Game", "Type", "Manufacturer", "Year", "Set", "Card Condition", "Rarity"],
+        # Books/Media
+        "267": ["Author", "Publisher", "Format", "Language", "Topic", "Genre", "Publication Year", "ISBN"],
+        "11233": ["Artist", "Format", "Genre", "Release Year", "Record Label", "Style"],
+        "11232": ["Artist", "Format", "Genre", "Release Year", "Record Label", "Style", "Speed", "Record Size"],
+        "617": ["Title", "Format", "Director", "Genre", "Release Year", "Rating", "Region Code"],
+        # Toys
+        "19006": ["Brand", "Set Number", "Theme", "Recommended Age Range", "Year", "Number of Pieces", "Type"],
+        "246": ["Brand", "Character", "Series", "Year", "Recommended Age Range", "Material", "Type", "Size"],
+        "1249": ["Platform", "Genre", "Publisher", "Region Code", "Rating", "Game Name", "Release Year"],
+        "92074": ["Brand", "Vehicle Make", "Year of Manufacture", "Scale", "Vehicle Type", "Color", "Material", "Series"],
+        # Home/Kitchen
+        "20444": ["Brand", "Type", "Material", "Color", "Features", "Set Includes"],
+        "159912": ["Brand", "Type", "Material", "Color", "Features", "Cookware Type", "Set Pieces"],
+        "260799": ["Brand", "Type", "Material", "Color", "Style", "Room", "Assembly Required"],
+        # Jewelry/Watches
+        "281": ["Brand", "Metal", "Style", "Type", "Main Stone", "Main Stone Color", "Color"],
+        "31387": ["Brand", "Model", "Movement", "Case Material", "Band Material", "Color", "Style"],
+        # Sporting
+        "888": ["Brand", "Sport/Activity", "Type", "Color", "Material"],
+        "33509": ["Brand", "Type", "Color", "Suspension Type", "Material", "Frame Material", "Wheel Size"],
+        "73": ["Brand", "Magnification", "Objective Lens", "Type", "Reticle", "Color"],
+    }
+
+    # Try eBay first
+    aspects = []
+    ebay_status = None
     try:
         import requests as _req
         token = get_ebay_token(business_id)
         api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
         headers = {"Authorization": f"Bearer {token}"}
         r = _req.get(f"{api_base}/commerce/taxonomy/v1/category_tree/0/get_item_aspects_for_category?category_id={category_id}", headers=headers)
-        aspects = []
+        ebay_status = r.status_code
         if r.ok:
             data = r.json()
             for a in (data.get("aspects") or [])[:25]:
@@ -1167,20 +1223,26 @@ async def get_item_aspects(request: Request, category_id: str = ""):
                     "values": [v.get("localizedValue") for v in (a.get("aspectValues") or [])[:8]]
                 })
             aspects.sort(key=lambda x: (0 if x["required"] else 1 if x["recommended"] else 2))
-        # Fallback: provide common aspects when API blocks us
-        if not aspects:
-            aspects = [
-                {"name": "Brand", "required": True, "recommended": False, "values": []},
-                {"name": "Color", "required": True, "recommended": False, "values": []},
-                {"name": "Size", "required": True, "recommended": False, "values": []},
-                {"name": "Type", "required": True, "recommended": False, "values": []},
-                {"name": "Material", "required": False, "recommended": True, "values": []},
-                {"name": "Model", "required": False, "recommended": True, "values": []},
-                {"name": "MPN", "required": False, "recommended": True, "values": []}
-            ]
-        return {"aspects": aspects[:18], "ebay_status": r.status_code if r else None}
     except Exception as e:
-        return {"aspects": [], "error": str(e)}
+        print(f"[eBay] Aspects error: {e}")
+
+    # If eBay returned nothing, use category-specific fallback
+    if not aspects:
+        cat_specific = CATEGORY_ASPECTS.get(category_id)
+        if cat_specific:
+            for i, name in enumerate(cat_specific):
+                aspects.append({
+                    "name": name,
+                    "required": i < 4,  # First 4 marked required
+                    "recommended": i >= 4 and i < 8,
+                    "values": []
+                })
+        else:
+            # Generic fallback
+            for i, name in enumerate(["Brand", "Type", "Color", "Size", "Model", "Material", "Style", "Features"]):
+                aspects.append({"name": name, "required": i < 4, "recommended": i >= 4, "values": []})
+
+    return {"aspects": aspects[:18], "ebay_status": ebay_status, "fallback": not bool(ebay_status and ebay_status == 200)}
 
 @app.get("/api/ebay/policies")
 async def get_ebay_policies(request: Request):
