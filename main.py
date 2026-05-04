@@ -772,6 +772,7 @@ async def submit_listings_to_ebay(request: Request):
                         "title": title,
                         "description": description if len(description) >= 30 else (description + " - Listed via Lister AI"),
                         "aspects": inv_aspects,
+                        "country": "US"
                     }
                 }
                 if photo_url and photo_url.startswith("https://"):
@@ -796,6 +797,7 @@ async def submit_listings_to_ebay(request: Request):
                         "price": {"value": str(price), "currency": "USD"}
                     },
                     "categoryId": category_id,
+                    "merchantLocationKey": "default",
                     "listingPolicies": {}
                 }
 
