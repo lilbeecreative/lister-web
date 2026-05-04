@@ -798,6 +798,49 @@ def get_ebay_token(business_id: str) -> str:
     return tok["access_token"]
 
 
+
+def detect_brand_from_title(title):
+    """Detect brand name from item title using common brand list."""
+    if not title:
+        return None
+    title_lower = title.lower()
+    BRANDS = [
+        "Nike", "Adidas", "Puma", "Reebok", "New Balance", "Vans", "Converse", "Jordan",
+        "Yeezy", "Asics", "Under Armour", "Skechers", "Crocs", "Birkenstock", "Timberland",
+        "Apple", "Samsung", "Sony", "LG", "Dell", "HP", "Lenovo", "Asus", "Acer",
+        "Microsoft", "Logitech", "Razer", "Bose", "Beats", "JBL", "Sennheiser",
+        "Canon", "Nikon", "GoPro", "DJI", "Fujifilm", "Panasonic",
+        "Lego", "Mattel", "Hasbro", "Funko", "Hot Wheels", "Disney",
+        "Bella+Canvas", "Bella Canvas", "Gildan", "Hanes", "Champion", "Carhartt",
+        "Levi's", "Levis", "Wrangler", "Tommy Hilfiger", "Calvin Klein", "Ralph Lauren",
+        "Gucci", "Louis Vuitton", "Prada", "Chanel", "Hermes", "Burberry", "Coach",
+        "Rolex", "Omega", "Tag Heuer", "Casio", "Seiko", "Citizen",
+        "KitchenAid", "Cuisinart", "Ninja", "Vitamix", "Instant Pot", "Keurig",
+        "Dyson", "Shark", "iRobot", "Bissell", "Hoover",
+        "Steiner", "EOTech", "Aimpoint", "Trijicon", "Vortex", "Leupold",
+        "McLaren", "Ferrari", "Lamborghini", "Porsche", "BMW", "Mercedes",
+        "Govee", "Philips Hue", "Wyze", "Ring", "Nest", "Arlo",
+        "KEEN", "Merrell", "Salomon", "Columbia", "North Face", "Patagonia",
+    ]
+    for brand in BRANDS:
+        if brand.lower() in title_lower:
+            return brand
+    return None
+
+def detect_model_from_title(title, brand=None):
+    """Try to extract model number/name from title (after brand)."""
+    if not title:
+        return None
+    import re
+    # Look for common model patterns: alphanumeric like "MX Master 3S", "DBAL-D2", "B75571"
+    # Pattern: 2-15 char tokens with letters AND numbers
+    matches = re.findall(r'\b[A-Z]+[-]?[0-9A-Z]{2,15}\b', title)
+    for m in matches:
+        if any(c.isdigit() for c in m) and any(c.isalpha() for c in m):
+            return m
+    return None
+
+
 @app.post("/api/ebay/submit-listings")
 async def submit_listings_to_ebay(request: Request):
     """Submit selected listings to eBay as draft listings using Inventory API."""
@@ -835,8 +878,10 @@ async def submit_listings_to_ebay(request: Request):
                 title = (listing.get("title") or "Item")[:80]
                 price = float(listing.get("price") or 9.99)
                 condition = "USED_EXCELLENT" if (listing.get("condition") or "used").lower() == "used" else "NEW"
-                category_id = str(listing.get("ebay_category_id") or "99")
-                print(f"[eBay] Using category_id={category_id} for {listing.get('id')}")
+                # Prefer modal-provided category, fall back to DB
+                modal_lookup = modal_items.get(str(listing["id"]), {})
+                category_id = str(modal_lookup.get("category_id") or listing.get("ebay_category_id") or "99")
+                print(f"[eBay] Using category_id={category_id} for {listing.get('id')} (modal={modal_lookup.get('category_id')}, db={listing.get('ebay_category_id')})")
                 description = listing.get("description") or title
                 qty = int(listing.get("quantity") or 1)
 
@@ -891,16 +936,21 @@ async def submit_listings_to_ebay(request: Request):
                 except Exception as _asp_err:
                     print(f"[eBay] Aspect fetch failed: {_asp_err}")
 
-                # If aspects empty (e.g. permission denied), use generic defaults
+                # If aspects empty (e.g. permission denied), use detected + generic defaults
                 if not inv_aspects:
+                    detected_brand = detect_brand_from_title(title)
+                    detected_model = detect_model_from_title(title, detected_brand)
                     inv_aspects = {
-                        "Brand": ["Unbranded"], "Type": ["Other"], "Model": ["Generic"],
-                        "MPN": ["Does Not Apply"], "Color": ["Multicolor"], "Size": ["Standard"],
+                        "Brand": [detected_brand or "Unbranded"],
+                        "Type": ["Other"],
+                        "Model": [detected_model or "Generic"],
+                        "MPN": [detected_model or "Does Not Apply"],
+                        "Color": ["Multicolor"], "Size": ["Standard"],
                         "Size Type": ["Regular"], "Material": ["Mixed Materials"],
                         "Department": ["Unisex Adult"], "Style": ["Casual"], "Theme": ["General"],
                         "Movie/TV Title": ["N/A"], "Genre": ["Other"], "Format": ["Standard"]
                     }
-                    print(f"[eBay] Using generic fallback aspects")
+                    print(f"[eBay] Auto-detected: brand={detected_brand}, model={detected_model}")
 
                 # Override with any user-provided aspects from modal
                 user_aspects = modal.get("aspects") if 'modal' in dir() else {}
