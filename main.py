@@ -1028,6 +1028,78 @@ async def get_ebay_locations(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
+
+@app.get("/api/ebay/category-search")
+async def search_ebay_categories(request: Request, q: str = ""):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    if not q or len(q) < 2:
+        return {"categories": []}
+    try:
+        import requests as _req
+        token = get_ebay_token(business_id)
+        api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
+        headers = {"Authorization": f"Bearer {token}"}
+        r = _req.get(f"{api_base}/commerce/taxonomy/v1/category_tree/0/get_category_suggestions?q={q}", headers=headers)
+        results = []
+        if r.ok:
+            data = r.json()
+            for s in (data.get("categorySuggestions") or [])[:8]:
+                cat = s.get("category", {})
+                ancestors = s.get("categoryTreeNodeAncestors", [])
+                path_parts = [a.get("categoryName","") for a in reversed(ancestors)] + [cat.get("categoryName","")]
+                results.append({
+                    "id": cat.get("categoryId"),
+                    "name": cat.get("categoryName"),
+                    "path": " > ".join(path_parts)
+                })
+        return {"categories": results, "ebay_status": r.status_code}
+    except Exception as e:
+        return {"categories": [], "error": str(e)}
+
+
+@app.get("/api/ebay/item-aspects")
+async def get_item_aspects(request: Request, category_id: str = ""):
+    business_id = require_auth(request)
+    if not business_id:
+        raise HTTPException(401, "Not authenticated")
+    if not category_id:
+        return {"aspects": []}
+    try:
+        import requests as _req
+        token = get_ebay_token(business_id)
+        api_base = "https://api.ebay.com" if EBAY_ENV != "sandbox" else "https://api.sandbox.ebay.com"
+        headers = {"Authorization": f"Bearer {token}"}
+        r = _req.get(f"{api_base}/commerce/taxonomy/v1/category_tree/0/get_item_aspects_for_category?category_id={category_id}", headers=headers)
+        aspects = []
+        if r.ok:
+            data = r.json()
+            for a in (data.get("aspects") or [])[:25]:
+                constraint = a.get("aspectConstraint", {})
+                usage = constraint.get("aspectUsage", "OPTIONAL")
+                aspects.append({
+                    "name": a.get("localizedAspectName"),
+                    "required": usage == "REQUIRED",
+                    "recommended": usage == "RECOMMENDED",
+                    "values": [v.get("localizedValue") for v in (a.get("aspectValues") or [])[:8]]
+                })
+            aspects.sort(key=lambda x: (0 if x["required"] else 1 if x["recommended"] else 2))
+        # Fallback: provide common aspects when API blocks us
+        if not aspects:
+            aspects = [
+                {"name": "Brand", "required": True, "recommended": False, "values": []},
+                {"name": "Color", "required": True, "recommended": False, "values": []},
+                {"name": "Size", "required": True, "recommended": False, "values": []},
+                {"name": "Type", "required": True, "recommended": False, "values": []},
+                {"name": "Material", "required": False, "recommended": True, "values": []},
+                {"name": "Model", "required": False, "recommended": True, "values": []},
+                {"name": "MPN", "required": False, "recommended": True, "values": []}
+            ]
+        return {"aspects": aspects[:18], "ebay_status": r.status_code if r else None}
+    except Exception as e:
+        return {"aspects": [], "error": str(e)}
+
 @app.get("/api/ebay/policies")
 async def get_ebay_policies(request: Request):
     business_id = require_auth(request)
